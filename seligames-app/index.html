@@ -1,0 +1,2782 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SeliGames - Oyun Modlama Platformu</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Rajdhani', 'Segoe UI', sans-serif;
+            background: #0a0a0f;
+            color: #fff;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Login Container */
+        #login-overlay {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #0a0a0f;
+        }
+
+        #login-overlay.hidden {
+            display: none;
+        }
+
+        .login-container {
+            background: rgba(26, 26, 36, 0.95);
+            border: 1px solid rgba(0, 255, 157, 0.2);
+            border-radius: 20px;
+            padding: 3rem;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 0 40px rgba(0, 255, 157, 0.2);
+        }
+
+        .login-logo {
+            font-size: 2.5rem;
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #00ff9d, #00f0ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 3px;
+        }
+
+        .login-subtitle {
+            text-align: center;
+            color: #8b8b9a;
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #8b8b9a;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-wrapper i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #8b8b9a;
+        }
+
+        input {
+            width: 100%;
+            padding: 1rem 1rem 1rem 3rem;
+            background: #13131a;
+            border: 2px solid rgba(0, 255, 157, 0.1);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #00ff9d;
+            box-shadow: 0 0 20px rgba(0, 255, 157, 0.3);
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 1.2rem;
+            background: linear-gradient(135deg, #00ff9d, #00f0ff);
+            border: none;
+            border-radius: 10px;
+            color: #0a0a0f;
+            font-weight: 700;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 255, 157, 0.4);
+        }
+
+        /* App Container (hidden initially) - FIXED */
+        .app-container {
+            display: none;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+        }
+
+        .app-container.active {
+            display: flex;
+            overflow-x: hidden;
+        }
+
+        /* Sidebar - FIXED */
+        .sidebar {
+            width: 250px;
+            min-width: 250px;
+            max-width: 250px;
+            flex-shrink: 0;
+            background: #13131a;
+            padding: 2rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s;
+            position: relative;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .sidebar.collapsed {
+            width: 80px;
+            min-width: 80px;
+            max-width: 80px;
+        }
+
+        .sidebar.collapsed .sidebar-subtitle,
+        .sidebar.collapsed .nav-item span,
+        .sidebar.collapsed .user-name,
+        .sidebar.collapsed .user-status {
+            display: none;
+        }
+
+        .sidebar-header {
+            margin-bottom: 2rem;
+        }
+
+        .sidebar-logo {
+            font-size: 1.8rem;
+            font-weight: 900;
+            margin-bottom: 0.3rem;
+            background: linear-gradient(135deg, #00ff9d, #00f0ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2px;
+        }
+
+        .sidebar-subtitle {
+            font-size: 0.75rem;
+            color: #8b8b9a;
+            margin-bottom: 1rem;
+        }
+
+        .sidebar-toggle {
+            position: absolute;
+            top: 2rem;
+            right: -15px;
+            width: 30px;
+            height: 30px;
+            background: #00ff9d;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #0a0a0f;
+            font-size: 0.8rem;
+            transition: all 0.3s;
+            z-index: 10;
+        }
+
+        .sidebar-toggle:hover {
+            transform: scale(1.1);
+        }
+
+        .nav-item {
+            padding: 1rem 1.2rem;
+            margin-bottom: 0.3rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: #8b8b9a;
+            font-size: 0.95rem;
+        }
+
+        .nav-item:hover {
+            background: rgba(0, 255, 157, 0.1);
+            color: #00ff9d;
+            transform: translateX(5px);
+        }
+
+        .nav-item.active {
+            background: linear-gradient(135deg, rgba(0, 255, 157, 0.2), rgba(0, 240, 255, 0.2));
+            color: #00ff9d;
+            border-left: 3px solid #00ff9d;
+        }
+
+        .nav-item i {
+            width: 20px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+
+        .user-section {
+            margin-top: auto;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(0, 255, 157, 0.1);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .user-avatar {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00ff9d, #00f0ff);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: #0a0a0f;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .user-details {
+            flex: 1;
+        }
+
+        .user-name {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.2rem;
+        }
+
+        .user-status {
+            font-size: 0.75rem;
+            color: #8b8b9a;
+        }
+
+        .btn-logout {
+            width: 100%;
+            padding: 0.9rem;
+            background: rgba(255, 0, 110, 0.1);
+            border: 1px solid #ff006e;
+            border-radius: 10px;
+            color: #ff006e;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-logout:hover {
+            background: rgba(255, 0, 110, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* Main Content - COMPLETELY FIXED */
+        .main-content {
+            flex: 1;
+            min-width: 0;
+            padding: 2rem;
+            overflow-y: auto;
+            overflow-x: hidden;
+            background: #0a0a0f;
+            height: 100vh;
+            max-width: 100%;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .page {
+            display: none;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            overflow-x: hidden;
+        }
+
+        .page.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .page-header {
+            margin-bottom: 2rem;
+            max-width: 100%;
+            overflow: hidden;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: #fff;
+            line-height: 1.2;
+            word-wrap: break-word;
+        }
+
+        .page-subtitle {
+            color: #8b8b9a;
+            font-size: 1rem;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 1200px) {
+            .main-content {
+                padding: 1.5rem;
+            }
+            .page-title {
+                font-size: 1.75rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 1rem;
+            }
+            .page-title {
+                font-size: 1.5rem;
+            }
+            .page-subtitle {
+                font-size: 0.9rem;
+            }
+        }
+
+        /* Stats Grid - OPTIMIZED */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .stat-card {
+            background: #13131a;
+            border: 1px solid rgba(0, 255, 157, 0.1);
+            border-radius: 15px;
+            padding: 1.5rem;
+            text-align: center;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stat-card:hover {
+            border-color: #00ff9d;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 255, 157, 0.15);
+        }
+
+        .stat-icon {
+            font-size: 2rem;
+            margin-bottom: 0.75rem;
+            color: #00ff9d;
+            opacity: 0.9;
+        }
+
+        .stat-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            line-height: 1;
+            color: #fff;
+        }
+
+        .stat-label {
+            color: #8b8b9a;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            word-wrap: break-word;
+            text-align: center;
+        }
+
+        /* Profile Page - Clean & Simple */
+        .profile-header {
+            background: #13131a;
+            border: 1px solid rgba(0, 255, 157, 0.2);
+            border-radius: 20px;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 2.5rem;
+        }
+
+        .profile-avatar-wrapper {
+            flex-shrink: 0;
+        }
+
+        .profile-avatar {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, #00ff9d, #00f0ff);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            font-weight: 700;
+            color: #0a0a0f;
+            box-shadow: 0 8px 30px rgba(0, 255, 157, 0.3);
+        }
+
+        .profile-info {
+            flex: 1;
+        }
+
+        .profile-name {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: #fff;
+        }
+
+        .profile-email {
+            color: #8b8b9a;
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .profile-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.8rem;
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(189, 0, 255, 0.15));
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            padding: 0.8rem 1.5rem;
+            border-radius: 50px;
+            font-weight: 600;
+        }
+
+        .profile-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.2rem;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 12px;
+            transition: all 0.3s;
+        }
+
+        .info-row:hover {
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .info-label {
+            font-weight: 600;
+            margin-bottom: 0.3rem;
+            color: #fff;
+        }
+
+        .info-value {
+            color: #8b8b9a;
+            font-size: 0.95rem;
+        }
+
+        .stat-mini {
+            text-align: center;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 15px;
+            border: 1px solid rgba(0, 255, 157, 0.1);
+            transition: all 0.3s;
+        }
+
+        .stat-mini:hover {
+            border-color: rgba(0, 255, 157, 0.3);
+            transform: translateY(-3px);
+        }
+
+        .stat-mini-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-mini-label {
+            color: #8b8b9a;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        @media (max-width: 768px) {
+            .profile-header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .profile-actions {
+                flex-direction: column;
+            }
+        }
+
+        /* Card Styles */
+        .card {
+            background: #13131a;
+            border: 1px solid rgba(0, 255, 157, 0.1);
+            border-radius: 20px;
+            padding: 2rem;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+            width: 100%;
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+
+        .card:hover {
+            border-color: rgba(0, 255, 157, 0.3);
+        }
+
+        .card-header-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: #00ff9d;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Grid içindeki grid'ler için responsive */
+        .info-grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
+            gap: 1.5rem;
+            width: 100%;
+            max-width: 100%;
+            overflow: hidden;
+        }
+
+        .info-grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
+            gap: 1.5rem;
+            width: 100%;
+            max-width: 100%;
+            overflow: hidden;
+        }
+
+        /* All inline grids */
+        .card > div[style*="display: grid"] {
+            box-sizing: border-box;
+            max-width: 100%;
+        }
+
+        /* Settings Page */
+        .settings-section {
+            background: #13131a;
+            border: 1px solid rgba(0, 255, 157, 0.1);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        .settings-section h3 {
+            color: #00ff9d;
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
+            font-weight: 700;
+        }
+
+        .setting-item {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.2rem 0;
+            border-bottom: 1px solid rgba(139, 139, 154, 0.1);
+        }
+
+        .setting-item:last-child {
+            border-bottom: none;
+        }
+
+        .setting-info {
+            flex: 1;
+        }
+
+        .setting-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.3rem;
+        }
+
+        .setting-desc {
+            font-size: 0.85rem;
+            color: #8b8b9a;
+        }
+
+        /* Toggle Switch */
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+            flex-shrink: 0;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #8b8b9a;
+            transition: 0.3s;
+            border-radius: 26px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        input:checked+.toggle-slider {
+            background: linear-gradient(135deg, #00ff9d, #00f0ff);
+        }
+
+        input:checked+.toggle-slider:before {
+            transform: translateX(24px);
+        }
+
+        /* Mod Cards - COMPLETELY FIXED */
+        .mods-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
+            gap: 1.5rem;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            padding: 0;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        @media (max-width: 1400px) {
+            .mods-grid {
+                grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+                gap: 1.25rem;
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .mods-grid {
+                grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
+                gap: 1rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .mods-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+        }
+
+        .mod-card {
+            background: #13131a;
+            border: 1px solid rgba(0, 255, 157, 0.1);
+            border-radius: 15px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            box-sizing: border-box;
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .mod-card:hover {
+            transform: translateY(-5px);
+            border-color: #00ff9d;
+            box-shadow: 0 10px 30px rgba(0, 255, 157, 0.2);
+        }
+
+        .mod-badge {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            background: linear-gradient(135deg, #bd00ff, #ff006e);
+            color: white;
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            z-index: 10;
+        }
+
+        .mod-image {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+
+        .mod-content {
+            padding: 1.25rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        .mod-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #00ff9d;
+            margin-bottom: 0.5rem;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .mod-version {
+            display: inline-block;
+            background: rgba(0, 255, 157, 0.1);
+            color: #00ff9d;
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .mod-description {
+            color: #8b8b9a;
+            line-height: 1.5;
+            font-size: 0.85rem;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 15, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 3000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #13131a;
+            border: 2px solid var(--primary);
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 900px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .modal-close {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 0, 110, 0.2);
+            border: 1px solid #ff006e;
+            color: #ff006e;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 0, 110, 0.3);
+            transform: rotate(90deg);
+        }
+
+        .modal-description {
+            color: #8b8b9a;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .gift-mapping {
+            display: grid;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .gift-item {
+            background: var(--bg-surface);
+            border: 1px solid rgba(0, 255, 157, 0.1);
+            border-radius: 10px;
+            padding: 1.5rem;
+            display: grid;
+            grid-template-columns: 80px 1fr 250px;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        .gift-icon {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #bd00ff, #ff006e);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+
+        .gift-info {
+            flex: 1;
+        }
+
+        .gift-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.3rem;
+        }
+
+        .gift-coins {
+            font-size: 0.85rem;
+            color: #8b8b9a;
+        }
+
+        .action-select {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            background: var(--bg-surface);
+            border: 2px solid rgba(0, 255, 157, 0.1);
+            border-radius: 10px;
+            color: white;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .action-select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .action-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #8b8b9a;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+
+        .btn-secondary {
+            padding: 1rem 2rem;
+            background: rgba(139, 139, 154, 0.2);
+            border: 1px solid #8b8b9a;
+            border-radius: 10px;
+            color: #8b8b9a;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(139, 139, 154, 0.3);
+        }
+
+        .btn-success {
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #00ff9d 0%, #00f0ff 100%);
+            border: 2px solid rgba(0, 255, 157, 0.5);
+            border-radius: 10px;
+            color: #000;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 15px rgba(0, 255, 157, 0.3);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 255, 157, 0.6);
+            background: linear-gradient(135deg, #00ffaa 0%, #00ffff 100%);
+            border-color: #00ff9d;
+        }
+
+        @keyframes shimmer {
+            0% {
+                left: -100%;
+            }
+
+            100% {
+                left: 100%;
+            }
+        }
+
+        /* Statistics Page */
+        .stats-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .stat-box {
+            background: #13131a;
+            border: 1px solid rgba(0, 255, 157, 0.1);
+            border-radius: 15px;
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+            box-sizing: border-box;
+            max-width: 100%;
+        }
+
+        .stat-box:hover {
+            transform: translateY(-5px);
+            border-color: #00ff9d;
+            box-shadow: 0 10px 30px rgba(0, 255, 157, 0.2);
+        }
+
+        .stat-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #00ff9d, #00f0ff);
+        }
+
+        .stat-box-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: white;
+        }
+
+        .stat-box-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: baseline;
+            gap: 0.5rem;
+        }
+
+        .stat-box-label {
+            color: #8b8b9a;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .history-section {
+            background: #13131a;
+            border: 1px solid rgba(0, 255, 157, 0.1);
+            border-radius: 15px;
+            padding: 2rem;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .history-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+            color: #8b8b9a;
+            gap: 1rem;
+        }
+
+        .empty-icon {
+            font-size: 3rem;
+            opacity: 0.3;
+        }
+
+        /* Performance Monitor */
+        .perf-monitor {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(19, 19, 26, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 157, 0.2);
+            border-radius: 10px;
+            padding: 10px 15px;
+            display: flex;
+            gap: 15px;
+            z-index: 1000;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+        }
+
+        .perf-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .perf-label {
+            color: #8b8b9a;
+            font-weight: 700;
+        }
+
+        .perf-value {
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        /* TikTok Page */
+        .tiktok-status-card {
+            background: #13131a;
+            border: 1px solid rgba(0, 255, 157, 0.1);
+            border-radius: 15px;
+            padding: 3rem;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .status-icon-wrapper {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: rgba(255, 0, 110, 0.1);
+            border: 2px solid #ff006e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            font-size: 2.5rem;
+            color: #ff006e;
+        }
+
+        .status-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .status-subtext {
+            color: #8b8b9a;
+        }
+
+        .tiktok-connect-card {
+            background: #13131a;
+            border: 1px solid rgba(0, 255, 157, 0.1);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .tiktok-input-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .tiktok-input {
+            flex: 1;
+            background: #0a0a0f;
+            border: 1px solid rgba(0, 255, 157, 0.2);
+            border-radius: 10px;
+            padding: 1rem;
+            color: white;
+            font-size: 1rem;
+        }
+
+        .tiktok-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .btn-tiktok {
+            background: linear-gradient(135deg, #ff0050, #00f2ea);
+            border: none;
+            border-radius: 10px;
+            padding: 0 2rem;
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-tiktok:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(255, 0, 80, 0.3);
+        }
+
+        .info-card {
+            background: #13131a;
+            border: 1px solid rgba(0, 255, 157, 0.1);
+            border-radius: 15px;
+            padding: 2rem;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        .info-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+        }
+
+        .info-list {
+            list-style: none;
+            color: #8b8b9a;
+        }
+
+        .info-list li {
+            margin-bottom: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .info-list i {
+            color: var(--primary);
+            font-size: 0.8rem;
+        }
+
+        /* Contact Page */
+        .contact-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+            gap: 1.5rem;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .contact-card {
+            background: #13131a;
+            border: 1px solid rgba(0, 255, 157, 0.1);
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        .contact-card:hover {
+            transform: translateY(-5px);
+            border-color: #00ff9d;
+            box-shadow: 0 8px 20px rgba(0, 255, 157, 0.15);
+        }
+
+        .contact-icon {
+            width: 80px;
+            height: 80px;
+            background: rgba(0, 255, 157, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            font-size: 2rem;
+            color: var(--primary);
+        }
+
+        .contact-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .contact-text {
+            color: #8b8b9a;
+            margin-bottom: 1.5rem;
+        }
+
+        .contact-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .contact-link:hover {
+            text-decoration: underline;
+        }
+
+        /* TikTok Live Animations */
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 0.8;
+            }
+        }
+
+        @keyframes glow {
+            0%, 100% {
+                box-shadow: 0 0 10px rgba(255, 0, 80, 0.5);
+            }
+            50% {
+                box-shadow: 0 0 20px rgba(255, 0, 80, 1), 0 0 30px rgba(0, 242, 234, 0.5);
+            }
+        }
+
+        @keyframes rotate {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Gift Sound Settings */
+        .sound-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+            width: 100%;
+            max-width: 100%;
+            overflow: hidden;
+        }
+
+        .sound-option {
+            background: rgba(255, 255, 255, 0.02);
+            border: 2px solid rgba(0, 255, 157, 0.1);
+            border-radius: 12px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .sound-option:hover {
+            border-color: #00ff9d;
+            background: rgba(0, 255, 157, 0.05);
+            transform: translateY(-2px);
+        }
+
+        .sound-option.active {
+            border-color: #00ff9d;
+            background: rgba(0, 255, 157, 0.15);
+            box-shadow: 0 0 20px rgba(0, 255, 157, 0.3);
+        }
+
+        .sound-play-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00ff9d, #00f0ff);
+            border: none;
+            color: #000;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .sound-play-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 15px rgba(0, 255, 157, 0.5);
+        }
+
+        .sound-info {
+            flex: 1;
+        }
+
+        .sound-name {
+            font-weight: 700;
+            margin-bottom: 0.2rem;
+            color: #fff;
+        }
+
+        .sound-desc {
+            font-size: 0.8rem;
+            color: #8b8b9a;
+        }
+
+        /* Profile Page - Editable Inputs */
+        .profile-input {
+            flex: 1;
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(0, 255, 157, 0.2);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+        }
+
+        .profile-input:focus {
+            outline: none;
+            border-color: #00ff9d;
+            box-shadow: 0 0 15px rgba(0, 255, 157, 0.3);
+        }
+
+        .profile-input:read-only {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-update-field {
+            padding: 0.75rem 1rem;
+            background: rgba(0, 255, 157, 0.2);
+            border: 2px solid #00ff9d;
+            border-radius: 10px;
+            color: #00ff9d;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1rem;
+            min-width: 50px;
+        }
+
+        .btn-update-field:hover {
+            background: rgba(0, 255, 157, 0.3);
+            transform: scale(1.05);
+        }
+
+        .btn-update-field:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* TikTok Page - COMPACT & FIXED STYLES */
+        .tiktok-connection-card {
+            background: linear-gradient(135deg, rgba(255, 0, 80, 0.1), rgba(0, 242, 234, 0.1));
+            border: 1px solid rgba(255, 0, 80, 0.3);
+            border-radius: 12px;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        .tiktok-status-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ff006e;
+            box-shadow: 0 0 10px #ff006e;
+            animation: pulse 2s infinite;
+        }
+
+        .status-text {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #fff;
+        }
+
+        .tiktok-username-display {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex: 1;
+            background: rgba(0, 217, 255, 0.1);
+            border: 1px solid rgba(0, 217, 255, 0.3);
+            border-radius: 8px;
+            padding: 0.6rem 1rem;
+        }
+
+        #tiktok-username-text {
+            color: #00d9ff;
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        .btn-start-live {
+            background: linear-gradient(135deg, #ff0050, #00f2ea);
+            border: none;
+            border-radius: 8px;
+            padding: 0.6rem 1.5rem;
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .btn-start-live:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255, 0, 80, 0.5);
+        }
+
+        .tiktok-compact-stats {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .compact-stat {
+            border-radius: 10px;
+            padding: 0.6rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.3s;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .compact-stat:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .stat-emoji {
+            font-size: 1.5rem;
+        }
+
+        .stat-num {
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: #fff;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .tiktok-event-container {
+            background: #13131a;
+            border: 1px solid rgba(0, 255, 157, 0.2);
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 280px);
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        .tiktok-event-header {
+            background: linear-gradient(135deg, rgba(0, 255, 157, 0.1), rgba(0, 240, 255, 0.1));
+            border-bottom: 1px solid rgba(0, 255, 157, 0.2);
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            flex-shrink: 0;
+        }
+
+        .event-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #00ff9d;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0;
+        }
+
+        .live-badge {
+            font-size: 0.65rem;
+            background: linear-gradient(135deg, #ff0050, #00f2ea);
+            padding: 0.25rem 0.6rem;
+            border-radius: 12px;
+            font-weight: 700;
+            color: #fff;
+            animation: glow 2s infinite;
+        }
+
+        .event-filters {
+            display: flex;
+            gap: 0.4rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .event-filter-btn {
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: #8b8b9a;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .event-filter-btn.active {
+            border-color: #00ff9d;
+            background: rgba(0, 255, 157, 0.2);
+            color: #00ff9d;
+        }
+
+        .event-filter-btn:hover {
+            border-color: #00ff9d;
+            background: rgba(0, 255, 157, 0.1);
+        }
+
+        .btn-clear-feed {
+            padding: 0.4rem 0.8rem;
+            background: rgba(255, 0, 110, 0.2);
+            border: 2px solid rgba(255, 0, 110, 0.5);
+            border-radius: 8px;
+            color: #ff006e;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-clear-feed:hover {
+            background: rgba(255, 0, 110, 0.3);
+        }
+
+        .tiktok-event-feed {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 0.6rem;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .event-placeholder {
+            text-align: center;
+            color: #8b8b9a;
+            padding: 3rem 2rem;
+        }
+
+        .event-placeholder i {
+            font-size: 3rem;
+            opacity: 0.3;
+            margin-bottom: 1rem;
+            display: block;
+            animation: rotate 3s linear infinite;
+        }
+
+        .placeholder-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: #fff;
+        }
+
+        .placeholder-desc {
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        /* TikTok Responsive */
+        @media (max-width: 1024px) {
+            .tiktok-compact-stats {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .tiktok-connection-card {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .tiktok-username-group {
+                width: 100%;
+            }
+
+            .btn-start-live {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .tiktok-compact-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .event-title {
+                font-size: 0.9rem;
+            }
+
+            .event-filters {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .tiktok-compact-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .stat-emoji {
+                font-size: 1.2rem;
+            }
+
+            .stat-num {
+                font-size: 1.2rem;
+            }
+        }
+
+        /* Event Feed Additional Fixes */
+        .event-filter-btn {
+            border: none;
+        }
+        
+        @media (max-width: 768px) {
+            .event-filter-btn {
+                padding: 0.4rem 0.6rem;
+                font-size: 0.75rem;
+            }
+            
+            .btn-clear-feed {
+                padding: 0.4rem 0.6rem;
+                font-size: 0.75rem;
+            }
+        }
+
+        /* Sound Selector Responsive */
+        @media (max-width: 768px) {
+            .sound-selector {
+                grid-template-columns: 1fr !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Login Overlay -->
+    <div id="login-overlay">
+        <div class="login-container">
+            <div class="login-logo">SELIGAMES</div>
+            <div class="login-subtitle">Oyun Modlama Platformu</div>
+
+            <form id="login-form">
+                <div class="form-group">
+                    <label>E-POSTA</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" id="email" placeholder="ornek@ornek.com" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>ŞİFRE</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="password" placeholder="........" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-sign-in-alt"></i> GİRİŞ YAP
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- App Container -->
+    <div class="app-container" id="app-container">
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-toggle" onclick="toggleSidebar()">
+                <i class="fas fa-chevron-left" id="toggle-icon"></i>
+            </div>
+
+            <div class="sidebar-header">
+                <div class="sidebar-logo">SELIGAMES</div>
+                <div class="sidebar-subtitle">Modlama Platformu</div>
+            </div>
+
+            <div class="nav-item active" onclick="navigateTo('dashboard')">
+                <i class="fas fa-home"></i>
+                <span>Ana Sayfa</span>
+            </div>
+            <div class="nav-item" onclick="navigateTo('mods')">
+                <i class="fas fa-puzzle-piece"></i>
+                <span>Modlar</span>
+            </div>
+            <div class="nav-item" onclick="navigateTo('tiktok')">
+                <i class="fab fa-tiktok"></i>
+                <span>TikTok Canlı</span>
+            </div>
+            <div class="nav-item" onclick="navigateTo('profile')">
+                <i class="fas fa-user"></i>
+                <span>Profil</span>
+            </div>
+            <div class="nav-item" onclick="navigateTo('statistics')">
+                <i class="fas fa-chart-line"></i>
+                <span>İstatistikler</span>
+            </div>
+            <div class="nav-item" onclick="navigateTo('guide')">
+                <i class="fas fa-book"></i>
+                <span>Kullanım Kılavuzu</span>
+            </div>
+            <div class="nav-item" onclick="navigateTo('contact')">
+                <i class="fas fa-envelope"></i>
+                <span>İletişim</span>
+            </div>
+            <div class="nav-item" onclick="navigateTo('settings')">
+                <i class="fas fa-cog"></i>
+                <span>Ayarlar</span>
+            </div>
+
+            <div class="user-section">
+                <div class="user-info">
+                    <div class="user-avatar" id="user-avatar">E</div>
+                    <div class="user-details">
+                        <div class="user-name" id="user-name">ethem</div>
+                        <div class="user-status">Premium Üye</div>
+                    </div>
+                </div>
+                <button class="btn-logout" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> <span>Çıkış Yap</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <!-- Dashboard Page -->
+            <div class="page active" id="dashboard-page">
+                <div class="page-header">
+                    <div class="page-title">Ana Sayfa</div>
+                    <div class="page-subtitle">SeliGames'e Hoş Geldiniz, <span id="user-name-display">Kullanıcı</span>!
+                    </div>
+                </div>
+
+                <!-- Welcome Banner -->
+                <div
+                    style="background: linear-gradient(135deg, rgba(0, 255, 157, 0.1), rgba(0, 240, 255, 0.1)); border: 1px solid rgba(0, 255, 157, 0.2); border-radius: 20px; padding: 2.5rem; margin-bottom: 2rem; position: relative; overflow: hidden;">
+                    <div
+                        style="position: absolute; top: -50px; right: -50px; width: 200px; height: 200px; background: radial-gradient(circle, rgba(0, 255, 157, 0.2), transparent); border-radius: 50%;">
+                    </div>
+                    <div style="position: relative; z-index: 1;">
+                        <h2
+                            style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; background: linear-gradient(135deg, #00ff9d, #00f0ff); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">
+                            🎮 Oyun Deneyiminizi Güçlendirin!
+                        </h2>
+                        <p style="color: #8b8b9a; font-size: 1.1rem; margin-bottom: 1.5rem;">
+                            TikTok izleyicilerinizle etkileşimli oyun deneyimi yaşatın. Modlarınızı yükleyin, ayarlayın
+                            ve canlı yayınlarınızı eğlenceye dönüştürün!
+                        </p>
+                        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                            <button onclick="navigateTo('mods')"
+                                style="background: linear-gradient(135deg, #00ff9d, #00f0ff); color: #0a0a0f; border: none; padding: 1rem 2rem; border-radius: 10px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="fas fa-rocket"></i> Modları Keşfet
+                            </button>
+                            <button onclick="navigateTo('guide')"
+                                style="background: rgba(255, 255, 255, 0.05); color: #00ff9d; border: 1px solid rgba(0, 255, 157, 0.3); padding: 1rem 2rem; border-radius: 10px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="fas fa-book"></i> Kullanım Kılavuzu
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Overview -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-puzzle-piece"></i></div>
+                        <div class="stat-value" id="stat-mods">2</div>
+                        <div class="stat-label">MEVCUT MODLAR</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fab fa-tiktok"></i></div>
+                        <div class="stat-value"><i class="fas fa-circle" style="font-size: 1rem; color: #ff006e;"></i>
+                        </div>
+                        <div class="stat-label">TIKTOK DURUMU</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-download"></i></div>
+                        <div class="stat-value">0</div>
+                        <div class="stat-label">İNDİRMELER</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-star"></i></div>
+                        <div class="stat-value">Premium</div>
+                        <div class="stat-label">ÜYELİK</div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div style="margin: 2rem 0;">
+                    <h3 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 1.5rem; color: #00ff9d;">⚡ Hızlı
+                        Aksiyonlar</h3>
+                    <div
+                        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr)); gap: 1.5rem; width: 100%; max-width: 100%; overflow: hidden;">
+                        <div onclick="navigateTo('tiktok')"
+                            style="background: #13131a; border: 1px solid rgba(0, 255, 157, 0.1); border-radius: 15px; padding: 1.5rem; cursor: pointer; transition: all 0.3s;"
+                            onmouseover="this.style.transform='translateY(-5px)'; this.style.borderColor='#00ff9d';"
+                            onmouseout="this.style.transform=''; this.style.borderColor='rgba(0, 255, 157, 0.1)';">
+                            <div
+                                style="width: 50px; height: 50px; background: rgba(255, 0, 80, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
+                                <i class="fab fa-tiktok"
+                                    style="font-size: 1.5rem; background: linear-gradient(135deg, #ff0050, #00f2ea); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;"></i>
+                            </div>
+                            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">TikTok Bağla</h4>
+                            <p style="color: #8b8b9a; font-size: 0.9rem;">Hesabınızı bağlayarak canlı yayınlarınıza mod
+                                entegrasyonu sağlayın</p>
+                        </div>
+
+                        <div onclick="document.getElementById('mods-grid') && loadMods() || navigateTo('mods')"
+                            style="background: #13131a; border: 1px solid rgba(0, 255, 157, 0.1); border-radius: 15px; padding: 1.5rem; cursor: pointer; transition: all 0.3s;"
+                            onmouseover="this.style.transform='translateY(-5px)'; this.style.borderColor='#00ff9d';"
+                            onmouseout="this.style.transform=''; this.style.borderColor='rgba(0, 255, 157, 0.1)';">
+                            <div
+                                style="width: 50px; height: 50px; background: rgba(0, 255, 157, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
+                                <i class="fas fa-download" style="font-size: 1.5rem; color: #00ff9d;"></i>
+                            </div>
+                            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">Mod İndir</h4>
+                            <p style="color: #8b8b9a; font-size: 0.9rem;">Yeni modlar indirin ve oyun deneyiminizi
+                                geliştirin</p>
+                        </div>
+
+                        <div onclick="navigateTo('statistics')"
+                            style="background: #13131a; border: 1px solid rgba(0, 255, 157, 0.1); border-radius: 15px; padding: 1.5rem; cursor: pointer; transition: all 0.3s;"
+                            onmouseover="this.style.transform='translateY(-5px)'; this.style.borderColor='#00ff9d';"
+                            onmouseout="this.style.transform=''; this.style.borderColor='rgba(0, 255, 157, 0.1)';">
+                            <div
+                                style="width: 50px; height: 50px; background: rgba(0, 240, 255, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
+                                <i class="fas fa-chart-line" style="font-size: 1.5rem; color: #00f0ff;"></i>
+                            </div>
+                            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">İstatistikleri Gör</h4>
+                            <p style="color: #8b8b9a; font-size: 0.9rem;">Kullanım istatistiklerinizi ve performans
+                                metriklerini inceleyin</p>
+                        </div>
+
+                        <div onclick="navigateTo('settings')"
+                            style="background: #13131a; border: 1px solid rgba(0, 255, 157, 0.1); border-radius: 15px; padding: 1.5rem; cursor: pointer; transition: all 0.3s;"
+                            onmouseover="this.style.transform='translateY(-5px)'; this.style.borderColor='#00ff9d';"
+                            onmouseout="this.style.transform=''; this.style.borderColor='rgba(0, 255, 157, 0.1)';">
+                            <div
+                                style="width: 50px; height: 50px; background: rgba(189, 0, 255, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
+                                <i class="fas fa-cog" style="font-size: 1.5rem; color: #bd00ff;"></i>
+                            </div>
+                            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">Ayarları Düzenle</h4>
+                            <p style="color: #8b8b9a; font-size: 0.9rem;">Uygulama tercihlerinizi ve mod ayarlarınızı
+                                yönetin</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div
+                    style="background: #13131a; border: 1px solid rgba(0, 255, 157, 0.1); border-radius: 15px; padding: 2rem;">
+                    <h3
+                        style="font-size: 1.3rem; font-weight: 700; margin-bottom: 1.5rem; color: #00ff9d; display: flex; align-items: center; gap: 0.8rem;">
+                        <i class="fas fa-clock"></i> Son Aktiviteler
+                    </h3>
+                    <div id="recent-activity" style="color: #8b8b9a; text-align: center; padding: 2rem;">
+                        <i class="fas fa-inbox" style="font-size: 3rem; opacity: 0.3; margin-bottom: 1rem;"></i>
+                        <p>Henüz aktivite yok. Bir mod yükleyerek başlayın!</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mods Page -->
+            <div class="page" id="mods-page">
+                <div class="page-header">
+                    <div class="page-title">Oyun Modları</div>
+                    <div class="page-subtitle">Mevcut modlara göz atın ve ind irin</div>
+                </div>
+
+                <div class="mods-grid" id="mods-grid">
+                    <!-- Mods will be loaded here -->
+                </div>
+            </div>
+
+            <!-- TikTok Page - COMPACT & FIXED -->
+            <div class="page" id="tiktok-page">
+                <div class="page-header">
+                    <div class="page-title"><i class="fab fa-tiktok" style="background: linear-gradient(135deg, #ff0050, #00f2ea); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;"></i> TikTok Canlı Yayın</div>
+                    <div class="page-subtitle">Canlı yayınınızı izleyin ve etkileşimleri takip edin</div>
+                </div>
+
+                <!-- Compact Connection Panel -->
+                <div class="tiktok-connection-card">
+                    <div class="tiktok-status-group">
+                        <div id="connection-status-dot" class="status-dot"></div>
+                        <span id="connection-status-text" class="status-text">Bağlı Değil</span>
+                    </div>
+                    <div class="tiktok-username-display">
+                        <i class="fab fa-tiktok" style="color: #ff0050; font-size: 1.2rem;"></i>
+                        <span id="tiktok-username-text" style="color: #00d9ff; font-weight: 700; font-size: 1rem;">Kullanıcı adı yükleniyor...</span>
+                    </div>
+                    <button onclick="startLiveStream()" class="btn-start-live">
+                        <i class="fas fa-play-circle"></i> Canlı Yayına Başla
+                    </button>
+                </div>
+
+                <!-- Compact Stats -->
+                <div class="tiktok-compact-stats">
+                    <div class="compact-stat" style="background: linear-gradient(135deg, #00ff9d, #00d9ff);">
+                        <span class="stat-emoji">💬</span>
+                        <span class="stat-num" id="total-comments">0</span>
+                    </div>
+                    <div class="compact-stat" style="background: linear-gradient(135deg, #ff006e, #ff5722);">
+                        <span class="stat-emoji">🎁</span>
+                        <span class="stat-num" id="total-gifts">0</span>
+                    </div>
+                    <div class="compact-stat" style="background: linear-gradient(135deg, #00d9ff, #0099ff);">
+                        <span class="stat-emoji">❤️</span>
+                        <span class="stat-num" id="total-likes">0</span>
+                    </div>
+                    <div class="compact-stat" style="background: linear-gradient(135deg, #bd00ff, #8b00ff);">
+                        <span class="stat-emoji">👋</span>
+                        <span class="stat-num" id="total-members">0</span>
+                    </div>
+                    <div class="compact-stat" style="background: linear-gradient(135deg, #ffa500, #ff8c00);">
+                        <span class="stat-emoji">👥</span>
+                        <span class="stat-num" id="live-viewers">0</span>
+                    </div>
+                </div>
+
+                <!-- Event Feed -->
+                <div class="tiktok-event-container">
+                    <div class="tiktok-event-header">
+                        <h3 class="event-title">
+                            <i class="fas fa-stream"></i> Canlı Event Akışı
+                            <span class="live-badge">🔴 CANLI</span>
+                        </h3>
+                        <div class="event-filters">
+                            <button class="event-filter-btn active" data-filter="all">Tümü</button>
+                            <button class="event-filter-btn" data-filter="gift">🎁</button>
+                            <button class="event-filter-btn" data-filter="comment">💬</button>
+                            <button class="event-filter-btn" data-filter="member">👋</button>
+                            <button onclick="clearEventFeed()" class="btn-clear-feed"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </div>
+                    <div id="event-feed" class="tiktok-event-feed">
+                        <div class="event-placeholder">
+                            <i class="fas fa-satellite-dish"></i>
+                            <p class="placeholder-title">Canlı Event Bekleniyor...</p>
+                            <p class="placeholder-desc">TikTok Live'a bağlandığınızda event'ler burada görünecek</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- End TikTok Page -->
+
+            <!-- Profile Page -->
+            <div class="page" id="profile-page">
+        <div class="page-header">
+            <div class="page-title">Profil</div>
+            <div class="page-subtitle">Hesap bilgilerinizi yönetin</div>
+        </div>
+
+        <!-- Profile Header -->
+        <div class="profile-header">
+            <div class="profile-avatar-wrapper">
+                <div class="profile-avatar">
+                    <span id="profile-avatar">E</span>
+                </div>
+            </div>
+            <div class="profile-info">
+                <h2 class="profile-name" id="profile-username">selitest</h2>
+                <p class="profile-email" id="profile-email">test@seligames.com</p>
+                <div class="profile-badge">
+                    <i class="fas fa-crown" style="color: #FFD700; font-size: 1.3rem;"></i>
+                    <span style="font-weight: 700;">Premium Üye</span>
+                </div>
+                <div class="profile-actions">
+                    <button class="btn-secondary" style="flex: 1;">
+                        <i class="fas fa-edit"></i> Profili Düzenle
+                    </button>
+                    <button class="btn-secondary" onclick="localStorage.clear(); location.reload();" style="flex: 1;">
+                        <i class="fas fa-sign-out-alt"></i> Çıkış Yap
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Usage Stats -->
+        <div class="card">
+            <h3 class="card-header-title">📊 Kullanım İstatistikleri</h3>
+            <div class="info-grid-3">
+                <div class="stat-mini">
+                    <div class="stat-mini-value" style="color: #00ff9d;">2</div>
+                    <div class="stat-mini-label">Yüklü Modlar</div>
+                </div>
+                <div class="stat-mini">
+                    <div class="stat-mini-value" style="color: #00f0ff;">0</div>
+                    <div class="stat-mini-label">Toplam Bağlantı</div>
+                </div>
+                <div class="stat-mini">
+                    <div class="stat-mini-value" style="color: #bd00ff;">0</div>
+                    <div class="stat-mini-label">Toplam Etkileşim</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Account Info - EDITABLE -->
+        <div class="card">
+            <h3 class="card-header-title">🔐 Hesap Bilgileri</h3>
+            <form id="profile-form" style="display: grid; gap: 1rem;">
+                <!-- Username -->
+                <div class="form-group">
+                    <label style="display: block; margin-bottom: 0.5rem; color: #8b8b9a; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Kullanıcı Adı</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="text" id="profile-username-edit" class="profile-input" placeholder="Kullanıcı adınız" />
+                        <button type="button" onclick="updateProfileField('username')" class="btn-update-field">
+                            <i class="fas fa-check"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Full Name -->
+                <div class="form-group">
+                    <label style="display: block; margin-bottom: 0.5rem; color: #8b8b9a; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Tam Ad</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="text" id="profile-fullname-edit" class="profile-input" placeholder="Ad Soyad" />
+                        <button type="button" onclick="updateProfileField('fullName')" class="btn-update-field">
+                            <i class="fas fa-check"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- TikTok Username -->
+                <div class="form-group">
+                    <label style="display: block; margin-bottom: 0.5rem; color: #8b8b9a; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">
+                        <i class="fab fa-tiktok" style="color: #ff0050;"></i> TikTok Kullanıcı Adı
+                    </label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="text" id="profile-tiktok-edit" class="profile-input" placeholder="@username" />
+                        <button type="button" onclick="updateProfileField('tiktokUsername')" class="btn-update-field">
+                            <i class="fas fa-check"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Phone Number -->
+                <div class="form-group">
+                    <label style="display: block; margin-bottom: 0.5rem; color: #8b8b9a; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Telefon</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="tel" id="profile-phone-edit" class="profile-input" placeholder="+90 5XX XXX XX XX" />
+                        <button type="button" onclick="updateProfileField('phoneNumber')" class="btn-update-field">
+                            <i class="fas fa-check"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Email (Read Only) -->
+                <div class="form-group">
+                    <label style="display: block; margin-bottom: 0.5rem; color: #8b8b9a; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">E-posta (Değiştirilemez)</label>
+                    <input type="email" id="profile-email-detail" class="profile-input" readonly style="opacity: 0.6; cursor: not-allowed;" />
+                </div>
+            </form>
+        </div>
+
+        <!-- Change Password -->
+        <div class="card">
+            <h3 class="card-header-title">🔑 Şifre Değiştir</h3>
+            <form id="password-form" style="display: grid; gap: 1rem;">
+                <div class="form-group">
+                    <label style="display: block; margin-bottom: 0.5rem; color: #8b8b9a; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Mevcut Şifre</label>
+                    <input type="password" id="current-password" class="profile-input" placeholder="••••••••" />
+                </div>
+                <div class="form-group">
+                    <label style="display: block; margin-bottom: 0.5rem; color: #8b8b9a; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Yeni Şifre</label>
+                    <input type="password" id="new-password" class="profile-input" placeholder="••••••••" />
+                </div>
+                <div class="form-group">
+                    <label style="display: block; margin-bottom: 0.5rem; color: #8b8b9a; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Yeni Şifre (Tekrar)</label>
+                    <input type="password" id="new-password-confirm" class="profile-input" placeholder="••••••••" />
+                </div>
+                <button type="button" onclick="changePassword()" class="btn-success" style="width: 100%;">
+                    <i class="fas fa-key"></i> Şifreyi Değiştir
+                </button>
+            </form>
+        </div>
+
+        <!-- Subscription Details -->
+        <div class="card" style="background: linear-gradient(135deg, rgba(255, 215, 0, 0.08), rgba(189, 0, 255, 0.08)); border-color: rgba(255, 215, 0, 0.3);">
+            <h3 class="card-header-title" style="color: #FFD700;">
+                <i class="fas fa-crown"></i> Premium Abonelik
+            </h3>
+            <div class="info-grid-2">
+                <div class="stat-mini">
+                    <div class="stat-mini-value" style="color: #FFD700;">Aktif</div>
+                    <div class="stat-mini-label">Durum</div>
+                </div>
+                <div class="stat-mini">
+                    <div class="stat-mini-value">17 Ocak</div>
+                    <div class="stat-mini-label">Yenileme Tarihi</div>
+                </div>
+                <div class="stat-mini">
+                    <div class="stat-mini-value">₺49.99</div>
+                    <div class="stat-mini-label">Aylık Ücret</div>
+                </div>
+                <div class="stat-mini">
+                    <div class="stat-mini-value" style="color: #00ff9d;">Açık</div>
+                    <div class="stat-mini-label">Otomatik Yenileme</div>
+                </div>
+            </div>
+            <button class="btn-success" style="width: 100%; margin-top: 1.5rem;">
+                <i class="fas fa-star"></i> Aboneliği Yönet
+            </button>
+        </div>
+    </div>
+
+    <!-- Statistics Page -->
+    <div class="page" id="statistics-page">
+        <div class="page-header">
+            <div class="page-title">İstatistikler</div>
+            <div class="page-subtitle">Mod kullanım geçmişiniz ve etkileşim istatistikleri</div>
+        </div>
+
+        <div class="stats-overview">
+            <div class="stat-box">
+                <div class="stat-box-icon" style="background: #00ff9d;">
+                    <i class="fas fa-puzzle-piece"></i>
+                </div>
+                <div class="stat-box-value">
+                    <i class="fas fa-slash" style="font-size: 1rem; opacity: 0.5;"></i>
+                </div>
+                <div class="stat-box-label">KULLANILAN MODLAR</div>
+            </div>
+
+            <div class="stat-box">
+                <div class="stat-box-icon" style="background: #00f0ff;">
+                    <i class="fas fa-bolt"></i>
+                </div>
+                <div class="stat-box-value">
+                    <i class="fas fa-slash" style="font-size: 1rem; opacity: 0.5;"></i>
+                </div>
+                <div class="stat-box-label">TOPLAM ETKİLEŞİM</div>
+            </div>
+
+            <div class="stat-box">
+                <div class="stat-box-icon" style="background: #00ff9d;">
+                    <i class="fas fa-gift"></i>
+                </div>
+                <div class="stat-box-value">
+                    <i class="fas fa-slash" style="font-size: 1rem; opacity: 0.5;"></i>
+                </div>
+                <div class="stat-box-label">HEDİYELER</div>
+            </div>
+
+            <div class="stat-box">
+                <div class="stat-box-icon" style="background: #00f0ff;">
+                    <i class="fas fa-comment"></i>
+                </div>
+                <div class="stat-box-value">
+                    <i class="fas fa-slash" style="font-size: 1rem; opacity: 0.5;"></i>
+                </div>
+                <div class="stat-box-label">YORUMLAR</div>
+            </div>
+        </div>
+
+        <div class="history-section">
+            <div class="history-header">
+                <div class="history-title">
+                    <i class="fas fa-history"></i> Mod Kullanım Geçmişi
+                </div>
+            </div>
+
+            <div class="empty-state">
+                <i class="fas fa-inbox empty-icon"></i>
+                <p>Henüz veri yok</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Guide Page -->
+    <div class="page" id="guide-page">
+        <div class="page-header">
+            <div class="page-title">Kullanım Kılavuzu</div>
+            <div class="page-subtitle">SeliGames'i nasıl kullanacağınızı öğrenin</div>
+        </div>
+
+        <div
+            style="background: #13131a; border: 1px solid rgba(0, 255, 157, 0.1); border-radius: 15px; padding: 2rem; margin-bottom: 2rem;">
+            <h3 style="color: #00ff9d; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem;">
+                <i class="fas fa-download"></i> Mod Kurulumu
+            </h3>
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <div style="display: flex; align-items: start; gap: 1rem;">
+                    <div
+                        style="background: #00ff9d; color: #0a0a0f; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">
+                        1</div>
+                    <div>
+                        <div style="font-weight: 600; margin-bottom: 0.3rem;">Modlar</div>
+                        <div style="color: #8b8b9a;">bölümünde mevcut modlara göz atın</div>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: start; gap: 1rem;">
+                    <div
+                        style="background: #00ff9d; color: #0a0a0f; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">
+                        2</div>
+                    <div>
+                        <div style="font-weight: 600; margin-bottom: 0.3rem;">İstediğiniz modun üzerine tıklayın
+                        </div>
+                        <div style="color: #8b8b9a;"></div>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: start; gap: 1rem;">
+                    <div
+                        style="background: #00ff9d; color: #0a0a0f; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">
+                        3</div>
+                    <div>
+                        <div style="font-weight: 600; margin-bottom: 0.3rem;">Ayarlar</div>
+                        <div style="color: #8b8b9a;">butonuna tıklayarak TikTok hediye eşleştirmelerini yapın
+                        </div>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: start; gap: 1rem;">
+                    <div
+                        style="background: #00ff9d; color: #0a0a0f; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">
+                        4</div>
+                    <div>
+                        <div style="font-weight: 600; margin-bottom: 0.3rem;">Modu Yükle</div>
+                        <div style="color: #8b8b9a;">butonuna tıklayın</div>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: start; gap: 1rem;">
+                    <div
+                        style="background: #00ff9d; color: #0a0a0f; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">
+                        5</div>
+                    <div>
+                        <div style="font-weight: 600; margin-bottom: 0.3rem;"></div>
+                        <div style="color: #8b8b9a;">Mod otomatik olarak oyun dizininize kurulacaktır</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="background: #13131a; border: 1px solid rgba(0, 255, 157, 0.1); border-radius: 15px; padding: 2rem;">
+            <h3 style="color: #00ff9d; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem;">
+                <i class="fab fa-tiktok"></i> TikTok Bağlantısı
+            </h3>
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <div style="display: flex; align-items: start; gap: 1rem;">
+                    <div
+                        style="background: #00ff9d; color: #0a0a0f; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">
+                        1</div>
+                    <div>
+                        <div style="font-weight: 600; margin-bottom: 0.3rem;">TikTok Canlı</div>
+                        <div style="color: #8b8b9a;">bölümüne gidin</div>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: start; gap: 1rem;">
+                    <div
+                        style="background: #00ff9d; color: #0a0a0f; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">
+                        2</div>
+                    <div>
+                        <div style="font-weight: 600; margin-bottom: 0.3rem;">TikToku Bağla</div>
+                        <div style="color: #8b8b9a;">butonuna tıklayın</div>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: start; gap: 1rem;">
+                    <div
+                        style="background: #00ff9d; color: #0a0a0f; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">
+                        3</div>
+                    <div>
+                        <div style="font-weight: 600; margin-bottom: 0.3rem;"></div>
+                        <div style="color: #8b8b9a;">SeliGames'in TikTok hesabınıza erişmesine izin verin</div>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: start; gap: 1rem;">
+                    <div
+                        style="background: #00ff9d; color: #0a0a0f; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">
+                        4</div>
+                    <div>
+                        <div style="font-weight: 600; margin-bottom: 0.3rem;"></div>
+                        <div style="color: #8b8b9a;">Hangi olayların hangi oyun aksiyonlarını tetikleyeceğini
+                            yapılandırın</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact Page -->
+    <div class="page" id="contact-page">
+        <div class="page-header">
+            <div class="page-title">İletişim</div>
+            <div class="page-subtitle">Bizimle iletişime geçin</div>
+        </div>
+
+        <div class="contact-grid">
+            <div class="contact-card">
+                <div class="contact-icon">
+                    <i class="fas fa-envelope"></i>
+                </div>
+                <div class="contact-title">E-posta</div>
+                <p class="contact-text">Her türlü soru ve destek için bize e-posta gönderin.</p>
+                <a href="#" class="contact-link">destek@seligames.com</a>
+            </div>
+
+            <div class="contact-card">
+                <div class="contact-icon">
+                    <i class="fab fa-discord"></i>
+                </div>
+                <div class="contact-title">Discord</div>
+                <p class="contact-text">Topluluğumuza katılın ve diğer modcularla tanışın.</p>
+                <a href="#" class="contact-link">Discord Sunucusu</a>
+            </div>
+
+            <div class="contact-card">
+                <div class="contact-icon">
+                    <i class="fas fa-globe"></i>
+                </div>
+                <div class="contact-title">Web Sitesi</div>
+                <p class="contact-text">Daha fazla bilgi ve güncellemeler için web sitemizi ziyaret edin.</p>
+                <a href="#" class="contact-link">www.seligames.com</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Page -->
+    <div class="page" id="settings-page">
+        <div class="page-header">
+            <div class="page-title">Ayarlar</div>
+            <div class="page-subtitle">Tercihlerinizi yapılandırın</div>
+        </div>
+
+        <!-- Genel Ayarlar -->
+        <div class="settings-section">
+            <h3>Genel Ayarlar</h3>
+
+            <div class="setting-item">
+                <div class="setting-info">
+                    <div class="setting-title">Modları Otomatik Güncelle</div>
+                    <div class="setting-desc">Mod güncellemelerini otomatik indir</div>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="auto-update-mods" checked onchange="updateSetting('autoUpdateMods', this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <div class="setting-item">
+                <div class="setting-info">
+                    <div class="setting-title">Bildirimler</div>
+                    <div class="setting-desc">Masaüstü bildirimlerini göster</div>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="notifications" checked onchange="updateSetting('notifications', this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <div class="setting-item">
+                <div class="setting-info">
+                    <div class="setting-title">Başlangıçta Çalıştır</div>
+                    <div class="setting-desc">Bilgisayar açıldığında SeliGames'i başlat</div>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="launch-on-startup" onchange="updateSetting('launchOnStartup', this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <div class="setting-item">
+                <div class="setting-info">
+                    <div class="setting-title">Karanlık Tema</div>
+                    <div class="setting-desc">Koyu renk temasını kullan</div>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="dark-theme" checked onchange="updateSetting('darkTheme', this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <!-- TikTok Ayarları -->
+        <div class="settings-section">
+            <h3>TikTok Ayarları</h3>
+
+            <div class="setting-item">
+                <div class="setting-info">
+                    <div class="setting-title">Otomatik Bağlan</div>
+                    <div class="setting-desc">Başlangıçta TikTok'a otomatik bağlan</div>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="tiktok-auto-connect" onchange="updateSetting('tiktokAutoConnect', this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <div class="setting-item">
+                <div class="setting-info">
+                    <div class="setting-title">Olay Kaydı</div>
+                    <div class="setting-desc">Hata ayıklama için tüm TikTok olaylarını kaydet</div>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="tiktok-event-logging" checked onchange="updateSetting('tiktokEventLogging', this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <div class="setting-item">
+                <div class="setting-info">
+                    <div class="setting-title">Ses Efektleri</div>
+                    <div class="setting-desc">Hediye geldiğinde ses çal</div>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="gift-sounds-toggle" checked onchange="updateSetting('tiktokSoundEffects', this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <div class="setting-item">
+                <div class="setting-info">
+                    <div class="setting-title">Ekran Bildirimleri</div>
+                    <div class="setting-desc">Önemli olaylar için ekranda bildirim göster</div>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="tiktok-screen-notifications" checked onchange="updateSetting('tiktokScreenNotifications', this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Hediye Ses Ayarları -->
+        <div class="settings-section">
+            <h3>🎁 Hediye Ses Ayarları</h3>
+            <p style="color: #8b8b9a; margin-bottom: 1.5rem;">Her hediye türü için farklı bildirim sesi seçin</p>
+
+            <!-- Small Gifts -->
+            <div style="margin-bottom: 2rem;">
+                <h4 style="color: #00ff9d; margin-bottom: 1rem; font-size: 1.1rem;">💚 Küçük Hediyeler (1-10 coin)</h4>
+                <div class="sound-selector">
+                    <div class="sound-option active" onclick="selectSound('small', 'bell')" data-category="small" data-sound="bell">
+                        <button class="sound-play-btn" onclick="event.stopPropagation(); playSound('bell')"><i class="fas fa-play"></i></button>
+                        <div class="sound-info">
+                            <div class="sound-name">🔔 Çan</div>
+                            <div class="sound-desc">Hafif zil sesi</div>
+                        </div>
+                    </div>
+                    <div class="sound-option" onclick="selectSound('small', 'pop')" data-category="small" data-sound="pop">
+                        <button class="sound-play-btn" onclick="event.stopPropagation(); playSound('pop')"><i class="fas fa-play"></i></button>
+                        <div class="sound-info">
+                            <div class="sound-name">💨 Pop</div>
+                            <div class="sound-desc">Kısa pop sesi</div>
+                        </div>
+                    </div>
+                    <div class="sound-option" onclick="selectSound('small', 'coin')" data-category="small" data-sound="coin">
+                        <button class="sound-play-btn" onclick="event.stopPropagation(); playSound('coin')"><i class="fas fa-play"></i></button>
+                        <div class="sound-info">
+                            <div class="sound-name">🪙 Coin</div>
+                            <div class="sound-desc">Madeni para sesi</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Medium Gifts -->
+            <div style="margin-bottom: 2rem;">
+                <h4 style="color: #00d9ff; margin-bottom: 1rem; font-size: 1.1rem;">💙 Orta Hediyeler (10-100 coin)</h4>
+                <div class="sound-selector">
+                    <div class="sound-option active" onclick="selectSound('medium', 'chime')" data-category="medium" data-sound="chime">
+                        <button class="sound-play-btn" onclick="event.stopPropagation(); playSound('chime')"><i class="fas fa-play"></i></button>
+                        <div class="sound-info">
+                            <div class="sound-name">🎵 Chime</div>
+                            <div class="sound-desc">Melodik bildirim</div>
+                        </div>
+                    </div>
+                    <div class="sound-option" onclick="selectSound('medium', 'ding')" data-category="medium" data-sound="ding">
+                        <button class="sound-play-btn" onclick="event.stopPropagation(); playSound('ding')"><i class="fas fa-play"></i></button>
+                        <div class="sound-info">
+                            <div class="sound-name">⭐ Ding</div>
+                            <div class="sound-desc">Parlak ding sesi</div>
+                        </div>
+                    </div>
+                    <div class="sound-option" onclick="selectSound('medium', 'sparkle')" data-category="medium" data-sound="sparkle">
+                        <button class="sound-play-btn" onclick="event.stopPropagation(); playSound('sparkle')"><i class="fas fa-play"></i></button>
+                        <div class="sound-info">
+                            <div class="sound-name">✨ Sparkle</div>
+                            <div class="sound-desc">Parıltı efekti</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Large Gifts -->
+            <div style="margin-bottom: 2rem;">
+                <h4 style="color: #ff006e; margin-bottom: 1rem; font-size: 1.1rem;">❤️ Büyük Hediyeler (100-1000 coin)</h4>
+                <div class="sound-selector">
+                    <div class="sound-option active" onclick="selectSound('large', 'fanfare')" data-category="large" data-sound="fanfare">
+                        <button class="sound-play-btn" onclick="event.stopPropagation(); playSound('fanfare')"><i class="fas fa-play"></i></button>
+                        <div class="sound-info">
+                            <div class="sound-name">🎺 Fanfare</div>
+                            <div class="sound-desc">Kutlama trompeti</div>
+                        </div>
+                    </div>
+                    <div class="sound-option" onclick="selectSound('large', 'tada')" data-category="large" data-sound="tada">
+                        <button class="sound-play-btn" onclick="event.stopPropagation(); playSound('tada')"><i class="fas fa-play"></i></button>
+                        <div class="sound-info">
+                            <div class="sound-name">🎉 Tada</div>
+                            <div class="sound-desc">Başarı sesi</div>
+                        </div>
+                    </div>
+                    <div class="sound-option" onclick="selectSound('large', 'wow')" data-category="large" data-sound="wow">
+                        <button class="sound-play-btn" onclick="event.stopPropagation(); playSound('wow')"><i class="fas fa-play"></i></button>
+                        <div class="sound-info">
+                            <div class="sound-name">😮 Wow</div>
+                            <div class="sound-desc">Şaşkınlık efekti</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Epic Gifts -->
+            <div>
+                <h4 style="color: #ffd700; margin-bottom: 1rem; font-size: 1.1rem;">👑 Epic Hediyeler (1000+ coin)</h4>
+                <div class="sound-selector">
+                    <div class="sound-option active" onclick="selectSound('epic', 'victory')" data-category="epic" data-sound="victory">
+                        <button class="sound-play-btn" onclick="event.stopPropagation(); playSound('victory')"><i class="fas fa-play"></i></button>
+                        <div class="sound-info">
+                            <div class="sound-name">🏆 Victory</div>
+                            <div class="sound-desc">Zafer müziği</div>
+                        </div>
+                    </div>
+                    <div class="sound-option" onclick="selectSound('epic', 'legendary')" data-category="epic" data-sound="legendary">
+                        <button class="sound-play-btn" onclick="event.stopPropagation(); playSound('legendary')"><i class="fas fa-play"></i></button>
+                        <div class="sound-info">
+                            <div class="sound-name">⚡ Legendary</div>
+                            <div class="sound-desc">Efsanevi etki</div>
+                        </div>
+                    </div>
+                    <div class="sound-option" onclick="selectSound('epic', 'epic')" data-category="epic" data-sound="epic">
+                        <button class="sound-play-btn" onclick="event.stopPropagation(); playSound('epic')"><i class="fas fa-play"></i></button>
+                        <div class="sound-info">
+                            <div class="sound-name">🎆 Epic</div>
+                            <div class="sound-desc">Epik atmosfer</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End Settings Page -->
+    
+        </div>
+        <!-- End main-content -->
+    </div>
+    <!-- End app-container -->
+
+    <!-- Mod Settings Modal -->
+    <div class="modal" id="mod-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modal-mod-title">GTA V Kaos Modu</h2>
+                <button class="modal-close" onclick="closeModModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <p class="modal-description" id="modal-mod-description">
+                Her TikTok hediyesi için bir oyun aksiyonu seçin. İzleyicileriniz hediye gönderdiğinde seçilen aksiyon
+                tetiklenecektir.
+            </p>
+
+            <div class="gift-mapping" id="gift-mapping">
+                <!-- Gift mappings will be loaded here -->
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closeModModal()">
+                    <i class="fas fa-times"></i> İptal
+                </button>
+                <button class="btn-success" onclick="installMod()" style="position: relative; overflow: hidden;">
+                    <i class="fas fa-download" style="margin-right: 0.5rem;"></i>
+                    <span>Modu Kur ve Kaydet</span>
+                    <div
+                        style="position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent); animation: shimmer 2s infinite;">
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Monitor -->
+    <div class="perf-monitor" id="perf-monitor">
+        <div class="perf-item">
+            <span class="perf-label">CPU:</span>
+            <span class="perf-value" id="perf-cpu">0%</span>
+        </div>
+        <div class="perf-item">
+            <span class="perf-label">RAM:</span>
+            <span class="perf-value" id="perf-ram">0GB</span>
+        </div>
+        <div class="perf-item">
+            <span class="perf-label">FPS:</span>
+            <span class="perf-value" id="perf-fps">60</span>
+        </div>
+    </div>
+
+    <script src="renderer.js"></script>
+</body>
+
+</html>
