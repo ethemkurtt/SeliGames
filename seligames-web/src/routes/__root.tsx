@@ -1,32 +1,34 @@
 import { createRootRoute, Outlet, useRouterState } from '@tanstack/react-router'
 import { TanStackRouterDevtools } from '@tanstack/router-devtools'
-import { ThemeProvider } from '@mui/material/styles'
-import CssBaseline from '@mui/material/CssBaseline'
-import { Navbar } from '@/components/Navbar'
-import { theme } from '@/theme'
+import { SiteLayout } from '@/components/layout/SiteLayout'
+import { AdminLayout } from '@/components/layout/AdminLayout'
+import { AppLayout } from '@/components/layout/AppLayout'
 
 function RootLayout() {
-  const { location } = useRouterState()
-  const isOverlay = location.pathname.startsWith('/overlay') || location.pathname.startsWith('/live')
+    const { location } = useRouterState()
+    const path = location.pathname
 
-  if (isOverlay) {
-    return <Outlet />
-  }
-
-  return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-        <Navbar />
-        <main style={{ flex: 1 }}>
-          <Outlet />
-        </main>
-      </div>
-      <TanStackRouterDevtools />
-    </ThemeProvider>
-  )
+    // Overlay routes — render bare for OBS Browser Source (transparent bg, no chrome)
+    if (path.startsWith('/live') || path.startsWith('/overlay')) {
+        return <Outlet />
+    }
+    // Admin panel — its own sidebar layout
+    if (path.startsWith('/admin')) {
+        return <AdminLayout><Outlet /></AdminLayout>
+    }
+    // Authenticated user area
+    if (path.startsWith('/dashboard') || path.startsWith('/profile') || path.startsWith('/subscription') || path.startsWith('/billing')) {
+        return <AppLayout><Outlet /></AppLayout>
+    }
+    // Default: marketing site (landing, pricing, features, mods, login, register, etc.)
+    return <SiteLayout><Outlet /></SiteLayout>
 }
 
 export const Route = createRootRoute({
-  component: RootLayout,
+    component: () => (
+        <>
+            <RootLayout />
+            {import.meta.env.DEV && <TanStackRouterDevtools position="bottom-right" />}
+        </>
+    ),
 })

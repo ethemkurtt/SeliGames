@@ -1,211 +1,123 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { useState, useEffect } from 'react'
+import { Download, Gamepad2, CreditCard, ArrowRight, Activity, Trophy, Heart, Gift } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
-import { CircularProgress } from '@mui/material'
 import api from '@/lib/api'
 
 export const Route = createFileRoute('/dashboard')({
-    component: Dashboard,
+    component: DashboardPage,
 })
 
-interface Mod {
-    _id: string
-    title: string
-    version: string
-    imageUrl?: string
-    gameTitle: string
-}
-
-interface Statistics {
-    mods: any[]
-    summary: {
-        totalMods: number
-        totalInteractions: number
-        totalGifts: number
-        totalComments: number
-        totalLikes: number
-    }
-}
-
-function Dashboard() {
+function DashboardPage() {
     const { user } = useAuth()
-    const [recentMods, setRecentMods] = useState<Mod[]>([])
-    const [statistics, setStatistics] = useState<Statistics | null>(null)
-    const [loading, setLoading] = useState(true)
+    const [stats, setStats] = useState<any>(null)
+    const [profile, setProfile] = useState<any>(null)
 
     useEffect(() => {
-        fetchDashboardData()
+        api.get('/auth/profile').then((r) => setProfile(r.data)).catch(() => {})
+        api.get('/events/stats').then((r) => setStats(r.data)).catch(() => {})
     }, [])
 
-    const fetchDashboardData = async () => {
-        try {
-            const [modsResponse, statsResponse] = await Promise.all([
-                api.get('/mods'),
-                api.get('/statistics').catch(() => ({ data: { summary: { totalMods: 0, totalInteractions: 0, totalGifts: 0, totalComments: 0, totalLikes: 0 }, mods: [] } }))
-            ])
-            
-            setRecentMods(modsResponse.data.slice(0, 3))
-            setStatistics(statsResponse.data)
-        } catch (error) {
-            console.error('Dashboard verileri yüklenemedi:', error)
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    if (loading) {
-        return (
-            <div className="container mx-auto px-4 py-16 text-center">
-                <CircularProgress sx={{ color: 'var(--color-neon-green)' }} size={60} />
-                <p className="text-neon-green mt-4">Yükleniyor...</p>
-            </div>
-        )
-    }
+    const plan = profile?.subscriptionPlan || 'free'
+    const planName = ({ free: 'Ücretsiz', basic: 'Basic', pro: 'Pro', ultra: 'Ultra' } as any)[plan] || 'Ücretsiz'
 
     return (
-        <div className="container mx-auto px-4 py-8">
-            <div className="flex justify-between items-center mb-8">
-                <div>
-                    <h1 className="text-3xl font-heading font-bold text-neon-green">
-                        Hoşgeldin, {user?.username || 'SeliGamer'}!
-                    </h1>
-                    <p className="text-muted-foreground">Yayın kontrol paneline genel bakış.</p>
-                </div>
-                <Link to="/mods">
-                    <Button variant="neon">Modları Keşfet</Button>
-                </Link>
+        <div className="p-6 sm:p-8 max-w-6xl mx-auto">
+            {/* Welcome */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+                <h1 className="font-heading text-3xl sm:text-4xl font-black">
+                    Hoş geldin, <span className="text-gaming-gradient">{user?.username || user?.email?.split('@')[0]}</span>
+                </h1>
+                <p className="text-white/60 mt-1">Yayın komuta merkezin burada.</p>
+            </motion.div>
+
+            {/* Top tiles */}
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <Tile icon={<Gift />} label="Toplam Hediye" value={stats?.gift?.totalGiftCount || stats?.gift?.count || 0} accent="pink" />
+                <Tile icon={<Heart />} label="Toplam Beğeni" value={stats?.like?.totalLikes || stats?.like?.count || 0} accent="cyan" />
+                <Tile icon={<Trophy />} label="Toplam Elmas" value={stats?.gift?.totalDiamonds || 0} accent="yellow" />
+                <Tile icon={<Activity />} label="Toplam Event" value={Object.values(stats || {}).reduce((s: number, x: any) => s + (x?.count || 0), 0)} accent="green" />
             </div>
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                {[
-                    { 
-                        label: "Aktif Modlar", 
-                        value: statistics?.summary.totalMods || recentMods.length || 0, 
-                        color: "text-neon-green" 
-                    },
-                    { 
-                        label: "Toplam Etkileşim", 
-                        value: statistics?.summary.totalInteractions || 0, 
-                        color: "text-neon-blue" 
-                    },
-                    { 
-                        label: "Gelen Hediyeler", 
-                        value: statistics?.summary.totalGifts || 0, 
-                        color: "text-neon-purple" 
-                    },
-                    { 
-                        label: "Toplam Beğeni", 
-                        value: statistics?.summary.totalLikes || 0, 
-                        color: "text-white" 
-                    },
-                ].map((stat, i) => (
-                    <Card key={i} className="bg-black/40 border-white/10">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-medium text-muted-foreground">{stat.label}</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className={`text-3xl font-bold ${stat.color}`}>{stat.value}</div>
-                        </CardContent>
-                    </Card>
-                ))}
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Recent Mods */}
-                <div className="lg:col-span-2 space-y-6">
-                    <h2 className="text-xl font-heading font-bold">Son Modlar</h2>
-                    <div className="grid gap-4">
-                        {recentMods.length > 0 ? recentMods.map((mod, i) => (
-                            <motion.div
-                                key={mod._id}
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: i * 0.1 }}
-                            >
-                                <Card className="flex items-center justify-between p-4 hover:border-neon-green/50 transition-colors">
-                                    <div className="flex items-center gap-4">
-                                        <div 
-                                            className="w-12 h-12 rounded bg-gradient-to-br from-gray-800 to-black border border-white/10 bg-cover bg-center"
-                                            style={{ backgroundImage: mod.imageUrl ? `url(${mod.imageUrl})` : 'none' }}
-                                        />
-                                        <div>
-                                            <h3 className="font-bold">{mod.title}</h3>
-                                            <p className="text-xs text-muted-foreground">{mod.version} • {mod.gameTitle}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                        <span className="text-xs px-2 py-1 rounded bg-neon-green/20 text-neon-green">
-                                            Aktif
-                                        </span>
-                                        <Link to="/mods/$modId" params={{ modId: mod._id }}>
-                                            <Button variant="ghost" size="sm">Detaylar</Button>
-                                        </Link>
-                                    </div>
-                                </Card>
-                            </motion.div>
-                        )) : (
-                            <Card className="p-6 text-center">
-                                <p className="text-muted-foreground">Henüz mod bulunmuyor</p>
-                                <Link to="/mods">
-                                    <Button variant="neon" className="mt-4">Modları Keşfet</Button>
-                                </Link>
-                            </Card>
+            <div className="grid lg:grid-cols-3 gap-5">
+                {/* Subscription card */}
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl bg-gradient-to-br from-neon-green/10 to-neon-blue/10 border border-white/10 p-6 lg:col-span-2">
+                    <div className="flex items-start justify-between mb-4">
+                        <div>
+                            <div className="text-xs uppercase tracking-widest text-white/50 mb-1">Mevcut Planın</div>
+                            <div className="font-heading text-3xl font-black text-gaming-gradient">{planName}</div>
+                            <div className="text-sm text-white/60 mt-1">
+                                Durum: <span className={profile?.subscriptionStatus === 'active' ? 'text-neon-green font-bold' : 'text-amber-400 font-bold'}>
+                                    {profile?.subscriptionStatus || 'free'}
+                                </span>
+                            </div>
+                        </div>
+                        <CreditCard className="text-neon-green" size={28} />
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-6">
+                        <Link to="/subscription" className="px-5 py-2.5 rounded-lg bg-gaming-gradient text-black font-bold text-sm hover:scale-[1.02] transition-all">
+                            Aboneliği Yönet
+                        </Link>
+                        {plan === 'free' && (
+                            <Link to="/pricing" className="px-5 py-2.5 rounded-lg bg-white/5 border border-white/10 text-sm hover:bg-white/10 transition-all">
+                                Yükselt
+                            </Link>
                         )}
                     </div>
-                </div>
+                </motion.div>
 
-                {/* Quick Actions & News */}
-                <div className="space-y-6">
-                    <Card className="border-neon-purple/20 bg-neon-purple/5">
-                        <CardHeader>
-                            <CardTitle className="text-neon-purple">Hızlı İşlemler</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-2">
-                            <Link to="/mods">
-                                <Button className="w-full justify-start" variant="ghost">⚡ Yeni Mod Ekle</Button>
-                            </Link>
-                            <Link to="/profile">
-                                <Button className="w-full justify-start" variant="ghost">🔧 Profil Düzenle</Button>
-                            </Link>
-                            <Link to="/tips">
-                                <Button className="w-full justify-start" variant="ghost">📚 Kılavuzları Oku</Button>
-                            </Link>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Son Güncellemeler</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="text-sm">
-                                <p className="font-medium text-neon-blue">SeliGames v2.0 Yayında!</p>
-                                <p className="text-muted-foreground text-xs mt-1">
-                                    MongoDB Atlas entegrasyonu ve dinamik mod sistemi eklendi.
-                                </p>
-                            </div>
-                            <div className="text-sm">
-                                <p className="font-medium text-neon-green">
-                                    {recentMods.length} Yeni Mod
-                                </p>
-                                <p className="text-muted-foreground text-xs mt-1">
-                                    GTA V, Minecraft, CS:GO ve daha fazlası için modlar mevcut.
-                                </p>
-                            </div>
-                            <div className="text-sm">
-                                <p className="font-medium text-neon-purple">TikTok Live Entegrasyonu</p>
-                                <p className="text-muted-foreground text-xs mt-1">
-                                    Gerçek zamanlı hediye takibi ve otomatik aksiyon sistemi aktif.
-                                </p>
-                            </div>
-                        </CardContent>
-                    </Card>
+                {/* Quick actions */}
+                <div className="space-y-3">
+                    <QuickAction to="/download" icon={<Download size={18} />} label="Uygulamayı İndir" desc="Masaüstü versiyonu" />
+                    <QuickAction to="/mods" icon={<Gamepad2 size={18} />} label="Mod Kütüphanesi" desc="10+ oyun" />
+                    <QuickAction to="/profile" icon={<ArrowRight size={18} />} label="Profilim" desc="Bilgilerini güncelle" />
                 </div>
             </div>
+
+            {/* Recent activity placeholder */}
+            <div className="mt-8 rounded-2xl bg-card border border-white/10 p-6">
+                <h2 className="font-heading text-xl font-black mb-4 flex items-center gap-2">
+                    <Activity size={20} className="text-neon-green" /> Son Aktivite
+                </h2>
+                <p className="text-sm text-white/50">
+                    Yayınlarındaki son hediye, beğeni ve takip etkinlikleri burada görünecek. Henüz yayın yapmadıysan
+                    <Link to="/download" className="text-neon-green hover:underline ml-1">uygulamayı indir</Link> ve TikTok Live'a bağlan.
+                </p>
+            </div>
         </div>
+    )
+}
+
+function Tile({ icon, label, value, accent }: { icon: React.ReactNode; label: string; value: number | string; accent: 'green' | 'cyan' | 'yellow' | 'pink' }) {
+    const accents: any = {
+        green: 'from-neon-green/20 to-transparent border-neon-green/30 text-neon-green',
+        cyan: 'from-neon-blue/20 to-transparent border-neon-blue/30 text-neon-blue',
+        yellow: 'from-neon-yellow/20 to-transparent border-neon-yellow/30 text-neon-yellow',
+        pink: 'from-neon-pink/20 to-transparent border-neon-pink/30 text-neon-pink',
+    }
+    return (
+        <motion.div whileHover={{ y: -4 }} className={`rounded-xl bg-gradient-to-br ${accents[accent]} border bg-card p-5`}>
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 ${accents[accent].split(' ').slice(-1)[0]}`} style={{ background: 'rgba(255,255,255,0.04)' }}>
+                {icon}
+            </div>
+            <div className="text-2xl font-black">{Number(value).toLocaleString('tr-TR')}</div>
+            <div className="text-xs text-white/60 uppercase tracking-widest mt-1 font-semibold">{label}</div>
+        </motion.div>
+    )
+}
+
+function QuickAction({ to, icon, label, desc }: { to: string; icon: React.ReactNode; label: string; desc: string }) {
+    return (
+        <Link to={to} className="block rounded-xl bg-card border border-white/10 hover:border-neon-green/40 hover:bg-white/5 p-4 transition-all group">
+            <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-neon-green/10 text-neon-green flex items-center justify-center">{icon}</div>
+                <div className="flex-1 min-w-0">
+                    <div className="font-bold text-sm">{label}</div>
+                    <div className="text-xs text-white/50">{desc}</div>
+                </div>
+                <ArrowRight size={16} className="text-white/40 group-hover:text-neon-green group-hover:translate-x-1 transition-all" />
+            </div>
+        </Link>
     )
 }

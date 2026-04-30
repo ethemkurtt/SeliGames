@@ -117,7 +117,30 @@ let tiktokConnection = null;
 let backendSocket = null;
 let currentSessionId = null;
 
-const BACKEND_URL = 'http://localhost:3000';
+// Runtime config — prefer config.json (gitignored, per-machine overrides)
+// over config.default.json (committed). Renderer reads the same config via
+// `window.api.getAppConfig()` so all URLs match.
+function loadAppConfig() {
+    const tryPaths = [
+        path.join(__dirname, 'config.json'),
+        path.join(__dirname, 'config.default.json'),
+    ];
+    for (const p of tryPaths) {
+        try {
+            if (fs.existsSync(p)) {
+                const parsed = JSON.parse(fs.readFileSync(p, 'utf-8'));
+                console.log(`📦 Loaded config from ${path.basename(p)}: backend=${parsed.backendUrl} web=${parsed.webUrl}`);
+                return parsed;
+            }
+        } catch (e) {
+            console.warn(`Failed to read ${p}: ${e.message}`);
+        }
+    }
+    return { backendUrl: 'http://localhost:3000', webUrl: 'http://localhost:5173' };
+}
+
+const APP_CONFIG = loadAppConfig();
+const BACKEND_URL = APP_CONFIG.backendUrl;
 
 function connectToBackendSocket(token) {
     if (backendSocket && backendSocket.connected) {
@@ -215,7 +238,7 @@ app.on('window-all-closed', () => {
 // IPC Handlers
 ipcMain.handle('login', async (event, { email, password }) => {
     try {
-        const response = await axios.post('http://localhost:3000/api/auth/login', { email, password });
+        const response = await axios.post(`${BACKEND_URL}/api/auth/login`, { email, password });
         return { success: true, data: response.data };
     } catch (error) {
         return { success: false, error: error.response?.data?.error || error.message };
@@ -224,7 +247,7 @@ ipcMain.handle('login', async (event, { email, password }) => {
 
 ipcMain.handle('get-mods', async () => {
     try {
-        const response = await axios.get('http://localhost:3000/api/mods');
+        const response = await axios.get(`${BACKEND_URL}/api/mods`);
         return { success: true, data: response.data };
     } catch (error) {
         return { success: false, error: error.message };
@@ -233,7 +256,7 @@ ipcMain.handle('get-mods', async () => {
 
 ipcMain.handle('get-profile', async (event, token) => {
     try {
-        const response = await axios.get('http://localhost:3000/api/auth/profile', {
+        const response = await axios.get(`${BACKEND_URL}/api/auth/profile`, {
             headers: { Authorization: `Bearer ${token}` }
         });
         return { success: true, data: response.data };
@@ -244,7 +267,7 @@ ipcMain.handle('get-profile', async (event, token) => {
 
 ipcMain.handle('connect-tiktok', async (event, { token, tiktokUsername }) => {
     try {
-        const response = await axios.post('http://localhost:3000/api/auth/connect-tiktok',
+        const response = await axios.post(`${BACKEND_URL}/api/auth/connect-tiktok`,
             { tiktokUsername },
             { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -256,7 +279,7 @@ ipcMain.handle('connect-tiktok', async (event, { token, tiktokUsername }) => {
 
 ipcMain.handle('toggle-live', async (event, { token, isLive }) => {
     try {
-        const response = await axios.post('http://localhost:3000/api/auth/toggle-live',
+        const response = await axios.post(`${BACKEND_URL}/api/auth/toggle-live`,
             { isLive },
             { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -268,7 +291,7 @@ ipcMain.handle('toggle-live', async (event, { token, isLive }) => {
 
 ipcMain.handle('change-password', async (event, { token, currentPassword, newPassword }) => {
     try {
-        const response = await axios.post('http://localhost:3000/api/auth/change-password',
+        const response = await axios.post(`${BACKEND_URL}/api/auth/change-password`,
             { currentPassword, newPassword },
             { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -280,7 +303,7 @@ ipcMain.handle('change-password', async (event, { token, currentPassword, newPas
 
 ipcMain.handle('get-statistics', async (event, token) => {
     try {
-        const response = await axios.get('http://localhost:3000/api/statistics', {
+        const response = await axios.get(`${BACKEND_URL}/api/statistics`, {
             headers: { Authorization: `Bearer ${token}` }
         });
         return { success: true, data: response.data };
@@ -507,7 +530,7 @@ ipcMain.handle('disconnect-tiktok-live', async (event) => {
 ipcMain.handle('get-settings', async (event) => {
     try {
         const token = mainWindow.webContents.executeJavaScript('localStorage.getItem("token")');
-        const response = await axios.get('http://localhost:3000/api/auth/settings', {
+        const response = await axios.get(`${BACKEND_URL}/api/auth/settings`, {
             headers: { Authorization: `Bearer ${await token}` }
         });
         return { success: true, data: response.data };
@@ -519,7 +542,7 @@ ipcMain.handle('get-settings', async (event) => {
 ipcMain.handle('update-settings', async (event, settings) => {
     try {
         const token = await mainWindow.webContents.executeJavaScript('localStorage.getItem("token")');
-        const response = await axios.post('http://localhost:3000/api/auth/settings',
+        const response = await axios.post(`${BACKEND_URL}/api/auth/settings`,
             { settings },
             { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -532,7 +555,7 @@ ipcMain.handle('update-settings', async (event, settings) => {
 ipcMain.handle('update-gift-sound', async (event, { category, sound }) => {
     try {
         const token = await mainWindow.webContents.executeJavaScript('localStorage.getItem("token")');
-        const response = await axios.post('http://localhost:3000/api/auth/settings/gift-sounds',
+        const response = await axios.post(`${BACKEND_URL}/api/auth/settings/gift-sounds`,
             { category, sound },
             { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -545,7 +568,7 @@ ipcMain.handle('update-gift-sound', async (event, { category, sound }) => {
 ipcMain.handle('update-tiktok-username', async (event, username) => {
     try {
         const token = await mainWindow.webContents.executeJavaScript('localStorage.getItem("token")');
-        const response = await axios.post('http://localhost:3000/api/auth/settings',
+        const response = await axios.post(`${BACKEND_URL}/api/auth/settings`,
             { tiktokUsername: username },
             { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -558,7 +581,7 @@ ipcMain.handle('update-tiktok-username', async (event, username) => {
 ipcMain.handle('update-profile', async (event, profileData) => {
     try {
         const token = await mainWindow.webContents.executeJavaScript('localStorage.getItem("token")');
-        const response = await axios.post('http://localhost:3000/api/auth/profile',
+        const response = await axios.post(`${BACKEND_URL}/api/auth/profile`,
             profileData,
             { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -601,7 +624,7 @@ ipcMain.handle('get-overlay', async (event, id) => {
 ipcMain.handle('create-overlay', async (event, data) => {
     try {
         const token = await getAuthToken();
-        const response = await axios.post('http://localhost:3000/api/overlays', data, {
+        const response = await axios.post(`${BACKEND_URL}/api/overlays`, data, {
             headers: { Authorization: `Bearer ${token}` }
         });
         return { success: true, data: response.data };
@@ -725,7 +748,7 @@ ipcMain.handle('get-event-stats', async (event, query = {}) => {
 ipcMain.handle('get-event-sessions', async () => {
     try {
         const token = await getAuthToken();
-        const response = await axios.get('http://localhost:3000/api/events/sessions', {
+        const response = await axios.get(`${BACKEND_URL}/api/events/sessions`, {
             headers: { Authorization: `Bearer ${token}` }
         });
         return { success: true, data: response.data };
@@ -737,7 +760,7 @@ ipcMain.handle('get-event-sessions', async () => {
 // Gift catalog (public, no auth)
 ipcMain.handle('get-gift-catalog', async () => {
     try {
-        const response = await axios.get('http://localhost:3000/api/gifts');
+        const response = await axios.get(`${BACKEND_URL}/api/gifts`);
         return { success: true, data: response.data };
     } catch (error) {
         return { success: false, error: error.message };
@@ -748,7 +771,7 @@ ipcMain.handle('get-gift-catalog', async () => {
 ipcMain.handle('set-gift-sound-mapping', async (event, giftName, entry) => {
     try {
         const token = await getAuthToken();
-        const response = await axios.post('http://localhost:3000/api/auth/settings/gift-sound-map',
+        const response = await axios.post(`${BACKEND_URL}/api/auth/settings/gift-sound-map`,
             { giftName, entry },
             { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -761,7 +784,7 @@ ipcMain.handle('set-gift-sound-mapping', async (event, giftName, entry) => {
 // ─── Mods CRUD + per-user config ─────────────────────────────────────────
 ipcMain.handle('create-mod', async (event, data) => {
     try {
-        const response = await axios.post('http://localhost:3000/api/mods', data);
+        const response = await axios.post(`${BACKEND_URL}/api/mods`, data);
         return { success: true, data: response.data };
     } catch (error) {
         return { success: false, error: error.response?.data?.error || error.message };
@@ -917,7 +940,7 @@ ipcMain.handle('uninstall-mod', async (event, modId) => {
 ipcMain.handle('get-installed-mods', async () => {
     try {
         const token = await getAuthToken();
-        const response = await axios.get('http://localhost:3000/api/mods/user/installed', {
+        const response = await axios.get(`${BACKEND_URL}/api/mods/user/installed`, {
             headers: { Authorization: `Bearer ${token}` }
         });
         return { success: true, data: response.data };
@@ -925,6 +948,8 @@ ipcMain.handle('get-installed-mods', async () => {
         return { success: false, error: error.response?.data?.error || error.message };
     }
 });
+
+ipcMain.handle('get-app-config', () => APP_CONFIG);
 
 ipcMain.handle('execute-action', async (event, action) => {
     try {
@@ -956,7 +981,7 @@ ipcMain.handle('pick-install-directory', async (event, modTitle) => {
 ipcMain.handle('replace-gift-sound-map', async (event, map) => {
     try {
         const token = await getAuthToken();
-        const response = await axios.post('http://localhost:3000/api/auth/settings/gift-sound-map/bulk',
+        const response = await axios.post(`${BACKEND_URL}/api/auth/settings/gift-sound-map/bulk`,
             { map },
             { headers: { Authorization: `Bearer ${token}` } }
         );

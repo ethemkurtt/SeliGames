@@ -1,311 +1,241 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import Container from '@mui/material/Container'
-import Box from '@mui/material/Box'
-import Typography from '@mui/material/Typography'
-import Button from '@mui/material/Button'
-import Card from '@mui/material/Card'
-import CardContent from '@mui/material/CardContent'
 import { motion } from 'framer-motion'
-import CardGiftcardIcon from '@mui/icons-material/CardGiftcard'
-import RadioIcon from '@mui/icons-material/Radio'
-import EmojiEventsIcon from '@mui/icons-material/EmojiEvents'
+import { ArrowRight, Sparkles, Gamepad2, Zap, Trophy, Users, Layers, Mic2, Download as DownloadIcon, Play } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import api from '@/lib/api'
 
 export const Route = createFileRoute('/')({
     component: LandingPage,
 })
 
 function LandingPage() {
+    const [mods, setMods] = useState<any[]>([])
+    const [siteName, setSiteName] = useState('SeliGames')
+    const [tagline, setTagline] = useState('TikTok Live ile Oyunlarını Kontrol Et')
+    const [heroSubtitle, setHeroSubtitle] = useState('İzleyicilerinin hediyeleri oyununda gerçek aksiyonlara dönüşsün')
+
+    useEffect(() => {
+        api.get('/mods').then((r) => setMods((r.data || []).slice(0, 6))).catch(() => {})
+        // /api/site (no auth) — pulls public marketing copy from admin SiteSettings
+        api.get('/site').then((r) => {
+            if (r.data?.siteName) setSiteName(r.data.siteName)
+            if (r.data?.tagline) setTagline(r.data.tagline)
+            if (r.data?.heroSubtitle) setHeroSubtitle(r.data.heroSubtitle)
+        }).catch(() => {})
+    }, [])
+
     return (
-        <Box>
-            {/* Hero Section */}
-            <Box
-                sx={{
-                    position: 'relative',
-                    minHeight: '85vh',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    overflow: 'hidden',
-                    py: { xs: 8, md: 12 },
-                }}
-            >
-                {/* Background Image */}
-                <Box
-                    sx={{
-                        position: 'absolute',
-                        inset: 0,
-                        backgroundImage: 'url(https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=2000&q=80)',
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center',
-                        opacity: 0.15,
-                        zIndex: 0,
-                    }}
-                />
+        <div>
+            {/* Hero */}
+            <section className="relative overflow-hidden">
+                <div className="absolute inset-0 -z-10 opacity-50">
+                    <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-neon-green/20 blur-[120px]" />
+                    <div className="absolute top-20 right-0 w-96 h-96 rounded-full bg-neon-purple/20 blur-[120px]" />
+                    <div className="absolute bottom-0 left-1/2 w-96 h-96 rounded-full bg-neon-blue/20 blur-[120px]" />
+                </div>
 
-                {/* Gradient Overlay */}
-                <Box
-                    sx={{
-                        position: 'absolute',
-                        inset: 0,
-                        background: 'linear-gradient(to bottom, transparent 0%, rgba(10, 10, 10, 0.8) 50%, #0a0a0a 100%)',
-                        zIndex: 1,
-                    }}
-                />
-
-                <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 2, textAlign: 'center' }}>
+                <div className="container mx-auto px-4 sm:px-6 pt-24 pb-20 sm:pt-32 sm:pb-32">
                     <motion.div
-                        initial={{ opacity: 0, y: 40 }}
+                        initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8, ease: 'easeOut' }}
+                        className="max-w-4xl mx-auto text-center"
                     >
-                        <Typography
-                            variant="h1"
-                            sx={{
-                                fontSize: { xs: '2.5rem', sm: '3.5rem', md: '4.5rem', lg: '5rem' },
-                                fontWeight: 700,
-                                mb: 3,
-                                background: 'linear-gradient(to bottom, #ffffff 0%, #a0a0a0 100%)',
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent',
-                                textShadow: '0px 2px 4px rgba(0,0,0,0.3)',
-                            }}
-                        >
-                            YAYINLARINI
-                        </Typography>
-                        <Typography
-                            variant="h1"
-                            sx={{
-                                fontSize: { xs: '2.5rem', sm: '3.5rem', md: '4.5rem', lg: '5rem' },
-                                fontWeight: 700,
-                                mb: 4,
-                                background: 'linear-gradient(135deg, #00f0ff 0%, #ffffff 100%)',
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent',
-                                filter: 'drop-shadow(0 0 20px rgba(0, 240, 255, 0.5))',
-                            }}
-                        >
-                            EFSANEYE DÖNÜŞTÜR
-                        </Typography>
-
-                        <Typography
-                            variant="h5"
-                            sx={{
-                                color: 'chrome.300',
-                                mb: 6,
-                                maxWidth: 800,
-                                mx: 'auto',
-                                lineHeight: 1.8,
-                                fontSize: { xs: '1.1rem', md: '1.3rem' },
-                                px: 2,
-                            }}
-                        >
-                            TikTok canlı yayınlarında izleyicilerinle etkileşime geçmenin en gelişmiş yolu.
-                            <Box component="span" sx={{ color: 'white', fontWeight: 600 }}> SeliGames</Box> ile hediyeler oyuna, izleyiciler oyuncuya dönüşsün.
-                        </Typography>
-
-                        <Box sx={{ display: 'flex', gap: 3, justifyContent: 'center', flexWrap: 'wrap' }}>
-                            <Link to="/register" style={{ textDecoration: 'none' }}>
-                                <Button
-                                    variant="contained"
-                                    size="large"
-                                    sx={{
-                                        px: 5,
-                                        py: 2,
-                                        fontSize: '1.125rem',
-                                        background: 'linear-gradient(135deg, #ffffff 0%, #e0e0e0 100%)',
-                                        color: '#000',
-                                        fontWeight: 700,
-                                        boxShadow: '0 0 30px rgba(255, 255, 255, 0.3)',
-                                        '&:hover': {
-                                            transform: 'scale(1.05)',
-                                            boxShadow: '0 0 40px rgba(255, 255, 255, 0.5)',
-                                        },
-                                        transition: 'all 0.3s',
-                                    }}
-                                >
-                                    Hemen Başla
-                                </Button>
-                            </Link>
-                            <Link to="/mods" style={{ textDecoration: 'none' }}>
-                                <Button
-                                    variant="outlined"
-                                    size="large"
-                                    sx={{
-                                        px: 5,
-                                        py: 2,
-                                        fontSize: '1.125rem',
-                                        borderColor: 'rgba(255, 255, 255, 0.2)',
-                                        color: 'white',
-                                        backdropFilter: 'blur(10px)',
-                                        '&:hover': {
-                                            borderColor: 'rgba(255, 255, 255, 0.4)',
-                                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                                        },
-                                    }}
-                                >
-                                    Modları İncele
-                                </Button>
-                            </Link>
-                        </Box>
-                    </motion.div>
-                </Container>
-            </Box>
-
-            {/* Features Section */}
-            <Container maxWidth="lg" sx={{ py: { xs: 8, md: 12 } }}>
-                <Box
-                    sx={{
-                        display: 'grid',
-                        gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
-                        gap: 4,
-                    }}
-                >
-                    <FeatureCard
-                        icon={<CardGiftcardIcon sx={{ fontSize: 48, color: 'secondary.main' }} />}
-                        title="İnteraktif Hediyeler"
-                        description="İzleyicilerin gönderdiği güller, asalar ve jetonlar oyunun kaderini değiştirsin."
-                    />
-                    <FeatureCard
-                        icon={<RadioIcon sx={{ fontSize: 48, color: 'white' }} />}
-                        title="Canlı Entegrasyon"
-                        description="TikTok Live Studio ile saniyeler içinde bağlantı kurun. Gecikmesiz etkileşim."
-                    />
-                    <FeatureCard
-                        icon={<EmojiEventsIcon sx={{ fontSize: 48, color: 'chrome.400' }} />}
-                        title="Sıralama Sistemi"
-                        description="En çok destek veren izleyicilerini ekranda göster, rekabeti kızıştır."
-                    />
-                </Box>
-            </Container>
-
-            {/* Stats Section */}
-            <Box sx={{ py: { xs: 8, md: 12 }, borderY: 1, borderColor: 'divider', bgcolor: 'rgba(255, 255, 255, 0.02)' }}>
-                <Container maxWidth="lg">
-                    <Box
-                        sx={{
-                            display: 'grid',
-                            gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' },
-                            gap: 4,
-                            textAlign: 'center',
-                        }}
-                    >
-                        <StatItem number="10K+" label="Aktif Yayıncı" />
-                        <StatItem number="500K+" label="Günlük Etkileşim" />
-                        <StatItem number="50+" label="Özel Mod" />
-                        <StatItem number="7/24" label="Canlı Destek" />
-                    </Box>
-                </Container>
-            </Box>
-
-            {/* CTA Section */}
-            <Container maxWidth="md" sx={{ py: { xs: 8, md: 12 }, textAlign: 'center' }}>
-                <Card
-                    sx={{
-                        p: { xs: 4, md: 8 },
-                        background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(0, 240, 255, 0.05) 100%)',
-                        border: '1px solid rgba(0, 240, 255, 0.2)',
-                    }}
-                >
-                    <CardContent>
-                        <Typography variant="h3" sx={{ mb: 3, fontWeight: 700, color: 'white' }}>
-                            Yayıncılık Kariyerini Zirveye Taşı
-                        </Typography>
-                        <Typography variant="h6" sx={{ mb: 5, color: 'chrome.300', lineHeight: 1.8 }}>
-                            Binlerce yayıncı SeliGames ile gelirlerini ve izleyici sayılarını artırdı. Sen de aramıza katıl.
-                        </Typography>
-                        <Link to="/register" style={{ textDecoration: 'none' }}>
-                            <Button
-                                variant="contained"
-                                size="large"
-                                sx={{
-                                    px: 6,
-                                    py: 2.5,
-                                    fontSize: '1.25rem',
-                                    background: 'linear-gradient(135deg, #00f0ff 0%, #0088cc 100%)',
-                                    color: 'white',
-                                    fontWeight: 700,
-                                    boxShadow: '0 0 40px rgba(0, 240, 255, 0.4)',
-                                    '&:hover': {
-                                        boxShadow: '0 0 60px rgba(0, 240, 255, 0.6)',
-                                        transform: 'scale(1.05)',
-                                    },
-                                    transition: 'all 0.3s',
-                                }}
+                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-neon-green/10 border border-neon-green/30 text-neon-green text-xs font-bold tracking-wide mb-6">
+                            <Sparkles size={14} /> CANLI YAYIN ETKİLEŞİM PLATFORMU
+                        </div>
+                        <h1 className="font-heading text-5xl sm:text-7xl md:text-8xl font-black leading-[1.05] tracking-tight mb-6">
+                            <span className="block">TikTok Live ile</span>
+                            <span className="block text-gaming-gradient">{tagline.split(' ').slice(-3).join(' ')}</span>
+                        </h1>
+                        <p className="text-lg sm:text-xl text-white/70 max-w-2xl mx-auto mb-8 leading-relaxed">
+                            {heroSubtitle}. Hediye geldiğinde tuşa bas, overlay'i tetikle, oyunu kontrol et — hepsi otomatik.
+                        </p>
+                        <div className="flex flex-wrap items-center justify-center gap-4">
+                            <Link
+                                to="/register"
+                                className="group inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-gaming-gradient text-black font-bold text-base shadow-2xl shadow-neon-green/30 hover:shadow-neon-green/50 hover:scale-105 transition-all"
                             >
-                                Ücretsiz Kayıt Ol
-                            </Button>
-                        </Link>
-                    </CardContent>
-                </Card>
-            </Container>
-        </Box>
-    )
-}
+                                Ücretsiz Başla <ArrowRight className="group-hover:translate-x-1 transition-transform" size={18} />
+                            </Link>
+                            <Link
+                                to="/features"
+                                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-xl font-semibold hover:bg-white/10 hover:border-white/20 transition-all"
+                            >
+                                <Play size={16} /> Nasıl Çalışıyor?
+                            </Link>
+                        </div>
 
-function FeatureCard({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
-    return (
-        <Card
-            sx={{
-                height: '100%',
-                transition: 'all 0.3s',
-                '&:hover': {
-                    transform: 'translateY(-8px)',
-                },
-            }}
-        >
-            <CardContent sx={{ p: 4, textAlign: 'center' }}>
-                <Box
-                    sx={{
-                        mb: 3,
-                        p: 2,
-                        display: 'inline-flex',
-                        borderRadius: 3,
-                        bgcolor: 'rgba(255, 255, 255, 0.03)',
-                        transition: 'all 0.3s',
-                        '&:hover': {
-                            bgcolor: 'rgba(0, 240, 255, 0.1)',
-                        },
-                    }}
+                        {/* Stats strip */}
+                        <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
+                            <Stat label="Aktif Yayıncı" value="2.5K+" />
+                            <Stat label="Desteklenen Oyun" value="10+" />
+                            <Stat label="TikTok Hediyesi" value="123" />
+                            <Stat label="Overlay Tipi" value="7" />
+                        </div>
+                    </motion.div>
+                </div>
+            </section>
+
+            {/* Features */}
+            <section className="container mx-auto px-4 sm:px-6 py-20">
+                <SectionHead
+                    badge="ÖZELLİKLER"
+                    title="Yayın Deneyimini Yeniden Tanımla"
+                    subtitle="Tek bir platform, sınırsız etkileşim. Her hediye, her beğeni, her takip — gerçek aksiyon."
+                />
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 mt-12">
+                    <FeatureCard
+                        icon={<Gamepad2 size={28} />}
+                        title="Mod Sistemi"
+                        desc="GTA V, Minecraft, Valorant, Fortnite ve daha fazlası. Her mod'a özel hediye→tuş atama yap."
+                        accent="green"
+                    />
+                    <FeatureCard
+                        icon={<Layers size={28} />}
+                        title="Canlı Overlay'ler"
+                        desc="Goal bar, gift alert, leaderboard, chat dock. OBS Browser Source ile yayına entegre."
+                        accent="cyan"
+                    />
+                    <FeatureCard
+                        icon={<Mic2 size={28} />}
+                        title="Hediye Sesleri"
+                        desc="Her TikTok hediyesi için özel ses ya da MP3 yükle. Tier bazlı varsayılanlar mevcut."
+                        accent="purple"
+                    />
+                    <FeatureCard
+                        icon={<Zap size={28} />}
+                        title="Anlık WebSocket"
+                        desc="0 gecikme. Hediye geldiği anda overlay'in büyüsün, tuşun fırlasın."
+                        accent="yellow"
+                    />
+                    <FeatureCard
+                        icon={<Trophy size={28} />}
+                        title="İstatistikler"
+                        desc="Yayın geçmişi, top hediye gönderenler, tamamlanan hedefler — her şey kayıt altında."
+                        accent="green"
+                    />
+                    <FeatureCard
+                        icon={<Users size={28} />}
+                        title="İzleyici Etkileşimi"
+                        desc="Takip, beğeni, paylaşım, hediye, yorum — hepsi tek bir akışta etkileşime dönüşsün."
+                        accent="cyan"
+                    />
+                </div>
+            </section>
+
+            {/* Mods showcase */}
+            {mods.length > 0 && (
+                <section className="container mx-auto px-4 sm:px-6 py-20">
+                    <SectionHead
+                        badge="MOD KÜTÜPHANESİ"
+                        title="Hangi Oyunu Oynuyorsun?"
+                        subtitle="10+ desteklenen mod. Her biri için özel yapılandırılmış hediye-aksiyon eşleştirmeleri."
+                        action={<Link to="/mods" className="text-sm font-semibold text-neon-green hover:underline">Tümünü Gör →</Link>}
+                    />
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-12">
+                        {mods.map((m) => (
+                            <Link
+                                key={m._id}
+                                to="/mods"
+                                className="group relative rounded-xl overflow-hidden bg-card border border-white/10 hover:border-neon-green/40 transition-all"
+                            >
+                                <div className="aspect-video overflow-hidden bg-gradient-to-br from-white/5 to-black/30">
+                                    {m.imageUrl && (
+                                        <img
+                                            src={m.imageUrl}
+                                            alt={m.title}
+                                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                            loading="lazy"
+                                        />
+                                    )}
+                                </div>
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+                                <div className="absolute bottom-0 left-0 right-0 p-4">
+                                    <div className="text-[10px] font-black tracking-widest text-neon-green uppercase mb-1">{m.category || 'Mod'}</div>
+                                    <div className="text-base font-bold text-white">{m.title}</div>
+                                    <div className="text-xs text-white/60 mt-0.5">{m.gameTitle}</div>
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
+                </section>
+            )}
+
+            {/* CTA */}
+            <section className="container mx-auto px-4 sm:px-6 py-20">
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-neon-green/10 via-neon-blue/10 to-neon-purple/10 border border-white/10 p-10 sm:p-16 text-center"
                 >
-                    {icon}
-                </Box>
-                <Typography variant="h5" sx={{ mb: 2, fontWeight: 600, color: 'white' }}>
-                    {title}
-                </Typography>
-                <Typography variant="body1" sx={{ color: 'chrome.400', lineHeight: 1.8 }}>
-                    {description}
-                </Typography>
-            </CardContent>
-        </Card>
+                    <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-neon-green/30 blur-[100px]" />
+                    <div className="absolute -bottom-20 -left-20 w-72 h-72 rounded-full bg-neon-purple/30 blur-[100px]" />
+                    <div className="relative">
+                        <h2 className="font-heading text-4xl sm:text-5xl font-black mb-4">
+                            Yayını <span className="text-gaming-gradient">Bir Üst Seviyeye</span> Çıkar
+                        </h2>
+                        <p className="text-white/70 max-w-xl mx-auto mb-8">
+                            Ücretsiz hesap aç, masaüstü uygulamasını indir, ilk overlay'ini 5 dakikada kur.
+                        </p>
+                        <div className="flex flex-wrap items-center justify-center gap-4">
+                            <Link to="/register" className="px-7 py-3.5 rounded-xl bg-gaming-gradient text-black font-bold shadow-2xl shadow-neon-green/30 hover:scale-105 transition-all">
+                                Hemen Başla
+                            </Link>
+                            <Link to="/download" className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
+                                <DownloadIcon size={18} /> Uygulamayı İndir
+                            </Link>
+                        </div>
+                    </div>
+                </motion.div>
+            </section>
+        </div>
     )
 }
 
-function StatItem({ number, label }: { number: string; label: string }) {
+function Stat({ label, value }: { label: string; value: string }) {
     return (
-        <Box>
-            <Typography
-                variant="h2"
-                sx={{
-                    fontWeight: 700,
-                    mb: 1,
-                    fontSize: { xs: '2.5rem', md: '3.5rem' },
-                    color: 'white',
-                }}
-            >
-                {number}
-            </Typography>
-            <Typography
-                variant="body2"
-                sx={{
-                    color: 'chrome.500',
-                    fontWeight: 600,
-                    textTransform: 'uppercase',
-                    letterSpacing: 1.5,
-                    fontSize: '0.875rem',
-                }}
-            >
-                {label}
-            </Typography>
-        </Box>
+        <motion.div whileHover={{ y: -4 }} className="px-4 py-3 rounded-xl bg-white/5 border border-white/10 backdrop-blur">
+            <div className="text-2xl sm:text-3xl font-black text-gaming-gradient">{value}</div>
+            <div className="text-[11px] text-white/60 uppercase tracking-widest mt-1 font-semibold">{label}</div>
+        </motion.div>
+    )
+}
+
+function SectionHead({ badge, title, subtitle, action }: { badge: string; title: string; subtitle: string; action?: React.ReactNode }) {
+    return (
+        <div className="flex items-end justify-between gap-4 flex-wrap">
+            <div>
+                <div className="inline-block px-3 py-1 rounded-full bg-neon-green/10 border border-neon-green/30 text-neon-green text-[10px] font-black tracking-widest mb-3">{badge}</div>
+                <h2 className="font-heading text-3xl sm:text-4xl font-black leading-tight">{title}</h2>
+                <p className="text-white/60 mt-2 max-w-xl">{subtitle}</p>
+            </div>
+            {action}
+        </div>
+    )
+}
+
+const accentMap = {
+    green: 'from-neon-green/20 to-transparent border-neon-green/30 text-neon-green',
+    cyan: 'from-neon-blue/20 to-transparent border-neon-blue/30 text-neon-blue',
+    purple: 'from-neon-purple/20 to-transparent border-neon-purple/30 text-neon-purple',
+    yellow: 'from-neon-yellow/20 to-transparent border-neon-yellow/30 text-neon-yellow',
+}
+
+function FeatureCard({ icon, title, desc, accent = 'green' }: { icon: React.ReactNode; title: string; desc: string; accent?: keyof typeof accentMap }) {
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            whileHover={{ y: -6 }}
+            className={`relative rounded-2xl bg-gradient-to-br ${accentMap[accent]} border bg-card p-6 backdrop-blur-xl group`}
+        >
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 bg-current/10 ${accentMap[accent].split(' ')[3]}`} style={{ background: 'rgba(255,255,255,0.04)' }}>
+                {icon}
+            </div>
+            <h3 className="text-xl font-bold mb-2 text-white">{title}</h3>
+            <p className="text-sm text-white/60 leading-relaxed">{desc}</p>
+        </motion.div>
     )
 }

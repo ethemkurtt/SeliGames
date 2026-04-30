@@ -2442,8 +2442,23 @@ function playGiftSound(giftName, coins) {
 
 // ==================== OVERLAY SYSTEM ====================
 
-const BACKEND_URL = 'http://localhost:3000';
-const WEB_URL = 'http://localhost:5173';
+// These are overwritten with values from main.js config (see initAppConfig below).
+// Kept as `let` so the runtime override sticks.
+let BACKEND_URL = 'http://localhost:3000';
+let WEB_URL = 'http://localhost:5173';
+
+// Load runtime config from main.js (config.json / config.default.json) before
+// any URL-dependent code runs. Resolves a promise that other init code awaits.
+const appConfigReady = (async () => {
+    try {
+        const cfg = await window.api.getAppConfig();
+        if (cfg?.backendUrl) BACKEND_URL = cfg.backendUrl;
+        if (cfg?.webUrl) WEB_URL = cfg.webUrl;
+        console.log(`📦 Renderer config: backend=${BACKEND_URL} web=${WEB_URL}`);
+    } catch (e) {
+        console.warn('Could not load app config; using defaults', e);
+    }
+})();
 
 // Build the OBS Browser Source URL for a given overlay.
 // The web app's universal /live/:overlayId route handles all 7 overlay types

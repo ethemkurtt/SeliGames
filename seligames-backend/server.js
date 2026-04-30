@@ -13,6 +13,8 @@ const goalRoutes = require('./src/routes/goals');
 const overlayRoutes = require('./src/routes/overlays');
 const eventRoutes = require('./src/routes/events');
 const giftRoutes = require('./src/routes/gifts');
+const adminRoutes = require('./src/routes/admin');
+const siteRoutes = require('./src/routes/site');
 const Goal = require('./src/models/Goal');
 const Overlay = require('./src/models/Overlay');
 const Event = require('./src/models/Event');
@@ -43,6 +45,8 @@ app.use('/api/goals', goalRoutes);
 app.use('/api/overlays', overlayRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/gifts', giftRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/site', siteRoutes);
 
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', message: 'SeliGames API is running' });

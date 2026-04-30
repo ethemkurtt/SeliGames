@@ -9,29 +9,26 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TipsRouteImport } from './routes/tips'
 import { Route as SubscriptionRouteImport } from './routes/subscription'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as ModsRouteImport } from './routes/mods'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
+import { Route as FeaturesRouteImport } from './routes/features'
 import { Route as DownloadRouteImport } from './routes/download'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as NewsIndexRouteImport } from './routes/news/index'
-import { Route as ModsIndexRouteImport } from './routes/mods/index'
-import { Route as GoalsIndexRouteImport } from './routes/goals/index'
-import { Route as NewsNewsIdRouteImport } from './routes/news/$newsId'
-import { Route as ModsModIdRouteImport } from './routes/mods/$modId'
+import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as LiveOverlayIdRouteImport } from './routes/live/$overlayId'
+import { Route as AdminUsersRouteImport } from './routes/admin/users'
+import { Route as AdminSubscriptionsRouteImport } from './routes/admin/subscriptions'
+import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
+import { Route as AdminModsRouteImport } from './routes/admin/mods'
 import { Route as OverlayGoalOverlayIdRouteImport } from './routes/overlay/goal/$overlayId'
 import { Route as LiveLikesOverlayIdRouteImport } from './routes/live/likes/$overlayId'
 
-const TipsRoute = TipsRouteImport.update({
-  id: '/tips',
-  path: '/tips',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SubscriptionRoute = SubscriptionRouteImport.update({
   id: '/subscription',
   path: '/subscription',
@@ -52,9 +49,24 @@ const PricingRoute = PricingRouteImport.update({
   path: '/pricing',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ModsRoute = ModsRouteImport.update({
+  id: '/mods',
+  path: '/mods',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FeaturesRoute = FeaturesRouteImport.update({
+  id: '/features',
+  path: '/features',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DownloadRoute = DownloadRouteImport.update({
@@ -72,34 +84,34 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const NewsIndexRoute = NewsIndexRouteImport.update({
-  id: '/news/',
-  path: '/news/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ModsIndexRoute = ModsIndexRouteImport.update({
-  id: '/mods/',
-  path: '/mods/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GoalsIndexRoute = GoalsIndexRouteImport.update({
-  id: '/goals/',
-  path: '/goals/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const NewsNewsIdRoute = NewsNewsIdRouteImport.update({
-  id: '/news/$newsId',
-  path: '/news/$newsId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ModsModIdRoute = ModsModIdRouteImport.update({
-  id: '/mods/$modId',
-  path: '/mods/$modId',
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LiveOverlayIdRoute = LiveOverlayIdRouteImport.update({
   id: '/live/$overlayId',
   path: '/live/$overlayId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/admin/users',
+  path: '/admin/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminSubscriptionsRoute = AdminSubscriptionsRouteImport.update({
+  id: '/admin/subscriptions',
+  path: '/admin/subscriptions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminSettingsRoute = AdminSettingsRouteImport.update({
+  id: '/admin/settings',
+  path: '/admin/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminModsRoute = AdminModsRouteImport.update({
+  id: '/admin/mods',
+  path: '/admin/mods',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OverlayGoalOverlayIdRoute = OverlayGoalOverlayIdRouteImport.update({
@@ -117,18 +129,20 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/download': typeof DownloadRoute
+  '/features': typeof FeaturesRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/mods': typeof ModsRoute
   '/pricing': typeof PricingRoute
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/subscription': typeof SubscriptionRoute
-  '/tips': typeof TipsRoute
+  '/admin/mods': typeof AdminModsRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/subscriptions': typeof AdminSubscriptionsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/live/$overlayId': typeof LiveOverlayIdRoute
-  '/mods/$modId': typeof ModsModIdRoute
-  '/news/$newsId': typeof NewsNewsIdRoute
-  '/goals': typeof GoalsIndexRoute
-  '/mods': typeof ModsIndexRoute
-  '/news': typeof NewsIndexRoute
+  '/admin': typeof AdminIndexRoute
   '/live/likes/$overlayId': typeof LiveLikesOverlayIdRoute
   '/overlay/goal/$overlayId': typeof OverlayGoalOverlayIdRoute
 }
@@ -136,18 +150,20 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/download': typeof DownloadRoute
+  '/features': typeof FeaturesRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/mods': typeof ModsRoute
   '/pricing': typeof PricingRoute
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/subscription': typeof SubscriptionRoute
-  '/tips': typeof TipsRoute
+  '/admin/mods': typeof AdminModsRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/subscriptions': typeof AdminSubscriptionsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/live/$overlayId': typeof LiveOverlayIdRoute
-  '/mods/$modId': typeof ModsModIdRoute
-  '/news/$newsId': typeof NewsNewsIdRoute
-  '/goals': typeof GoalsIndexRoute
-  '/mods': typeof ModsIndexRoute
-  '/news': typeof NewsIndexRoute
+  '/admin': typeof AdminIndexRoute
   '/live/likes/$overlayId': typeof LiveLikesOverlayIdRoute
   '/overlay/goal/$overlayId': typeof OverlayGoalOverlayIdRoute
 }
@@ -156,18 +172,20 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/download': typeof DownloadRoute
+  '/features': typeof FeaturesRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/mods': typeof ModsRoute
   '/pricing': typeof PricingRoute
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/subscription': typeof SubscriptionRoute
-  '/tips': typeof TipsRoute
+  '/admin/mods': typeof AdminModsRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/subscriptions': typeof AdminSubscriptionsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/live/$overlayId': typeof LiveOverlayIdRoute
-  '/mods/$modId': typeof ModsModIdRoute
-  '/news/$newsId': typeof NewsNewsIdRoute
-  '/goals/': typeof GoalsIndexRoute
-  '/mods/': typeof ModsIndexRoute
-  '/news/': typeof NewsIndexRoute
+  '/admin/': typeof AdminIndexRoute
   '/live/likes/$overlayId': typeof LiveLikesOverlayIdRoute
   '/overlay/goal/$overlayId': typeof OverlayGoalOverlayIdRoute
 }
@@ -177,18 +195,20 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/download'
+    | '/features'
+    | '/forgot-password'
     | '/login'
+    | '/mods'
     | '/pricing'
     | '/profile'
     | '/register'
     | '/subscription'
-    | '/tips'
+    | '/admin/mods'
+    | '/admin/settings'
+    | '/admin/subscriptions'
+    | '/admin/users'
     | '/live/$overlayId'
-    | '/mods/$modId'
-    | '/news/$newsId'
-    | '/goals'
-    | '/mods'
-    | '/news'
+    | '/admin'
     | '/live/likes/$overlayId'
     | '/overlay/goal/$overlayId'
   fileRoutesByTo: FileRoutesByTo
@@ -196,18 +216,20 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/download'
+    | '/features'
+    | '/forgot-password'
     | '/login'
+    | '/mods'
     | '/pricing'
     | '/profile'
     | '/register'
     | '/subscription'
-    | '/tips'
+    | '/admin/mods'
+    | '/admin/settings'
+    | '/admin/subscriptions'
+    | '/admin/users'
     | '/live/$overlayId'
-    | '/mods/$modId'
-    | '/news/$newsId'
-    | '/goals'
-    | '/mods'
-    | '/news'
+    | '/admin'
     | '/live/likes/$overlayId'
     | '/overlay/goal/$overlayId'
   id:
@@ -215,18 +237,20 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/download'
+    | '/features'
+    | '/forgot-password'
     | '/login'
+    | '/mods'
     | '/pricing'
     | '/profile'
     | '/register'
     | '/subscription'
-    | '/tips'
+    | '/admin/mods'
+    | '/admin/settings'
+    | '/admin/subscriptions'
+    | '/admin/users'
     | '/live/$overlayId'
-    | '/mods/$modId'
-    | '/news/$newsId'
-    | '/goals/'
-    | '/mods/'
-    | '/news/'
+    | '/admin/'
     | '/live/likes/$overlayId'
     | '/overlay/goal/$overlayId'
   fileRoutesById: FileRoutesById
@@ -235,31 +259,26 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRoute
   DownloadRoute: typeof DownloadRoute
+  FeaturesRoute: typeof FeaturesRoute
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
+  ModsRoute: typeof ModsRoute
   PricingRoute: typeof PricingRoute
   ProfileRoute: typeof ProfileRoute
   RegisterRoute: typeof RegisterRoute
   SubscriptionRoute: typeof SubscriptionRoute
-  TipsRoute: typeof TipsRoute
+  AdminModsRoute: typeof AdminModsRoute
+  AdminSettingsRoute: typeof AdminSettingsRoute
+  AdminSubscriptionsRoute: typeof AdminSubscriptionsRoute
+  AdminUsersRoute: typeof AdminUsersRoute
   LiveOverlayIdRoute: typeof LiveOverlayIdRoute
-  ModsModIdRoute: typeof ModsModIdRoute
-  NewsNewsIdRoute: typeof NewsNewsIdRoute
-  GoalsIndexRoute: typeof GoalsIndexRoute
-  ModsIndexRoute: typeof ModsIndexRoute
-  NewsIndexRoute: typeof NewsIndexRoute
+  AdminIndexRoute: typeof AdminIndexRoute
   LiveLikesOverlayIdRoute: typeof LiveLikesOverlayIdRoute
   OverlayGoalOverlayIdRoute: typeof OverlayGoalOverlayIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/tips': {
-      id: '/tips'
-      path: '/tips'
-      fullPath: '/tips'
-      preLoaderRoute: typeof TipsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/subscription': {
       id: '/subscription'
       path: '/subscription'
@@ -288,11 +307,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PricingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/mods': {
+      id: '/mods'
+      path: '/mods'
+      fullPath: '/mods'
+      preLoaderRoute: typeof ModsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/features': {
+      id: '/features'
+      path: '/features'
+      fullPath: '/features'
+      preLoaderRoute: typeof FeaturesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/download': {
@@ -316,39 +356,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/news/': {
-      id: '/news/'
-      path: '/news'
-      fullPath: '/news'
-      preLoaderRoute: typeof NewsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/mods/': {
-      id: '/mods/'
-      path: '/mods'
-      fullPath: '/mods'
-      preLoaderRoute: typeof ModsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/goals/': {
-      id: '/goals/'
-      path: '/goals'
-      fullPath: '/goals'
-      preLoaderRoute: typeof GoalsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/news/$newsId': {
-      id: '/news/$newsId'
-      path: '/news/$newsId'
-      fullPath: '/news/$newsId'
-      preLoaderRoute: typeof NewsNewsIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/mods/$modId': {
-      id: '/mods/$modId'
-      path: '/mods/$modId'
-      fullPath: '/mods/$modId'
-      preLoaderRoute: typeof ModsModIdRouteImport
+    '/admin/': {
+      id: '/admin/'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/live/$overlayId': {
@@ -356,6 +368,34 @@ declare module '@tanstack/react-router' {
       path: '/live/$overlayId'
       fullPath: '/live/$overlayId'
       preLoaderRoute: typeof LiveOverlayIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/admin/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/subscriptions': {
+      id: '/admin/subscriptions'
+      path: '/admin/subscriptions'
+      fullPath: '/admin/subscriptions'
+      preLoaderRoute: typeof AdminSubscriptionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/settings': {
+      id: '/admin/settings'
+      path: '/admin/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AdminSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/mods': {
+      id: '/admin/mods'
+      path: '/admin/mods'
+      fullPath: '/admin/mods'
+      preLoaderRoute: typeof AdminModsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/overlay/goal/$overlayId': {
@@ -379,18 +419,20 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRoute,
   DownloadRoute: DownloadRoute,
+  FeaturesRoute: FeaturesRoute,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
+  ModsRoute: ModsRoute,
   PricingRoute: PricingRoute,
   ProfileRoute: ProfileRoute,
   RegisterRoute: RegisterRoute,
   SubscriptionRoute: SubscriptionRoute,
-  TipsRoute: TipsRoute,
+  AdminModsRoute: AdminModsRoute,
+  AdminSettingsRoute: AdminSettingsRoute,
+  AdminSubscriptionsRoute: AdminSubscriptionsRoute,
+  AdminUsersRoute: AdminUsersRoute,
   LiveOverlayIdRoute: LiveOverlayIdRoute,
-  ModsModIdRoute: ModsModIdRoute,
-  NewsNewsIdRoute: NewsNewsIdRoute,
-  GoalsIndexRoute: GoalsIndexRoute,
-  ModsIndexRoute: ModsIndexRoute,
-  NewsIndexRoute: NewsIndexRoute,
+  AdminIndexRoute: AdminIndexRoute,
   LiveLikesOverlayIdRoute: LiveLikesOverlayIdRoute,
   OverlayGoalOverlayIdRoute: OverlayGoalOverlayIdRoute,
 }

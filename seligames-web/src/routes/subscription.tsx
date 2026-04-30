@@ -1,314 +1,146 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { useState, useEffect } from 'react'
-import Container from '@mui/material/Container'
-import Box from '@mui/material/Box'
-import Typography from '@mui/material/Typography'
-import Card from '@mui/material/Card'
-import CardContent from '@mui/material/CardContent'
-import Button from '@mui/material/Button'
-import Chip from '@mui/material/Chip'
-import Switch from '@mui/material/Switch'
-import FormControlLabel from '@mui/material/FormControlLabel'
-import Table from '@mui/material/Table'
-import TableBody from '@mui/material/TableBody'
-import TableCell from '@mui/material/TableCell'
-import TableContainer from '@mui/material/TableContainer'
-import TableHead from '@mui/material/TableHead'
-import TableRow from '@mui/material/TableRow'
-import Paper from '@mui/material/Paper'
-import CheckCircleIcon from '@mui/icons-material/CheckCircle'
-import CancelIcon from '@mui/icons-material/Cancel'
-import axios from 'axios'
+import { createFileRoute, Link } from '@tanstack/react-router'
+import { useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
+import { Check, X, CreditCard, AlertTriangle, RefreshCw } from 'lucide-react'
+import api from '@/lib/api'
 
 export const Route = createFileRoute('/subscription')({
     component: SubscriptionPage,
 })
 
-const planFeatures = {
-    free: ['1 mod aktif', '50 etkileşim/gün', 'Temel analitik', 'Topluluk desteği'],
-    basic: ['5 mod aktif', '500 etkileşim/gün', 'Standart analitik', 'Email desteği', 'Reklamsız'],
-    pro: ['20 mod aktif', 'Sınırsız etkileşim', 'Gelişmiş analitik', 'Öncelikli destek', 'Özel branding', 'API erişimi (sınırlı)'],
-    ultra: ['Sınırsız mod', 'Sınırsız etkileşim', 'Gerçek zamanlı analitik', '24/7 destek', 'Tam API erişimi', 'White-label', 'Özel entegrasyonlar']
-}
-
-const planPrices = {
-    free: 0,
-    basic: 99,
-    pro: 299,
-    ultra: 599
-}
-
 function SubscriptionPage() {
-    const [subscription, setSubscription] = useState(null)
-    const [payments, setPayments] = useState([])
-    const [loading, setLoading] = useState(true)
-    const [autoRenew, setAutoRenew] = useState(false)
+    const [profile, setProfile] = useState<any>(null)
+    const [plans, setPlans] = useState<any[]>([])
+    const [busy, setBusy] = useState(false)
+    const [msg, setMsg] = useState('')
+    const [history, setHistory] = useState<any[]>([])
 
     useEffect(() => {
-        loadSubscriptionData()
+        load()
+        api.get('/site').then((r) => Array.isArray(r.data?.pricingPlans) && setPlans(r.data.pricingPlans)).catch(() => {})
+        api.get('/subscription/history').then((r) => setHistory(r.data?.payments || [])).catch(() => {})
     }, [])
 
-    const loadSubscriptionData = async () => {
+    async function load() {
+        try { const r = await api.get('/subscription/status'); setProfile(r.data) } catch { /* */ }
+    }
+
+    async function changePlan(planId: string) {
+        if (busy) return
+        setBusy(true); setMsg('')
         try {
-            const token = localStorage.getItem('token')
-            if (!token) {
-                window.location.href = '/login'
-                return
-            }
-
-            const [subRes, historyRes] = await Promise.all([
-                axios.get('http://localhost:3000/api/subscription/status', {
-                    headers: { Authorization: `Bearer ${token}` }
-                }),
-                axios.get('http://localhost:3000/api/subscription/history', {
-                    headers: { Authorization: `Bearer ${token}` }
-                })
-            ])
-
-            setSubscription(subRes.data.subscription)
-            setAutoRenew(subRes.data.subscription.autoRenew)
-            setPayments(historyRes.data.payments)
-        } catch (error) {
-            console.error('Error loading subscription:', error)
-        } finally {
-            setLoading(false)
-        }
+            const r = await api.post('/subscription/upgrade', { plan: planId })
+            setMsg(`Plan güncellendi: ${r.data?.subscription?.plan}`)
+            await load()
+        } catch (e: any) { setMsg(e.response?.data?.error || 'Hata') }
+        finally { setBusy(false) }
     }
 
-    const handleUpgrade = async (plan) => {
-        try {
-            const token = localStorage.getItem('token')
-            await axios.post('http://localhost:3000/api/subscription/upgrade',
-                { plan },
-                { headers: { Authorization: `Bearer ${token}` } }
-            )
-            alert(`${plan.toUpperCase()} planına yükseltme başarılı! Ödeme sayfasına yönlendiriliyorsunuz...`)
-            loadSubscriptionData()
-        } catch (error) {
-            alert('Hata: ' + (error.response?.data?.error || error.message))
-        }
+    async function cancel() {
+        if (!confirm('Aboneliğin iptal edilecek. Mevcut periyodun sonuna kadar aktif kalır. Emin misin?')) return
+        setBusy(true); setMsg('')
+        try { await api.post('/subscription/cancel'); setMsg('Abonelik iptal edildi.'); await load() }
+        catch (e: any) { setMsg(e.response?.data?.error || 'Hata') }
+        finally { setBusy(false) }
     }
 
-    const handleCancel = async () => {
-        if (!confirm('Aboneliğinizi iptal etmek istediğinizden emin misiniz?')) return
-
-        try {
-            const token = localStorage.getItem('token')
-            await axios.post('http://localhost:3000/api/subscription/cancel', {}, {
-                headers: { Authorization: `Bearer ${token}` }
-            })
-            alert('Abonelik iptal edildi')
-            loadSubscriptionData()
-        } catch (error) {
-            alert('Hata: ' + (error.response?.data?.error || error.message))
-        }
-    }
-
-    const handleAutoRenewToggle = async () => {
-        try {
-            const token = localStorage.getItem('token')
-            const newValue = !autoRenew
-            await axios.post('http://localhost:3000/api/subscription/auto-renew',
-                { autoRenew: newValue },
-                { headers: { Authorization: `Bearer ${token}` } }
-            )
-            setAutoRenew(newValue)
-        } catch (error) {
-            alert('Hata: ' + (error.response?.data?.error || error.message))
-        }
-    }
-
-    if (loading) {
-        return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
-                <Typography variant="h5">Yükleniyor...</Typography>
-            </Box>
-        )
-    }
-
-    const getPlanColor = (plan) => {
-        const colors = {
-            free: '#9e9e9e',
-            basic: '#2196f3',
-            pro: '#00f0ff',
-            ultra: '#ffd700'
-        }
-        return colors[plan] || '#9e9e9e'
-    }
-
-    const getStatusColor = (status) => {
-        const colors = {
-            active: 'success',
-            trial: 'info',
-            expired: 'error',
-            cancelled: 'warning'
-        }
-        return colors[status] || 'default'
-    }
+    const sub = profile?.subscription
+    const currentPlan = sub?.plan || 'free'
 
     return (
-        <Box sx={{ py: { xs: 4, md: 8 } }}>
-            <Container maxWidth="lg">
-                <Typography variant="h3" sx={{ fontWeight: 700, mb: 1, textAlign: 'center' }}>
-                    Abonelik Yönetimi
-                </Typography>
-                <Typography variant="body1" sx={{ color: 'text.secondary', mb: 6, textAlign: 'center' }}>
-                    Mevcut planınızı görüntüleyin ve yönetin
-                </Typography>
+        <div className="p-6 sm:p-8 max-w-5xl mx-auto">
+            <h1 className="font-heading text-3xl sm:text-4xl font-black mb-1">Abonelik <span className="text-gaming-gradient">Yönetimi</span></h1>
+            <p className="text-white/60 mb-8">Mevcut planın, faturalama geçmişin, plan değişiklikleri.</p>
 
-                {/* Current Subscription Card */}
-                <Card sx={{ mb: 6, background: `linear-gradient(135deg, ${getPlanColor(subscription.plan)}22 0%, transparent 100%)`, border: `2px solid ${getPlanColor(subscription.plan)}` }}>
-                    <CardContent sx={{ p: 4 }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', flexWrap: 'wrap', gap: 3 }}>
-                            <Box>
-                                <Typography variant="overline" sx={{ color: 'text.secondary' }}>
-                                    Mevcut Plan
-                                </Typography>
-                                <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, textTransform: 'uppercase', color: getPlanColor(subscription.plan) }}>
-                                    {subscription.plan}
-                                </Typography>
-                                <Chip
-                                    label={subscription.status === 'active' ? 'Aktif' : subscription.status === 'trial' ? 'Deneme' : subscription.status === 'expired' ? 'Süresi Dolmuş' : 'İptal Edildi'}
-                                    color={getStatusColor(subscription.status)}
-                                    sx={{ mb: 2 }}
-                                />
-                                {subscription.daysRemaining !== null && (
-                                    <Typography variant="h6" sx={{ color: subscription.daysRemaining < 7 ? 'error.main' : 'text.primary' }}>
-                                        {subscription.daysRemaining > 0 ? `${subscription.daysRemaining} gün kaldı` : 'Süresi doldu'}
-                                    </Typography>
-                                )}
-                            </Box>
+            {msg && (
+                <div className="rounded-lg bg-neon-green/10 border border-neon-green/30 px-4 py-3 text-sm text-neon-green mb-5">{msg}</div>
+            )}
 
-                            <Box sx={{ textAlign: 'right' }}>
-                                {subscription.plan !== 'free' && (
-                                    <>
-                                        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                                            Başlangıç: {subscription.startDate ? new Date(subscription.startDate).toLocaleDateString('tr-TR') : '-'}
-                                        </Typography>
-                                        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                                            Bitiş: {subscription.endDate ? new Date(subscription.endDate).toLocaleDateString('tr-TR') : '-'}
-                                        </Typography>
-                                        <Typography variant="body2" sx={{ color: 'text.secondary', mt: 1 }}>
-                                            Sonraki Ödeme: {subscription.nextBillingDate ? new Date(subscription.nextBillingDate).toLocaleDateString('tr-TR') : '-'}
-                                        </Typography>
-                                        <FormControlLabel
-                                            control={<Switch checked={autoRenew} onChange={handleAutoRenewToggle} />}
-                                            label="Otomatik Yenileme"
-                                            sx={{ mt: 2 }}
-                                        />
-                                    </>
-                                )}
-                            </Box>
-                        </Box>
-
-                        {subscription.plan !== 'free' && subscription.status === 'active' && (
-                            <Box sx={{ mt: 3, pt: 3, borderTop: '1px solid', borderColor: 'divider' }}>
-                                <Button variant="outlined" color="error" onClick={handleCancel}>
-                                    Aboneliği İptal Et
-                                </Button>
-                            </Box>
-                        )}
-                    </CardContent>
-                </Card>
-
-                {/* Plan Comparison */}
-                <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>
-                    Planları Karşılaştır
-                </Typography>
-                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' }, gap: 3, mb: 6 }}>
-                    {Object.entries(planFeatures).map(([plan, features]) => (
-                        <Card
-                            key={plan}
-                            sx={{
-                                border: subscription.plan === plan ? `3px solid ${getPlanColor(plan)}` : '1px solid',
-                                borderColor: subscription.plan === plan ? getPlanColor(plan) : 'divider',
-                                position: 'relative'
-                            }}
-                        >
-                            {subscription.plan === plan && (
-                                <Chip
-                                    label="Mevcut Plan"
-                                    size="small"
-                                    sx={{ position: 'absolute', top: 16, right: 16, bgcolor: getPlanColor(plan), color: '#000' }}
-                                />
-                            )}
-                            <CardContent>
-                                <Typography variant="h6" sx={{ fontWeight: 700, textTransform: 'uppercase', mb: 1 }}>
-                                    {plan}
-                                </Typography>
-                                <Typography variant="h4" sx={{ fontWeight: 700, mb: 3 }}>
-                                    ₺{planPrices[plan]}
-                                    <Typography component="span" variant="body2" sx={{ color: 'text.secondary' }}>
-                                        /ay
-                                    </Typography>
-                                </Typography>
-                                <Box sx={{ mb: 3 }}>
-                                    {features.map((feature, idx) => (
-                                        <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                            <CheckCircleIcon sx={{ fontSize: 20, color: 'success.main' }} />
-                                            <Typography variant="body2">{feature}</Typography>
-                                        </Box>
-                                    ))}
-                                </Box>
-                                {subscription.plan !== plan && (
-                                    <Button
-                                        fullWidth
-                                        variant={plan === 'pro' ? 'contained' : 'outlined'}
-                                        onClick={() => handleUpgrade(plan)}
-                                        sx={plan === 'pro' ? {
-                                            background: 'linear-gradient(135deg, #00f0ff 0%, #0088cc 100%)',
-                                            '&:hover': { boxShadow: '0 0 20px rgba(0, 240, 255, 0.5)' }
-                                        } : {}}
-                                    >
-                                        {plan === 'free' ? 'Düşür' : 'Yükselt'}
-                                    </Button>
-                                )}
-                            </CardContent>
-                        </Card>
-                    ))}
-                </Box>
-
-                {/* Payment History */}
-                {payments.length > 0 && (
-                    <>
-                        <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>
-                            Ödeme Geçmişi
-                        </Typography>
-                        <TableContainer component={Paper} sx={{ mb: 4 }}>
-                            <Table>
-                                <TableHead>
-                                    <TableRow>
-                                        <TableCell>Tarih</TableCell>
-                                        <TableCell>Plan</TableCell>
-                                        <TableCell>Tutar</TableCell>
-                                        <TableCell>Durum</TableCell>
-                                        <TableCell>İşlem ID</TableCell>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {payments.map((payment) => (
-                                        <TableRow key={payment.id}>
-                                            <TableCell>{new Date(payment.paymentDate).toLocaleDateString('tr-TR')}</TableCell>
-                                            <TableCell sx={{ textTransform: 'uppercase' }}>{payment.plan}</TableCell>
-                                            <TableCell>₺{payment.amount} {payment.currency}</TableCell>
-                                            <TableCell>
-                                                <Chip
-                                                    label={payment.status === 'success' ? 'Başarılı' : payment.status === 'pending' ? 'Beklemede' : 'Başarısız'}
-                                                    color={payment.status === 'success' ? 'success' : payment.status === 'pending' ? 'warning' : 'error'}
-                                                    size="small"
-                                                />
-                                            </TableCell>
-                                            <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
-                                                {payment.transactionId || '-'}
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </TableContainer>
-                    </>
+            {/* Current plan */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl bg-gradient-to-br from-neon-green/10 to-neon-blue/10 border border-white/10 p-6 mb-8">
+                <div className="flex items-start justify-between flex-wrap gap-4">
+                    <div>
+                        <div className="text-xs uppercase tracking-widest text-white/50 mb-1">Mevcut Plan</div>
+                        <div className="font-heading text-3xl font-black text-gaming-gradient capitalize">{currentPlan}</div>
+                        <div className="text-sm text-white/60 mt-2">
+                            Durum: <span className={sub?.status === 'active' ? 'text-neon-green' : 'text-amber-400'}>{sub?.status || 'free'}</span>
+                            {sub?.endDate && <> · Bitiş: {new Date(sub.endDate).toLocaleDateString('tr-TR')}</>}
+                            {typeof sub?.daysRemaining === 'number' && sub.daysRemaining >= 0 && <> · Kalan: <b className="text-neon-green">{sub.daysRemaining}</b> gün</>}
+                        </div>
+                    </div>
+                    <CreditCard className="text-neon-green" size={36} />
+                </div>
+                {currentPlan !== 'free' && (
+                    <div className="flex flex-wrap gap-2 mt-5">
+                        <button onClick={cancel} disabled={busy} className="inline-flex items-center gap-1 px-4 py-2 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-bold hover:bg-red-500/20 transition-all disabled:opacity-50">
+                            <X size={14} /> Aboneliği İptal Et
+                        </button>
+                    </div>
                 )}
-            </Container>
-        </Box>
+            </motion.div>
+
+            {/* Plans grid */}
+            <h2 className="font-heading text-xl font-black mb-4">Plan Değiştir</h2>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+                {plans.map((p) => (
+                    <div key={p.id} className={`rounded-xl border p-5 ${currentPlan === p.id ? 'border-neon-green bg-neon-green/5' : 'bg-card border-white/10'}`}>
+                        <div className="flex items-start justify-between mb-2">
+                            <h3 className="font-bold">{p.name}</h3>
+                            {currentPlan === p.id && <span className="px-2 py-0.5 rounded-full bg-neon-green/20 text-neon-green text-[10px] font-black">AKTİF</span>}
+                        </div>
+                        <div className="text-3xl font-black text-gaming-gradient mb-3">₺{p.price}</div>
+                        <ul className="space-y-1.5 mb-4">
+                            {(p.features || []).slice(0, 4).map((f: string) => (
+                                <li key={f} className="flex items-start gap-1.5 text-xs text-white/70"><Check size={12} className="text-neon-green mt-0.5" /> {f}</li>
+                            ))}
+                        </ul>
+                        <button
+                            onClick={() => changePlan(p.id)}
+                            disabled={busy || currentPlan === p.id}
+                            className="w-full py-2 rounded-lg bg-white/5 border border-white/10 text-xs font-bold hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        >
+                            {currentPlan === p.id ? 'Mevcut Plan' : `${p.name}'e Geç`}
+                        </button>
+                    </div>
+                ))}
+            </div>
+
+            {/* Billing history */}
+            <h2 className="font-heading text-xl font-black mb-4">Faturalama Geçmişi</h2>
+            <div className="rounded-2xl bg-card border border-white/10 overflow-hidden">
+                {history.length === 0 ? (
+                    <div className="text-center py-10 text-white/50 text-sm">Henüz ödeme geçmişin yok.</div>
+                ) : (
+                    <table className="w-full text-sm">
+                        <thead className="bg-white/5">
+                            <tr className="text-left text-white/60 text-xs uppercase tracking-widest">
+                                <th className="px-5 py-3">Tarih</th>
+                                <th className="px-5 py-3">Plan</th>
+                                <th className="px-5 py-3 text-right">Tutar</th>
+                                <th className="px-5 py-3">Durum</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {history.map((h, i) => (
+                                <tr key={i} className="border-t border-white/5">
+                                    <td className="px-5 py-3 text-white/70">{new Date(h.paymentDate || h.createdAt).toLocaleDateString('tr-TR')}</td>
+                                    <td className="px-5 py-3 capitalize">{h.plan}</td>
+                                    <td className="px-5 py-3 text-right font-mono text-neon-green">{h.amount} {h.currency}</td>
+                                    <td className="px-5 py-3"><span className={h.status === 'paid' ? 'text-neon-green' : 'text-amber-400'}>{h.status}</span></td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                )}
+            </div>
+
+            <div className="mt-10 rounded-xl bg-amber-500/5 border border-amber-500/20 p-5 flex gap-3 text-sm">
+                <AlertTriangle className="text-amber-400 flex-shrink-0" size={20} />
+                <div className="text-amber-200/80">
+                    <b>Otomatik Yenileme:</b> Tüm planlar her ay otomatik yenilenir. İptal edersen mevcut periyot sonunda Free plana geçersin.
+                    Sorularını <a className="text-neon-green hover:underline" href="mailto:destek@seligame.com">destek@seligame.com</a> adresine yazabilirsin.
+                </div>
+            </div>
+        </div>
     )
 }

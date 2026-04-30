@@ -1,6 +1,7 @@
 const { contextBridge, ipcRenderer, shell } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
+    getAppConfig: () => ipcRenderer.invoke('get-app-config'),
     login: (credentials) => ipcRenderer.invoke('login', credentials),
     getMods: () => ipcRenderer.invoke('get-mods'),
     getProfile: (token) => ipcRenderer.invoke('get-profile', token),

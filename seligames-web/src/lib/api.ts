@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:3000/api';
+// Allow override via Vite env (set VITE_API_URL in .env.production)
+const API_BASE = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000';
+const API_URL = `${API_BASE}/api`;
 
 const api = axios.create({
     baseURL: API_URL,

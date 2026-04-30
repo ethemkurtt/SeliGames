@@ -1,0 +1,5 @@
+{
+    "backendUrl": "http://localhost:3000",
+    "webUrl": "http://localhost:5173",
+    "_doc": "Copy to config.json and edit to override (config.json is gitignored). Used by main.js + renderer.js to construct API/socket/OBS URLs."
+}
