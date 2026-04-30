@@ -23,5 +23,46 @@ contextBridge.exposeInMainWorld('api', {
     disconnectTikTokLive: () => ipcRenderer.invoke('disconnect-tiktok-live'),
     onTikTokConnected: (callback) => ipcRenderer.on('tiktok-connected', (event, data) => callback(data)),
     onTikTokEvent: (callback) => ipcRenderer.on('tiktok-event', (event, data) => callback(data)),
-    onTikTokDisconnected: (callback) => ipcRenderer.on('tiktok-disconnected', (event, data) => callback(data))
+    onTikTokDisconnected: (callback) => ipcRenderer.on('tiktok-disconnected', (event, data) => callback(data)),
+
+    // Overlay API
+    getOverlays: (query) => ipcRenderer.invoke('get-overlays', query),
+    getOverlay: (id) => ipcRenderer.invoke('get-overlay', id),
+    createOverlay: (data) => ipcRenderer.invoke('create-overlay', data),
+    updateOverlay: (id, data) => ipcRenderer.invoke('update-overlay', id, data),
+    deleteOverlay: (id) => ipcRenderer.invoke('delete-overlay', id),
+    resetOverlay: (id) => ipcRenderer.invoke('reset-overlay', id),
+    incrementOverlay: (id, amount) => ipcRenderer.invoke('increment-overlay', id, amount),
+
+    // Backend Socket Bridge
+    connectBackendSocket: () => ipcRenderer.invoke('connect-backend-socket'),
+    disconnectBackendSocket: () => ipcRenderer.invoke('disconnect-backend-socket'),
+    forwardTikTokEvent: (data) => ipcRenderer.invoke('forward-tiktok-event', data),
+    startLiveSession: () => ipcRenderer.invoke('start-live-session'),
+    getBackendSocketStatus: () => ipcRenderer.invoke('get-backend-socket-status'),
+    onBackendSocketStatus: (callback) => ipcRenderer.on('backend-socket-status', (event, data) => callback(data)),
+    onEventProcessed: (callback) => ipcRenderer.on('event-processed', (event, data) => callback(data)),
+
+    // Event API
+    getEvents: (query) => ipcRenderer.invoke('get-events', query),
+    getEventStats: (query) => ipcRenderer.invoke('get-event-stats', query),
+    getEventSessions: () => ipcRenderer.invoke('get-event-sessions'),
+
+    // Gift catalog + per-gift sound map
+    getGiftCatalog: () => ipcRenderer.invoke('get-gift-catalog'),
+    setGiftSoundMapping: (giftName, entry) => ipcRenderer.invoke('set-gift-sound-mapping', giftName, entry),
+    replaceGiftSoundMap: (map) => ipcRenderer.invoke('replace-gift-sound-map', map),
+
+    // Mods & per-user mod config
+    createMod: (data) => ipcRenderer.invoke('create-mod', data),
+    updateMod: (id, data) => ipcRenderer.invoke('update-mod', id, data),
+    deleteMod: (id) => ipcRenderer.invoke('delete-mod', id),
+    getModConfig: (modId) => ipcRenderer.invoke('get-mod-config', modId),
+    saveModConfig: (modId, data) => ipcRenderer.invoke('save-mod-config', modId, data),
+    setModGiftAction: (modId, giftName, action) => ipcRenderer.invoke('set-mod-gift-action', modId, giftName, action),
+    installMod: (modId, installPath) => ipcRenderer.invoke('install-mod', modId, installPath),
+    uninstallMod: (modId) => ipcRenderer.invoke('uninstall-mod', modId),
+    getInstalledMods: () => ipcRenderer.invoke('get-installed-mods'),
+    pickInstallDirectory: (modTitle) => ipcRenderer.invoke('pick-install-directory', modTitle),
+    executeAction: (action) => ipcRenderer.invoke('execute-action', action)
 });

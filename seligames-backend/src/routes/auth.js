@@ -45,7 +45,7 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ error: 'Invalid credentials' });
         }
 
-        const token = jwt.sign({ id: user._id, role: user.role }, SECRET_KEY, { expiresIn: '1h' });
+        const token = jwt.sign({ userId: user._id, role: user.role }, SECRET_KEY, { expiresIn: '7d' });
         console.log('Login successful:', email);
         res.json({ token, user: { id: user._id, username: user.username, email: user.email, role: user.role } });
     } catch (error) {
@@ -62,7 +62,7 @@ const verifyToken = (req, res, next) => {
     }
     try {
         const decoded = jwt.verify(token, SECRET_KEY);
-        req.userId = decoded.id;
+        req.userId = decoded.userId;
         next();
     } catch (error) {
         return res.status(401).json({ error: 'Invalid token' });
@@ -228,13 +228,21 @@ router.post('/settings', verifyToken, async (req, res) => {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        // Update settings if provided
+        // Update settings if provided.
+        // `user.settings` is a Mongoose typed subdoc — direct spread produces garbage
+        // and "Cast to Object failed for value undefined at path settings.giftSounds".
+        // Use Object.assign on the subdoc so Mongoose's setters handle each field.
         if (settings) {
-            // Merge with existing settings
-            user.settings = {
-                ...user.settings,
-                ...settings
-            };
+            if (!user.settings) user.settings = {};
+            Object.entries(settings).forEach(([k, v]) => {
+                if (k === 'giftSounds' && v && typeof v === 'object') {
+                    if (!user.settings.giftSounds) user.settings.giftSounds = {};
+                    Object.assign(user.settings.giftSounds, v);
+                } else {
+                    user.settings[k] = v;
+                }
+            });
+            user.markModified('settings');
         }
 
         // Update TikTok username if provided
@@ -249,6 +257,52 @@ router.post('/settings', verifyToken, async (req, res) => {
             settings: user.settings,
             tiktokUsername: user.tiktokUsername
         });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Per-gift sound mapping (overrides tier defaults)
+router.post('/settings/gift-sound-map', verifyToken, async (req, res) => {
+    try {
+        const { giftName, entry } = req.body;
+        if (!giftName) return res.status(400).json({ error: 'giftName required' });
+
+        const user = await User.findById(req.userId);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        if (!user.settings) user.settings = {};
+        if (!user.settings.giftSoundMap) user.settings.giftSoundMap = {};
+
+        if (entry === null || entry === undefined) {
+            delete user.settings.giftSoundMap[giftName];
+        } else {
+            user.settings.giftSoundMap[giftName] = entry;
+        }
+        user.markModified('settings');
+        await user.save();
+
+        res.json({ message: 'Gift sound map updated', giftSoundMap: user.settings.giftSoundMap });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Bulk replace the whole gift sound map
+router.post('/settings/gift-sound-map/bulk', verifyToken, async (req, res) => {
+    try {
+        const { map } = req.body;
+        if (typeof map !== 'object' || map === null) return res.status(400).json({ error: 'map object required' });
+
+        const user = await User.findById(req.userId);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        if (!user.settings) user.settings = {};
+        user.settings.giftSoundMap = map;
+        user.markModified('settings');
+        await user.save();
+
+        res.json({ message: 'Gift sound map replaced', count: Object.keys(map).length });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

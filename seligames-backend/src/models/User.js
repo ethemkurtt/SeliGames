@@ -84,7 +84,7 @@ const userSchema = new mongoose.Schema({
             type: Boolean,
             default: true
         },
-        // Gift Sound Mappings
+        // Gift Sound Mappings (tier-based fallback)
         giftSounds: {
             small: {
                 type: String,
@@ -102,6 +102,21 @@ const userSchema = new mongoose.Schema({
                 type: String,
                 default: 'victory'
             }
+        },
+        // Per-gift sound mapping — overrides tier-based giftSounds above.
+        // Keyed by gift name. Each entry is either
+        //   { preset: "coin" } → use one of the built-in synth sounds, or
+        //   { mp3: "data:audio/mpeg;base64,…", volume: 0.8 } → custom uploaded MP3
+        giftSoundMap: {
+            type: mongoose.Schema.Types.Mixed,
+            default: {}
+        },
+        // Per-mod gift→action mapping. Keyed by modId (string of ObjectId).
+        // Each mod config: { installed: bool, installPath: string, giftActions: { [giftName]: { shortcut, type, value, enabled } } }
+        // action types: 'keyboard' (Ctrl+1, Shift+A), 'text' (typed command), 'mouse' (left-click, right-click)
+        modConfigs: {
+            type: mongoose.Schema.Types.Mixed,
+            default: {}
         }
     },
     // Subscription Information

@@ -14,6 +14,7 @@ import LoginIcon from '@mui/icons-material/Login'
 import PersonAddIcon from '@mui/icons-material/PersonAdd'
 import MonetizationOnIcon from '@mui/icons-material/MonetizationOn'
 import CardMembershipIcon from '@mui/icons-material/CardMembership'
+import TrackChangesIcon from '@mui/icons-material/TrackChanges'
 
 export function Navbar() {
     return (
@@ -74,6 +75,7 @@ export function Navbar() {
                         }}
                     >
                         <NavButton to="/" icon={<HomeIcon />} label="Anasayfa" />
+                        <NavButton to="/goals" icon={<TrackChangesIcon />} label="Goals" />
                         <NavButton to="/pricing" icon={<MonetizationOnIcon />} label="Fiyatlandırma" />
                         <NavButton to="/subscription" icon={<CardMembershipIcon />} label="Abonelik" />
                         <NavButton to="/news" icon={<NewspaperIcon />} label="Haberler" />

@@ -1,0 +1,788 @@
+import { useEffect, useRef, useState } from 'react'
+import { io, Socket } from 'socket.io-client'
+import { findGiftByName } from '@/data/tiktokGifts'
+
+const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000'
+
+export interface OverlayStyle {
+    barColor?: string
+    backgroundColor?: string
+    textColor?: string
+    fontSize?: number
+    borderRadius?: number
+    showPercentage?: boolean
+    showNumbers?: boolean
+    animation?: string
+    theme?: string
+    customCSS?: string
+}
+
+export interface OverlayConfig {
+    maxItems?: number
+    duration?: number
+    iconSize?: number
+}
+
+export interface LastXItem { user: string; time: number; gift?: string; count?: number }
+export interface LeaderItem { user: string; score: number }
+export interface GiftAlertData { user: string; name: string; count: number; icon?: string; diamonds?: number; time: number }
+
+export interface OverlayData {
+    _id: string
+    overlayId: string
+    overlayType: 'goal' | 'gift-alert' | 'last-x' | 'leaderboard' | 'chart' | 'chat' | 'event-feed'
+    subType: string
+    title: string
+    currentValue: number
+    targetValue: number
+    isActive: boolean
+    style: OverlayStyle
+    config?: OverlayConfig
+    data?: { items?: any[]; lastGift?: GiftAlertData; [k: string]: any }
+}
+
+interface TikTokLiveEvent {
+    type: 'chat' | 'event'
+    user: string
+    text: string
+    icon?: string
+    eventType?: string
+    giftName?: string
+    count?: number
+    diamondCount?: number
+    profilePicture?: string
+    _id?: string
+    _t?: number
+}
+
+// ============================================================================
+// Main entry — fetches overlay + sockets + dispatches to the right view.
+// ============================================================================
+
+export function LiveOverlay({ overlayId }: { overlayId: string }) {
+    const [ov, setOv] = useState<OverlayData | null>(null)
+    const [status, setStatus] = useState<'loading' | 'ready' | 'not-found' | 'error'>('loading')
+    const [liveEvents, setLiveEvents] = useState<TikTokLiveEvent[]>([])
+    const [valueDelta, setValueDelta] = useState<number | null>(null)
+    const prevValueRef = useRef(0)
+    const deltaTimerRef = useRef<number | null>(null)
+    const socketRef = useRef<Socket | null>(null)
+
+    useEffect(() => {
+        let cancelled = false
+        fetch(`${API_URL}/api/overlays/render/${overlayId}`)
+            .then(async (r) => {
+                if (r.status === 404) { if (!cancelled) setStatus('not-found'); return null }
+                return r.json()
+            })
+            .then((data) => {
+                if (cancelled || !data) return
+                if (data.error) { setStatus('not-found'); return }
+                setOv(data)
+                prevValueRef.current = data.currentValue || 0
+                setStatus('ready')
+            })
+            .catch(() => { if (!cancelled) setStatus('error') })
+        return () => { cancelled = true }
+    }, [overlayId])
+
+    useEffect(() => {
+        const socket = io(API_URL, { transports: ['websocket', 'polling'], reconnection: true, reconnectionDelay: 1500 })
+        socketRef.current = socket
+        const join = () => socket.emit('join-overlay', overlayId)
+        socket.on('connect', join)
+        socket.on('reconnect', join)
+
+        socket.on('overlay-update', (payload: any) => {
+            if (payload.overlayId !== overlayId) return
+            setOv((prev) => {
+                if (!prev) return prev
+                const next: OverlayData = { ...prev }
+                if (typeof payload.currentValue === 'number') next.currentValue = payload.currentValue
+                if (typeof payload.targetValue === 'number') next.targetValue = payload.targetValue
+                if (payload.data) next.data = { ...(next.data || {}), ...payload.data }
+                return next
+            })
+            if (typeof payload.currentValue === 'number') {
+                const delta = payload.currentValue - prevValueRef.current
+                if (delta > 0) {
+                    setValueDelta(delta)
+                    if (deltaTimerRef.current) window.clearTimeout(deltaTimerRef.current)
+                    deltaTimerRef.current = window.setTimeout(() => setValueDelta(null), 1100)
+                }
+                prevValueRef.current = payload.currentValue
+            }
+        })
+
+        socket.on('tiktok-live-event', (ev: TikTokLiveEvent) => {
+            setLiveEvents((list) => {
+                const withId: TikTokLiveEvent = { ...ev, _id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, _t: Date.now() }
+                const next = [...list, withId]
+                return next.length > 200 ? next.slice(-200) : next
+            })
+        })
+
+        return () => {
+            if (deltaTimerRef.current) window.clearTimeout(deltaTimerRef.current)
+            socket.disconnect()
+        }
+    }, [overlayId])
+
+    if (status === 'loading') return null
+    if (status === 'not-found') return <StatusScreen title="Overlay bulunamadı" detail={`ID: ${overlayId}`} color="#ff006e" />
+    if (status === 'error' || !ov) return <StatusScreen title="Bağlantı hatası" detail="Backend'e ulaşılamıyor" color="#ff006e" />
+
+    const style = ov.style || {}
+    return (
+        <div style={{
+            width: '100vw', height: '100vh', display: 'flex',
+            alignItems: 'center', justifyContent: 'center',
+            background: 'transparent', padding: 12, overflow: 'hidden',
+            fontFamily: '"Inter", "Segoe UI", sans-serif',
+        }}>
+            <style>{GLOBAL_CSS}</style>
+            {style.customCSS && <style>{style.customCSS}</style>}
+            {renderByType(ov, liveEvents, valueDelta)}
+        </div>
+    )
+}
+
+function renderByType(ov: OverlayData, liveEvents: TikTokLiveEvent[], valueDelta: number | null) {
+    switch (ov.overlayType) {
+        case 'goal': return <GoalView ov={ov} valueDelta={valueDelta} />
+        case 'gift-alert': return <GiftAlertView ov={ov} />
+        case 'last-x': return <LastXView ov={ov} />
+        case 'leaderboard': return <LeaderboardView ov={ov} />
+        case 'chart': return <ChartView ov={ov} />
+        case 'chat': return <ChatView ov={ov} liveEvents={liveEvents} />
+        case 'event-feed': return <EventFeedView ov={ov} liveEvents={liveEvents} />
+        default: return <StatusScreen title={`Desteklenmeyen tip: ${ov.overlayType}`} color="#ffa500" />
+    }
+}
+
+// ============================================================================
+// View: Goal (progress bar) — likes, follows, shares, viewers, coins, subscribers, custom
+// ============================================================================
+
+const GOAL_ICONS: Record<string, string> = {
+    likes: '❤️',
+    follows: '➕',
+    shares: '🔁',
+    viewer_count: '👁️',
+    coins: '🪙',
+    subscribers: '⭐',
+    members: '👋',
+    comments: '💬',
+    custom1: '🎯',
+    custom2: '🎯',
+    custom3: '🎯',
+}
+
+function GoalView({ ov, valueDelta }: { ov: OverlayData; valueDelta: number | null }) {
+    const s = ov.style || {}
+    const barColor = s.barColor || '#00ff9d'
+    const textColor = s.textColor || '#ffffff'
+    const bgColor = s.backgroundColor || 'rgba(0,0,0,0.6)'
+    const fontSize = s.fontSize || 18
+    const borderRadius = s.borderRadius ?? 12
+    const theme = s.theme || 'neon'
+    const animation = s.animation || 'smooth'
+    const showPercentage = s.showPercentage !== false
+    const showNumbers = s.showNumbers !== false
+
+    const target = ov.targetValue || 0
+    const current = ov.currentValue || 0
+    const pct = target > 0 ? Math.min((current / target) * 100, 100) : 0
+    const completed = target > 0 && current >= target
+    const icon = GOAL_ICONS[ov.subType] || '🎯'
+
+    const [bump, setBump] = useState(false)
+    useEffect(() => {
+        if (valueDelta && valueDelta > 0) {
+            setBump(true)
+            const t = window.setTimeout(() => setBump(false), 260)
+            return () => window.clearTimeout(t)
+        }
+    }, [valueDelta])
+
+    const containerStyle = themeContainer(theme, barColor, bgColor, borderRadius)
+
+    return (
+        <div
+            className={`${bump ? 'ov-bump' : ''} ${completed ? 'ov-celebrate' : ''}`}
+            style={{
+                ...containerStyle,
+                padding: theme === 'glass' ? '20px 24px' : '16px 20px',
+                minWidth: 320, maxWidth: 640, width: '100%',
+                transition: 'transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+                position: 'relative',
+            }}
+        >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, gap: 12 }}>
+                <div style={{
+                    color: textColor, fontSize, fontWeight: 700,
+                    textShadow: theme === 'neon' ? `0 0 8px ${barColor}66` : 'none',
+                    letterSpacing: theme === 'gaming' ? '1px' : '0',
+                    textTransform: theme === 'gaming' ? 'uppercase' : 'none',
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}>
+                    <span style={{ fontSize: fontSize + 2 }}>{icon}</span>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{ov.title}</span>
+                </div>
+                {showNumbers && (
+                    <div style={{
+                        color: barColor, fontSize: fontSize * 0.75, fontWeight: 700,
+                        fontVariantNumeric: 'tabular-nums',
+                        textShadow: theme === 'neon' ? `0 0 6px ${barColor}88` : 'none',
+                        flexShrink: 0,
+                    }}>
+                        {current.toLocaleString()} / {target.toLocaleString()}
+                    </div>
+                )}
+            </div>
+
+            <div style={{
+                height: theme === 'gaming' ? 28 : 22,
+                borderRadius,
+                background: theme === 'glass' ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.08)',
+                overflow: 'hidden', position: 'relative',
+            }}>
+                <div style={{
+                    width: `${pct}%`, height: '100%', borderRadius,
+                    background: theme === 'gradient'
+                        ? `linear-gradient(90deg, ${barColor}, ${barColor}bb, ${barColor})`
+                        : theme === 'gaming'
+                            ? `linear-gradient(90deg, ${barColor}dd, ${barColor}, ${barColor}dd)`
+                            : `linear-gradient(90deg, ${barColor}, ${barColor}cc)`,
+                    boxShadow: theme === 'neon' ? `0 0 16px ${barColor}88, 0 0 4px ${barColor}` : `0 0 8px ${barColor}44`,
+                    transition: animation === 'smooth' ? 'width 900ms cubic-bezier(0.4, 0, 0.2, 1)'
+                        : animation === 'bounce' ? 'width 600ms cubic-bezier(0.68, -0.55, 0.265, 1.55)'
+                        : animation === 'pulse' ? 'width 500ms ease' : 'width 250ms ease',
+                    position: 'relative', overflow: 'hidden',
+                }}>
+                    {theme === 'neon' && (
+                        <div style={{
+                            position: 'absolute', inset: 0,
+                            background: `linear-gradient(90deg, transparent, ${barColor}44, transparent)`,
+                            backgroundSize: '200% 100%',
+                            animation: 'ov-shimmer 2s linear infinite',
+                        }} />
+                    )}
+                </div>
+                {showPercentage && (
+                    <div style={{
+                        position: 'absolute', top: '50%', left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        color: '#fff', fontSize: 12, fontWeight: 800,
+                        textShadow: '0 1px 4px rgba(0,0,0,0.9)',
+                        letterSpacing: '0.5px', fontVariantNumeric: 'tabular-nums',
+                    }}>{pct.toFixed(0)}%</div>
+                )}
+            </div>
+
+            {completed && (
+                <div style={{
+                    textAlign: 'center', marginTop: 10,
+                    color: barColor, fontSize: 13, fontWeight: 800,
+                    letterSpacing: '2px', textTransform: 'uppercase',
+                    textShadow: `0 0 12px ${barColor}88`,
+                }}>🎉 TAMAMLANDI!</div>
+            )}
+
+            {valueDelta !== null && valueDelta > 0 && (
+                <div key={`delta-${Date.now()}`} className="ov-float" style={{
+                    position: 'absolute', right: 16, top: 6,
+                    color: barColor, fontSize: Math.max(14, fontSize * 0.85), fontWeight: 900,
+                    textShadow: `0 0 10px ${barColor}, 0 1px 3px rgba(0,0,0,0.8)`,
+                    pointerEvents: 'none',
+                }}>+{valueDelta} {icon}</div>
+            )}
+        </div>
+    )
+}
+
+// ============================================================================
+// View: Gift Alert — popup with big icon + user + gift name
+// ============================================================================
+
+function GiftAlertView({ ov }: { ov: OverlayData }) {
+    const s = ov.style || {}
+    const c = ov.config || {}
+    const textColor = s.textColor || '#ffffff'
+    const barColor = s.barColor || '#ffd700'
+    const fontSize = s.fontSize || 22
+    const borderRadius = s.borderRadius ?? 16
+    const theme = s.theme || 'gradient'
+    const duration = (c.duration || 5) * 1000
+
+    const gift = ov.data?.lastGift
+    const [visible, setVisible] = useState(false)
+    const hideTimerRef = useRef<number | null>(null)
+    const lastKeyRef = useRef<string | null>(null)
+
+    useEffect(() => {
+        if (!gift) { setVisible(false); return }
+        const key = `${gift.user}-${gift.name}-${gift.time}`
+        if (lastKeyRef.current === key) return
+        lastKeyRef.current = key
+        setVisible(true)
+        if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current)
+        hideTimerRef.current = window.setTimeout(() => setVisible(false), duration)
+        return () => { if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current) }
+    }, [gift?.user, gift?.name, gift?.time, duration])
+
+    if (!gift || !visible) return null
+
+    const catalogGift = findGiftByName(gift.name)
+    const iconUrl = catalogGift?.icon
+    const diamonds = gift.diamonds ?? (catalogGift ? catalogGift.coins * (gift.count || 1) : 0)
+
+    return (
+        <div className="ov-giftpop" style={{
+            ...themeContainer(theme, barColor, s.backgroundColor || 'rgba(0,0,0,0.6)', borderRadius),
+            padding: '24px 32px', textAlign: 'center',
+            minWidth: 280, maxWidth: 560, position: 'relative',
+        }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                {iconUrl ? (
+                    <img src={iconUrl} alt={gift.name} style={{
+                        width: c.iconSize || 96, height: c.iconSize || 96,
+                        objectFit: 'contain',
+                        filter: `drop-shadow(0 0 16px ${barColor}cc)`,
+                    }} />
+                ) : (
+                    <div style={{ fontSize: c.iconSize || 72, filter: `drop-shadow(0 0 16px ${barColor}cc)` }}>
+                        {gift.icon || '🎁'}
+                    </div>
+                )}
+                <div style={{
+                    color: textColor, fontSize, fontWeight: 800,
+                    textShadow: theme === 'neon' ? `0 0 8px ${barColor}88` : '0 1px 3px rgba(0,0,0,0.8)',
+                }}>{gift.user}</div>
+                <div style={{
+                    color: barColor, fontSize: fontSize * 0.85, fontWeight: 700,
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    textShadow: theme === 'neon' ? `0 0 6px ${barColor}88` : '0 1px 2px rgba(0,0,0,0.8)',
+                }}>
+                    <span>{gift.name}</span>
+                    {gift.count > 1 && <span style={{ color: '#ffd700' }}>×{gift.count}</span>}
+                </div>
+                {diamonds > 0 && (
+                    <div style={{
+                        marginTop: 4, padding: '4px 12px',
+                        background: 'rgba(255,215,0,0.12)', border: '1px solid rgba(255,215,0,0.3)',
+                        borderRadius: 999, color: '#ffd700',
+                        fontSize: fontSize * 0.7, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4,
+                    }}>💎 {diamonds.toLocaleString()}</div>
+                )}
+            </div>
+        </div>
+    )
+}
+
+// ============================================================================
+// View: Last-X — last follower / gift / liker / sharer
+// ============================================================================
+
+const LASTX_LABELS: Record<string, { label: string; icon: string }> = {
+    follows: { label: 'Son Takipçi', icon: '➕' },
+    gifts: { label: 'Son Hediye', icon: '🎁' },
+    likes: { label: 'Son Beğenen', icon: '❤️' },
+    shares: { label: 'Son Paylaşan', icon: '🔁' },
+}
+
+function LastXView({ ov }: { ov: OverlayData }) {
+    const s = ov.style || {}
+    const barColor = s.barColor || '#00ff9d'
+    const textColor = s.textColor || '#ffffff'
+    const bgColor = s.backgroundColor || 'rgba(0,0,0,0.6)'
+    const fontSize = s.fontSize || 24
+    const borderRadius = s.borderRadius ?? 12
+    const theme = s.theme || 'neon'
+
+    const items = (ov.data?.items || []) as LastXItem[]
+    const last = items[0]
+    const meta = LASTX_LABELS[ov.subType] || { label: ov.title, icon: '🎯' }
+    const catalogGift = last?.gift ? findGiftByName(last.gift) : undefined
+
+    return (
+        <div style={{
+            ...themeContainer(theme, barColor, bgColor, borderRadius),
+            padding: '16px 20px', minWidth: 260, maxWidth: 520,
+            position: 'relative',
+        }}>
+            <div style={{
+                color: barColor, fontSize: 12, textTransform: 'uppercase',
+                letterSpacing: 2, fontWeight: 700, marginBottom: 8,
+                display: 'flex', alignItems: 'center', gap: 6,
+            }}>
+                <span>{meta.icon}</span>
+                <span>{ov.title || meta.label}</span>
+            </div>
+            {last ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    {catalogGift && (
+                        <img src={catalogGift.icon} alt={catalogGift.name} style={{
+                            width: 56, height: 56, objectFit: 'contain',
+                            filter: `drop-shadow(0 0 10px ${barColor}88)`,
+                        }} />
+                    )}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{
+                            color: textColor, fontSize, fontWeight: 800,
+                            textShadow: theme === 'neon' ? `0 0 8px ${barColor}66` : 'none',
+                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}>{last.user}</div>
+                        {last.gift && (
+                            <div style={{
+                                color: barColor, fontSize: fontSize * 0.55, fontWeight: 600,
+                                marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                            }}>
+                                {last.gift}{last.count && last.count > 1 ? ` ×${last.count}` : ''}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            ) : (
+                <div style={{ color: textColor, opacity: 0.5, fontSize, fontStyle: 'italic' }}>Bekleniyor...</div>
+            )}
+        </div>
+    )
+}
+
+// ============================================================================
+// View: Leaderboard — top N gifters/likers
+// ============================================================================
+
+const MEDALS = ['👑', '🥈', '🥉']
+
+function LeaderboardView({ ov }: { ov: OverlayData }) {
+    const s = ov.style || {}
+    const c = ov.config || {}
+    const barColor = s.barColor || '#00ff9d'
+    const textColor = s.textColor || '#ffffff'
+    const bgColor = s.backgroundColor || 'rgba(0,0,0,0.6)'
+    const borderRadius = s.borderRadius ?? 12
+    const theme = s.theme || 'neon'
+    const maxItems = c.maxItems || 5
+
+    const allItems = (ov.data?.items || []) as LeaderItem[]
+    const items = [...allItems].sort((a, b) => b.score - a.score).slice(0, maxItems)
+    const subIcon = ov.subType === 'likes' ? '❤️' : ov.subType === 'gifts' ? '🎁' : '🏆'
+
+    return (
+        <div style={{
+            ...themeContainer(theme, barColor, bgColor, borderRadius),
+            padding: '16px 20px', minWidth: 300, maxWidth: 560,
+        }}>
+            <div style={{
+                color: barColor, fontSize: 14, textTransform: 'uppercase',
+                letterSpacing: 2, fontWeight: 800, marginBottom: 12,
+                display: 'flex', alignItems: 'center', gap: 6,
+                textShadow: theme === 'neon' ? `0 0 6px ${barColor}88` : 'none',
+            }}>
+                <span>{subIcon}</span>
+                <span>{ov.title}</span>
+            </div>
+            {items.length === 0 ? (
+                <div style={{ color: textColor, opacity: 0.5, padding: '12px 0', fontStyle: 'italic' }}>Bekleniyor...</div>
+            ) : items.map((item, i) => (
+                <div key={`${item.user}-${i}`} style={{
+                    display: 'flex', alignItems: 'center', gap: 12,
+                    padding: '8px 0',
+                    borderBottom: i < items.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none',
+                }}>
+                    <div style={{
+                        color: barColor, fontSize: 18, fontWeight: 800,
+                        width: 32, textAlign: 'center',
+                        textShadow: theme === 'neon' && i < 3 ? `0 0 8px ${barColor}88` : 'none',
+                    }}>{MEDALS[i] || i + 1}</div>
+                    <div style={{
+                        color: textColor, fontSize: 15, fontWeight: 600, flex: 1,
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}>{item.user}</div>
+                    <div style={{
+                        color: barColor, fontSize: 15, fontWeight: 800,
+                        fontVariantNumeric: 'tabular-nums',
+                    }}>{item.score.toLocaleString()}</div>
+                </div>
+            ))}
+        </div>
+    )
+}
+
+// ============================================================================
+// View: Chart — horizontal bars
+// ============================================================================
+
+function ChartView({ ov }: { ov: OverlayData }) {
+    const s = ov.style || {}
+    const c = ov.config || {}
+    const barColor = s.barColor || '#bd00ff'
+    const textColor = s.textColor || '#ffffff'
+    const bgColor = s.backgroundColor || 'rgba(0,0,0,0.6)'
+    const borderRadius = s.borderRadius ?? 12
+    const theme = s.theme || 'gradient'
+    const maxItems = c.maxItems || 5
+
+    const allItems = (ov.data?.items || []) as LeaderItem[]
+    const items = [...allItems].sort((a, b) => b.score - a.score).slice(0, maxItems)
+    const maxScore = Math.max(1, ...items.map((i) => i.score))
+
+    return (
+        <div style={{
+            ...themeContainer(theme, barColor, bgColor, borderRadius),
+            padding: '16px 20px', minWidth: 340, maxWidth: 640,
+        }}>
+            <div style={{
+                color: barColor, fontSize: 14, textTransform: 'uppercase',
+                letterSpacing: 2, fontWeight: 800, marginBottom: 12,
+                display: 'flex', alignItems: 'center', gap: 6,
+            }}>📊 {ov.title}</div>
+            {items.length === 0 ? (
+                <div style={{ color: textColor, opacity: 0.5, padding: '12px 0', fontStyle: 'italic' }}>Bekleniyor...</div>
+            ) : items.map((item, i) => {
+                const w = (item.score / maxScore) * 100
+                return (
+                    <div key={`${item.user}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                        <div style={{
+                            color: textColor, fontSize: 13, fontWeight: 600,
+                            width: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}>{item.user}</div>
+                        <div style={{
+                            flex: 1, height: 22, borderRadius: 11,
+                            background: 'rgba(255,255,255,0.08)', overflow: 'hidden', position: 'relative',
+                        }}>
+                            <div style={{
+                                width: `${w}%`, height: '100%', borderRadius: 11,
+                                background: `linear-gradient(90deg, ${barColor}, ${barColor}cc)`,
+                                boxShadow: `0 0 8px ${barColor}66`,
+                                transition: 'width 700ms cubic-bezier(0.4, 0, 0.2, 1)',
+                            }} />
+                        </div>
+                        <div style={{
+                            color: barColor, fontSize: 13, fontWeight: 800,
+                            width: 58, textAlign: 'right', fontVariantNumeric: 'tabular-nums',
+                        }}>{item.score.toLocaleString()}</div>
+                    </div>
+                )
+            })}
+        </div>
+    )
+}
+
+// ============================================================================
+// View: Chat — live chat messages
+// ============================================================================
+
+function ChatView({ ov, liveEvents }: { ov: OverlayData; liveEvents: TikTokLiveEvent[] }) {
+    const s = ov.style || {}
+    const c = ov.config || {}
+    const barColor = s.barColor || '#00ff9d'
+    const textColor = s.textColor || '#ffffff'
+    const bgColor = s.backgroundColor || 'rgba(0,0,0,0.6)'
+    const borderRadius = s.borderRadius ?? 12
+    const theme = s.theme || 'neon'
+    const fontSize = s.fontSize || 14
+    const maxMessages = (c as any).maxMessages || c.maxItems || 30
+
+    const messages = liveEvents.filter((e) => e.type === 'chat').slice(-maxMessages)
+    const scrollRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+    }, [messages.length])
+
+    return (
+        <div style={{
+            ...themeContainer(theme, barColor, bgColor, borderRadius),
+            padding: 12, minWidth: 300, maxWidth: 420, width: '100%',
+            display: 'flex', flexDirection: 'column', overflow: 'hidden',
+            maxHeight: '90vh',
+        }}>
+            <div style={{
+                color: barColor, fontSize: 12, textTransform: 'uppercase',
+                letterSpacing: 2, fontWeight: 800, marginBottom: 8,
+                display: 'flex', alignItems: 'center', gap: 6,
+            }}>💬 {ov.title || 'Canlı Chat'}</div>
+            <div ref={scrollRef} style={{
+                flex: 1, overflowY: 'auto', maxHeight: '80vh',
+            }}>
+                {messages.length === 0 ? (
+                    <div style={{ color: textColor, opacity: 0.4, padding: 8, fontStyle: 'italic', fontSize }}>
+                        Mesaj bekleniyor...
+                    </div>
+                ) : messages.map((m) => (
+                    <div key={m._id} className="ov-chatrow" style={{
+                        padding: '5px 0', display: 'flex', gap: 8, alignItems: 'flex-start',
+                    }}>
+                        {m.profilePicture && (
+                            <img src={m.profilePicture} alt="" style={{
+                                width: 22, height: 22, borderRadius: '50%',
+                                flexShrink: 0, objectFit: 'cover',
+                            }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                        )}
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                            <span style={{ color: barColor, fontWeight: 700, fontSize, marginRight: 6 }}>{m.user}:</span>
+                            <span style={{ color: textColor, fontSize }}>{m.text}</span>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    )
+}
+
+// ============================================================================
+// View: Event Feed — all live events (like, follow, share, gift, chat, etc.)
+// ============================================================================
+
+function EventFeedView({ ov, liveEvents }: { ov: OverlayData; liveEvents: TikTokLiveEvent[] }) {
+    const s = ov.style || {}
+    const c = ov.config || {}
+    const barColor = s.barColor || '#00d9ff'
+    const textColor = s.textColor || '#ffffff'
+    const bgColor = s.backgroundColor || 'rgba(0,0,0,0.6)'
+    const borderRadius = s.borderRadius ?? 12
+    const theme = s.theme || 'glass'
+    const fontSize = s.fontSize || 14
+    const maxEvents = (c as any).maxEvents || c.maxItems || 25
+
+    const events = liveEvents.slice(-maxEvents)
+    const scrollRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+    }, [events.length])
+
+    return (
+        <div style={{
+            ...themeContainer(theme, barColor, bgColor, borderRadius),
+            padding: 12, minWidth: 300, maxWidth: 440, width: '100%',
+            display: 'flex', flexDirection: 'column', overflow: 'hidden',
+            maxHeight: '90vh',
+        }}>
+            <div style={{
+                color: barColor, fontSize: 12, textTransform: 'uppercase',
+                letterSpacing: 2, fontWeight: 800, marginBottom: 8,
+            }}>📋 {ov.title || 'Event Akışı'}</div>
+            <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', maxHeight: '80vh' }}>
+                {events.length === 0 ? (
+                    <div style={{ color: textColor, opacity: 0.4, padding: 8, fontStyle: 'italic', fontSize }}>
+                        Event bekleniyor...
+                    </div>
+                ) : events.map((e) => {
+                    const giftInfo = e.eventType === 'gift' && e.giftName ? findGiftByName(e.giftName) : undefined
+                    return (
+                        <div key={e._id} className="ov-feedrow" style={{
+                            padding: '6px 0', display: 'flex', gap: 8, alignItems: 'center',
+                            borderBottom: '1px solid rgba(255,255,255,0.05)',
+                        }}>
+                            {giftInfo ? (
+                                <img src={giftInfo.icon} alt={giftInfo.name} style={{
+                                    width: 24, height: 24, objectFit: 'contain', flexShrink: 0,
+                                }} />
+                            ) : (
+                                <span style={{ fontSize: 18, flexShrink: 0 }}>{e.icon || '📌'}</span>
+                            )}
+                            <div style={{ flex: 1, minWidth: 0, fontSize, color: textColor }}>
+                                <b style={{ color: barColor, marginRight: 4 }}>{e.user}</b>
+                                <span>{e.text}</span>
+                            </div>
+                        </div>
+                    )
+                })}
+            </div>
+        </div>
+    )
+}
+
+// ============================================================================
+// Shared: theme-aware container style + status screen
+// ============================================================================
+
+function themeContainer(theme: string, barColor: string, bgColor: string, borderRadius: number): React.CSSProperties {
+    const base: React.CSSProperties = { borderRadius, overflow: 'hidden' }
+    if (theme === 'glass') {
+        return {
+            ...base,
+            background: 'rgba(255,255,255,0.08)',
+            backdropFilter: 'blur(24px)',
+            WebkitBackdropFilter: 'blur(24px)',
+            border: '1px solid rgba(255,255,255,0.15)',
+        }
+    }
+    if (theme === 'gradient') {
+        return {
+            ...base,
+            background: `linear-gradient(135deg, ${barColor}22, ${barColor}08, ${bgColor})`,
+            border: `1px solid ${barColor}33`,
+        }
+    }
+    if (theme === 'gaming') {
+        return {
+            ...base,
+            background: bgColor,
+            border: `2px solid ${barColor}66`,
+            boxShadow: `0 0 28px ${barColor}22`,
+        }
+    }
+    if (theme === 'minimal') {
+        return { ...base, background: bgColor, border: '1px solid rgba(255,255,255,0.08)' }
+    }
+    // neon (default)
+    return {
+        ...base,
+        background: bgColor,
+        border: `1px solid ${barColor}44`,
+        boxShadow: `0 0 22px ${barColor}33, inset 0 0 20px ${barColor}11`,
+    }
+}
+
+function StatusScreen({ title, detail, color }: { title: string; detail?: string; color: string }) {
+    return (
+        <div style={{
+            width: '100vw', height: '100vh', display: 'flex',
+            alignItems: 'center', justifyContent: 'center', background: 'transparent',
+            fontFamily: '"Inter", "Segoe UI", sans-serif',
+        }}>
+            <div style={{
+                padding: '16px 20px', borderRadius: 12,
+                background: 'rgba(0,0,0,0.6)',
+                border: `1px solid ${color}44`,
+                color: '#fff', textAlign: 'center', minWidth: 280,
+            }}>
+                <div style={{ color, fontSize: 16, fontWeight: 800, marginBottom: 4 }}>{title}</div>
+                {detail && <div style={{ color: '#8b8b9a', fontSize: 12 }}>{detail}</div>}
+            </div>
+        </div>
+    )
+}
+
+const GLOBAL_CSS = `
+    html, body, #root { background: transparent !important; margin: 0; padding: 0; }
+    body { overflow: hidden; }
+    * { box-sizing: border-box; }
+    @keyframes ov-shimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
+    .ov-bump { transform: scale(1.03); }
+    @keyframes ov-celebrate-kf { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.25); } }
+    .ov-celebrate { animation: ov-celebrate-kf 2s ease infinite; }
+    @keyframes ov-float-kf {
+        0% { opacity: 0; transform: translateY(0) scale(0.9); }
+        25% { opacity: 1; transform: translateY(-8px) scale(1.05); }
+        100% { opacity: 0; transform: translateY(-28px) scale(1); }
+    }
+    .ov-float { animation: ov-float-kf 1.1s ease-out forwards; pointer-events: none; }
+    @keyframes ov-giftpop-kf {
+        0% { opacity: 0; transform: scale(0.6) translateY(30px); }
+        60% { opacity: 1; transform: scale(1.08) translateY(-6px); }
+        100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .ov-giftpop { animation: ov-giftpop-kf 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    @keyframes ov-chatrow-kf {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .ov-chatrow, .ov-feedrow { animation: ov-chatrow-kf 0.25s ease-out; }
+`

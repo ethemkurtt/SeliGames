@@ -1,11 +1,187 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { execFile } = require('child_process');
 const axios = require('axios');
 const { WebcastPushConnection } = require('tiktok-live-connector');
+const { io: ioClient } = require('socket.io-client');
+
+// ────────────────────────────────────────────────────────────────────────
+// OS-level input simulation — fires a keyboard shortcut / text / mouse
+// click to whichever window currently has focus. User is expected to focus
+// their game before starting to stream, so incoming gift-mapped shortcuts
+// land in the game.
+//
+// Permissions:
+//   macOS → System Settings → Privacy & Security → Accessibility → allow Electron/Terminal
+//   Linux → requires `xdotool` installed (`apt install xdotool`)
+//   Windows → PowerShell SendKeys, no extra setup
+// ────────────────────────────────────────────────────────────────────────
+
+function parseShortcut(value) {
+    const parts = String(value).split('+').map((p) => p.trim()).filter(Boolean);
+    if (!parts.length) return { modifiers: [], key: '' };
+    const key = parts[parts.length - 1];
+    const modifiers = parts.slice(0, -1).map((m) => m.toLowerCase());
+    return { modifiers, key };
+}
+
+function escShell(s) { return String(s).replace(/"/g, '\\"'); }
+
+function macKeyCode(key) {
+    // Map common names to AppleScript key codes or the char itself
+    const codes = {
+        'enter': 36, 'return': 36, 'tab': 48, 'space': 49, 'delete': 51, 'backspace': 51,
+        'escape': 53, 'esc': 53,
+        'left': 123, 'right': 124, 'down': 125, 'up': 126,
+        'f1': 122, 'f2': 120, 'f3': 99, 'f4': 118, 'f5': 96, 'f6': 97,
+        'f7': 98, 'f8': 100, 'f9': 101, 'f10': 109, 'f11': 103, 'f12': 111
+    };
+    return codes[String(key).toLowerCase()] || null;
+}
+
+function execSim(bin, args) {
+    return new Promise((resolve, reject) => {
+        execFile(bin, args, { timeout: 3000 }, (err, stdout, stderr) => {
+            if (err) reject(new Error(stderr || err.message));
+            else resolve(stdout);
+        });
+    });
+}
+
+async function executeKeyboard(value) {
+    const { modifiers, key } = parseShortcut(value);
+    if (!key) throw new Error('empty shortcut');
+
+    if (process.platform === 'darwin') {
+        const modMap = { ctrl: 'control down', alt: 'option down', shift: 'shift down', cmd: 'command down', meta: 'command down' };
+        const using = modifiers.map((m) => modMap[m]).filter(Boolean).join(', ');
+        const usingPhrase = using ? ` using {${using}}` : '';
+        const code = macKeyCode(key);
+        const script = code !== null
+            ? `tell application "System Events" to key code ${code}${usingPhrase}`
+            : `tell application "System Events" to keystroke "${escShell(key.toLowerCase())}"${usingPhrase}`;
+        return execSim('osascript', ['-e', script]);
+    }
+    if (process.platform === 'win32') {
+        const mm = { ctrl: '^', alt: '%', shift: '+' };
+        const prefix = modifiers.map((m) => mm[m] || '').join('');
+        const k = key.length === 1 ? key : `{${key.toUpperCase()}}`;
+        const sendKeys = prefix + k;
+        const script = `Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait('${sendKeys.replace(/'/g, "''")}')`;
+        return execSim('powershell.exe', ['-NoProfile', '-Command', script]);
+    }
+    // linux
+    const mm = { ctrl: 'ctrl', alt: 'alt', shift: 'shift', cmd: 'super', meta: 'super' };
+    const chain = [...modifiers.map((m) => mm[m] || m), key.toLowerCase()].join('+');
+    return execSim('xdotool', ['key', chain]);
+}
+
+async function executeText(text) {
+    if (process.platform === 'darwin') {
+        return execSim('osascript', ['-e', `tell application "System Events" to keystroke "${escShell(text)}"`]);
+    }
+    if (process.platform === 'win32') {
+        const script = `Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait('${String(text).replace(/'/g, "''").replace(/([+^%~{}()[\]])/g, '{$1}')}')`;
+        return execSim('powershell.exe', ['-NoProfile', '-Command', script]);
+    }
+    return execSim('xdotool', ['type', '--', text]);
+}
+
+async function executeMouse(value) {
+    const btn = String(value).toLowerCase();
+    const map = { leftclick: 1, rightclick: 2, middleclick: 3 };
+    if (process.platform === 'darwin') {
+        // AppleScript click requires absolute coords; keeping mouse action off the MVP on macOS.
+        throw new Error('mouse action not implemented on macOS');
+    }
+    if (process.platform === 'win32') {
+        const mouseBtn = btn === 'rightclick' ? 'right' : 'left';
+        const script = `Add-Type -Name U -Namespace W -MemberDefinition '[DllImport("user32.dll")]public static extern void mouse_event(uint f,int x,int y,uint d,int e);'; $d=${mouseBtn === 'right' ? '0x0008' : '0x0002'}; $u=${mouseBtn === 'right' ? '0x0010' : '0x0004'}; [W.U]::mouse_event($d,0,0,0,0); [W.U]::mouse_event($u,0,0,0,0)`;
+        return execSim('powershell.exe', ['-NoProfile', '-Command', script]);
+    }
+    const bn = map[btn] || 1;
+    return execSim('xdotool', ['click', String(bn)]);
+}
+
+async function executeAction(action) {
+    if (!action || !action.value) throw new Error('empty action');
+    if (action.type === 'keyboard') return await executeKeyboard(action.value);
+    if (action.type === 'text') return await executeText(action.value);
+    if (action.type === 'mouse') return await executeMouse(action.value);
+    throw new Error(`unknown action type: ${action.type}`);
+}
 
 let mainWindow;
 let tiktokConnection = null;
+let backendSocket = null;
+let currentSessionId = null;
+
+const BACKEND_URL = 'http://localhost:3000';
+
+function connectToBackendSocket(token) {
+    if (backendSocket && backendSocket.connected) {
+        console.log('🔌 Backend socket already connected');
+        return;
+    }
+
+    backendSocket = ioClient(BACKEND_URL, {
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionDelay: 2000,
+        reconnectionAttempts: 10
+    });
+
+    backendSocket.on('connect', () => {
+        console.log('✅ Connected to backend Socket.io');
+        backendSocket.emit('auth', { token });
+    });
+
+    backendSocket.on('auth-success', (data) => {
+        console.log('🔐 Backend auth success:', data.userId);
+        if (mainWindow) {
+            mainWindow.webContents.send('backend-socket-status', { connected: true, userId: data.userId });
+        }
+    });
+
+    backendSocket.on('auth-error', (data) => {
+        console.error('🔐 Backend auth error:', data.error);
+    });
+
+    backendSocket.on('event-processed', (data) => {
+        if (mainWindow) {
+            mainWindow.webContents.send('event-processed', data);
+        }
+    });
+
+    backendSocket.on('disconnect', () => {
+        console.log('🔌 Backend socket disconnected');
+        if (mainWindow) {
+            mainWindow.webContents.send('backend-socket-status', { connected: false });
+        }
+    });
+
+    backendSocket.on('connect_error', (err) => {
+        console.error('🔌 Backend socket connection error:', err.message);
+    });
+}
+
+function disconnectBackendSocket() {
+    if (backendSocket) {
+        backendSocket.disconnect();
+        backendSocket = null;
+    }
+    currentSessionId = null;
+}
+
+function forwardEventToBackend(eventData) {
+    if (!backendSocket || !backendSocket.connected) {
+        console.warn('⚠️ Backend socket not connected, event not forwarded');
+        return false;
+    }
+    backendSocket.emit('tiktok-event', eventData);
+    return true;
+}
 
 function createWindow() {
     mainWindow = new BrowserWindow({
@@ -384,6 +560,404 @@ ipcMain.handle('update-profile', async (event, profileData) => {
         const token = await mainWindow.webContents.executeJavaScript('localStorage.getItem("token")');
         const response = await axios.post('http://localhost:3000/api/auth/profile',
             profileData,
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+        return { success: true, data: response.data };
+    } catch (error) {
+        return { success: false, error: error.response?.data?.error || error.message };
+    }
+});
+
+// Overlay CRUD Handlers
+async function getAuthToken() {
+    return await mainWindow.webContents.executeJavaScript('localStorage.getItem("token")');
+}
+
+ipcMain.handle('get-overlays', async (event, query = {}) => {
+    try {
+        const token = await getAuthToken();
+        const params = new URLSearchParams(query).toString();
+        const response = await axios.get(`http://localhost:3000/api/overlays?${params}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        return { success: true, data: response.data };
+    } catch (error) {
+        return { success: false, error: error.response?.data?.error || error.message };
+    }
+});
+
+ipcMain.handle('get-overlay', async (event, id) => {
+    try {
+        const token = await getAuthToken();
+        const response = await axios.get(`http://localhost:3000/api/overlays/${id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        return { success: true, data: response.data };
+    } catch (error) {
+        return { success: false, error: error.response?.data?.error || error.message };
+    }
+});
+
+ipcMain.handle('create-overlay', async (event, data) => {
+    try {
+        const token = await getAuthToken();
+        const response = await axios.post('http://localhost:3000/api/overlays', data, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        return { success: true, data: response.data };
+    } catch (error) {
+        return { success: false, error: error.response?.data?.error || error.message };
+    }
+});
+
+ipcMain.handle('update-overlay', async (event, id, data) => {
+    try {
+        const token = await getAuthToken();
+        const response = await axios.put(`http://localhost:3000/api/overlays/${id}`, data, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        return { success: true, data: response.data };
+    } catch (error) {
+        return { success: false, error: error.response?.data?.error || error.message };
+    }
+});
+
+ipcMain.handle('delete-overlay', async (event, id) => {
+    try {
+        const token = await getAuthToken();
+        const response = await axios.delete(`http://localhost:3000/api/overlays/${id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        return { success: true, data: response.data };
+    } catch (error) {
+        return { success: false, error: error.response?.data?.error || error.message };
+    }
+});
+
+ipcMain.handle('reset-overlay', async (event, id) => {
+    try {
+        const token = await getAuthToken();
+        const response = await axios.post(`http://localhost:3000/api/overlays/${id}/reset`, {}, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        return { success: true, data: response.data };
+    } catch (error) {
+        return { success: false, error: error.response?.data?.error || error.message };
+    }
+});
+
+ipcMain.handle('increment-overlay', async (event, id, amount = 1) => {
+    try {
+        const token = await getAuthToken();
+        const response = await axios.post(`http://localhost:3000/api/overlays/${id}/increment`, { amount }, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        return { success: true, data: response.data };
+    } catch (error) {
+        return { success: false, error: error.response?.data?.error || error.message };
+    }
+});
+
+// Backend Socket Bridge
+ipcMain.handle('connect-backend-socket', async () => {
+    try {
+        const token = await getAuthToken();
+        if (!token) return { success: false, error: 'Token bulunamadı' };
+        connectToBackendSocket(token);
+        return { success: true };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('disconnect-backend-socket', async () => {
+    disconnectBackendSocket();
+    return { success: true };
+});
+
+ipcMain.handle('forward-tiktok-event', async (event, eventData) => {
+    const sent = forwardEventToBackend(eventData);
+    return { success: sent };
+});
+
+ipcMain.handle('start-live-session', async () => {
+    if (!backendSocket || !backendSocket.connected) {
+        return { success: false, error: 'Backend socket bağlı değil' };
+    }
+    currentSessionId = `session_${Date.now()}`;
+    backendSocket.emit('start-session', { sessionId: currentSessionId });
+    return { success: true, sessionId: currentSessionId };
+});
+
+ipcMain.handle('get-backend-socket-status', async () => {
+    return {
+        connected: backendSocket?.connected || false,
+        sessionId: currentSessionId
+    };
+});
+
+ipcMain.handle('get-events', async (event, query = {}) => {
+    try {
+        const token = await getAuthToken();
+        const params = new URLSearchParams(query).toString();
+        const response = await axios.get(`http://localhost:3000/api/events?${params}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        return { success: true, data: response.data };
+    } catch (error) {
+        return { success: false, error: error.response?.data?.error || error.message };
+    }
+});
+
+ipcMain.handle('get-event-stats', async (event, query = {}) => {
+    try {
+        const token = await getAuthToken();
+        const params = new URLSearchParams(query).toString();
+        const response = await axios.get(`http://localhost:3000/api/events/stats?${params}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        return { success: true, data: response.data };
+    } catch (error) {
+        return { success: false, error: error.response?.data?.error || error.message };
+    }
+});
+
+ipcMain.handle('get-event-sessions', async () => {
+    try {
+        const token = await getAuthToken();
+        const response = await axios.get('http://localhost:3000/api/events/sessions', {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        return { success: true, data: response.data };
+    } catch (error) {
+        return { success: false, error: error.response?.data?.error || error.message };
+    }
+});
+
+// Gift catalog (public, no auth)
+ipcMain.handle('get-gift-catalog', async () => {
+    try {
+        const response = await axios.get('http://localhost:3000/api/gifts');
+        return { success: true, data: response.data };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
+// Per-gift sound mapping
+ipcMain.handle('set-gift-sound-mapping', async (event, giftName, entry) => {
+    try {
+        const token = await getAuthToken();
+        const response = await axios.post('http://localhost:3000/api/auth/settings/gift-sound-map',
+            { giftName, entry },
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+        return { success: true, data: response.data };
+    } catch (error) {
+        return { success: false, error: error.response?.data?.error || error.message };
+    }
+});
+
+// ─── Mods CRUD + per-user config ─────────────────────────────────────────
+ipcMain.handle('create-mod', async (event, data) => {
+    try {
+        const response = await axios.post('http://localhost:3000/api/mods', data);
+        return { success: true, data: response.data };
+    } catch (error) {
+        return { success: false, error: error.response?.data?.error || error.message };
+    }
+});
+
+ipcMain.handle('update-mod', async (event, id, data) => {
+    try {
+        const response = await axios.put(`http://localhost:3000/api/mods/${id}`, data);
+        return { success: true, data: response.data };
+    } catch (error) {
+        return { success: false, error: error.response?.data?.error || error.message };
+    }
+});
+
+ipcMain.handle('delete-mod', async (event, id) => {
+    try {
+        const response = await axios.delete(`http://localhost:3000/api/mods/${id}`);
+        return { success: true, data: response.data };
+    } catch (error) {
+        return { success: false, error: error.response?.data?.error || error.message };
+    }
+});
+
+ipcMain.handle('get-mod-config', async (event, modId) => {
+    try {
+        const token = await getAuthToken();
+        const response = await axios.get(`http://localhost:3000/api/mods/${modId}/config`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        return { success: true, data: response.data };
+    } catch (error) {
+        return { success: false, error: error.response?.data?.error || error.message };
+    }
+});
+
+ipcMain.handle('save-mod-config', async (event, modId, data) => {
+    try {
+        const token = await getAuthToken();
+        const response = await axios.post(`http://localhost:3000/api/mods/${modId}/config`, data, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        return { success: true, data: response.data };
+    } catch (error) {
+        return { success: false, error: error.response?.data?.error || error.message };
+    }
+});
+
+ipcMain.handle('set-mod-gift-action', async (event, modId, giftName, action) => {
+    try {
+        const token = await getAuthToken();
+        const response = await axios.post(`http://localhost:3000/api/mods/${modId}/config/gift-action`,
+            { giftName, action },
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+        return { success: true, data: response.data };
+    } catch (error) {
+        return { success: false, error: error.response?.data?.error || error.message };
+    }
+});
+
+ipcMain.handle('install-mod', async (event, modId, installPath) => {
+    try {
+        const token = await getAuthToken();
+
+        // 1. Fetch mod metadata + user's current gift-action config
+        const [modResp, cfgResp] = await Promise.all([
+            axios.get(`http://localhost:3000/api/mods/${modId}`),
+            axios.get(`http://localhost:3000/api/mods/${modId}/config`, {
+                headers: { Authorization: `Bearer ${token}` }
+            })
+        ]);
+        const mod = modResp.data;
+        const userConfig = cfgResp.data || { giftActions: {} };
+
+        let archiveDownloaded = false;
+        let archiveError = null;
+
+        // 2. Attempt to download mod archive from VPS. Non-fatal if it fails —
+        //    config file still lands and the DB is updated, so users see progress
+        //    even while the VPS hosting is being set up.
+        if (installPath && mod.downloadUrl) {
+            try {
+                if (!fs.existsSync(installPath)) fs.mkdirSync(installPath, { recursive: true });
+                const archiveResp = await axios.get(mod.downloadUrl, {
+                    responseType: 'arraybuffer',
+                    timeout: 15000,
+                    validateStatus: (s) => s >= 200 && s < 300
+                });
+                const archivePath = path.join(installPath, `${mod.title.replace(/\s+/g, '_')}.zip`);
+                fs.writeFileSync(archivePath, Buffer.from(archiveResp.data));
+                archiveDownloaded = true;
+                console.log(`✓ Archive downloaded: ${archivePath} (${archiveResp.data.byteLength} bytes)`);
+            } catch (dlErr) {
+                archiveError = dlErr.message;
+                console.warn(`⚠️ Archive download failed (VPS likely not ready): ${dlErr.message}`);
+            }
+        }
+
+        // 3. Write seligames-config.json with mod info + gift-action map so the
+        //    mod's runtime can read it and know what each gift should trigger.
+        if (installPath) {
+            try {
+                if (!fs.existsSync(installPath)) fs.mkdirSync(installPath, { recursive: true });
+                const configFile = path.join(installPath, 'seligames-config.json');
+                const content = {
+                    mod: {
+                        id: mod._id,
+                        title: mod.title,
+                        gameTitle: mod.gameTitle,
+                        version: mod.version,
+                        category: mod.category
+                    },
+                    giftActions: userConfig.giftActions || {},
+                    installedAt: new Date().toISOString(),
+                    archiveDownloaded,
+                    archiveError
+                };
+                fs.writeFileSync(configFile, JSON.stringify(content, null, 2), 'utf-8');
+                console.log(`✓ Config written: ${configFile}`);
+            } catch (fsErr) {
+                console.warn(`⚠️ Config write failed: ${fsErr.message}`);
+            }
+        }
+
+        // 4. Mark installed in backend (increments downloadCount)
+        const response = await axios.post(`http://localhost:3000/api/mods/${modId}/install`,
+            { installPath },
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+        return {
+            success: true,
+            data: response.data,
+            meta: { archiveDownloaded, archiveError, installPath }
+        };
+    } catch (error) {
+        return { success: false, error: error.response?.data?.error || error.message };
+    }
+});
+
+ipcMain.handle('uninstall-mod', async (event, modId) => {
+    try {
+        const token = await getAuthToken();
+        const response = await axios.post(`http://localhost:3000/api/mods/${modId}/uninstall`, {}, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        return { success: true, data: response.data };
+    } catch (error) {
+        return { success: false, error: error.response?.data?.error || error.message };
+    }
+});
+
+ipcMain.handle('get-installed-mods', async () => {
+    try {
+        const token = await getAuthToken();
+        const response = await axios.get('http://localhost:3000/api/mods/user/installed', {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        return { success: true, data: response.data };
+    } catch (error) {
+        return { success: false, error: error.response?.data?.error || error.message };
+    }
+});
+
+ipcMain.handle('execute-action', async (event, action) => {
+    try {
+        await executeAction(action);
+        return { success: true };
+    } catch (e) {
+        console.warn('executeAction failed:', e.message);
+        return { success: false, error: e.message };
+    }
+});
+
+ipcMain.handle('pick-install-directory', async (event, modTitle) => {
+    try {
+        const result = await dialog.showOpenDialog(mainWindow, {
+            title: `${modTitle} — Kurulum Dizini Seç`,
+            buttonLabel: 'Buraya Kur',
+            message: `"${modTitle}" için kurulum klasörünü seçin`,
+            properties: ['openDirectory', 'createDirectory']
+        });
+        if (result.canceled || !result.filePaths?.length) {
+            return { success: false, error: 'İptal edildi' };
+        }
+        return { success: true, data: { installPath: result.filePaths[0] } };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('replace-gift-sound-map', async (event, map) => {
+    try {
+        const token = await getAuthToken();
+        const response = await axios.post('http://localhost:3000/api/auth/settings/gift-sound-map/bulk',
+            { map },
             { headers: { Authorization: `Bearer ${token}` } }
         );
         return { success: true, data: response.data };

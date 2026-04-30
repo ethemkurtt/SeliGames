@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SeliGames - Oyun Modlama Platformu</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -14,13 +16,15 @@
         }
 
         body {
-            font-family: 'Rajdhani', 'Segoe UI', sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background: #0a0a0f;
-            color: #fff;
+            color: #e0e0e0;
             height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
+            font-size: 13px;
+            -webkit-font-smoothing: antialiased;
         }
 
         /* Login Container */
@@ -39,19 +43,19 @@
 
         .login-container {
             background: rgba(26, 26, 36, 0.95);
-            border: 1px solid rgba(0, 255, 157, 0.2);
-            border-radius: 20px;
-            padding: 3rem;
+            border: 1px solid rgba(0, 255, 157, 0.15);
+            border-radius: 14px;
+            padding: 2rem;
             width: 100%;
-            max-width: 450px;
-            box-shadow: 0 0 40px rgba(0, 255, 157, 0.2);
+            max-width: 380px;
+            box-shadow: 0 0 30px rgba(0, 255, 157, 0.1);
         }
 
         .login-logo {
-            font-size: 2.5rem;
+            font-size: 1.8rem;
             font-weight: 900;
             text-align: center;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.3rem;
             background: linear-gradient(135deg, #00ff9d, #00f0ff);
             -webkit-background-clip: text;
             background-clip: text;
@@ -62,19 +66,19 @@
         .login-subtitle {
             text-align: center;
             color: #8b8b9a;
-            margin-bottom: 2rem;
-            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.8rem;
         }
 
         .form-group {
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.35rem;
             color: #8b8b9a;
-            font-size: 0.85rem;
+            font-size: 0.72rem;
             text-transform: uppercase;
             letter-spacing: 1px;
         }
@@ -93,39 +97,38 @@
 
         input {
             width: 100%;
-            padding: 1rem 1rem 1rem 3rem;
+            padding: 0.65rem 0.65rem 0.65rem 2.5rem;
             background: #13131a;
-            border: 2px solid rgba(0, 255, 157, 0.1);
-            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 8px;
             color: #fff;
-            font-size: 1rem;
-            transition: all 0.3s;
+            font-size: 0.85rem;
+            transition: all 0.2s;
         }
 
         input:focus {
             outline: none;
             border-color: #00ff9d;
-            box-shadow: 0 0 20px rgba(0, 255, 157, 0.3);
+            box-shadow: 0 0 10px rgba(0, 255, 157, 0.15);
         }
 
         .btn-primary {
             width: 100%;
-            padding: 1.2rem;
+            padding: 0.75rem;
             background: linear-gradient(135deg, #00ff9d, #00f0ff);
             border: none;
-            border-radius: 10px;
+            border-radius: 8px;
             color: #0a0a0f;
             font-weight: 700;
-            font-size: 1rem;
+            font-size: 0.85rem;
             text-transform: uppercase;
             letter-spacing: 2px;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
         }
 
         .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(0, 255, 157, 0.4);
+            box-shadow: 0 6px 20px rgba(0, 255, 157, 0.3);
         }
 
         /* App Container (hidden initially) - FIXED */
@@ -141,26 +144,29 @@
             overflow-x: hidden;
         }
 
-        /* Sidebar - FIXED */
+        /* Sidebar - COMPACT */
         .sidebar {
-            width: 250px;
-            min-width: 250px;
-            max-width: 250px;
+            width: 210px;
+            min-width: 210px;
+            max-width: 210px;
             flex-shrink: 0;
-            background: #13131a;
-            padding: 2rem 1.5rem;
+            background: #111118;
+            padding: 1rem 0.75rem;
             display: flex;
             flex-direction: column;
             transition: all 0.3s;
             position: relative;
             overflow-y: auto;
             overflow-x: hidden;
+            border-right: 1px solid rgba(255,255,255,0.04);
         }
+        .sidebar::-webkit-scrollbar { width: 3px; }
+        .sidebar::-webkit-scrollbar-thumb { background: rgba(0,255,157,0.15); border-radius: 3px; }
 
         .sidebar.collapsed {
-            width: 80px;
-            min-width: 80px;
-            max-width: 80px;
+            width: 56px;
+            min-width: 56px;
+            max-width: 56px;
         }
 
         .sidebar.collapsed .sidebar-subtitle,
@@ -171,13 +177,14 @@
         }
 
         .sidebar-header {
-            margin-bottom: 2rem;
+            margin-bottom: 1rem;
+            padding: 0 0.4rem;
         }
 
         .sidebar-logo {
-            font-size: 1.8rem;
+            font-size: 1.3rem;
             font-weight: 900;
-            margin-bottom: 0.3rem;
+            margin-bottom: 0.15rem;
             background: linear-gradient(135deg, #00ff9d, #00f0ff);
             -webkit-background-clip: text;
             background-clip: text;
@@ -186,17 +193,17 @@
         }
 
         .sidebar-subtitle {
-            font-size: 0.75rem;
+            font-size: 0.65rem;
             color: #8b8b9a;
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
         }
 
         .sidebar-toggle {
             position: absolute;
-            top: 2rem;
-            right: -15px;
-            width: 30px;
-            height: 30px;
+            top: 1rem;
+            right: -12px;
+            width: 24px;
+            height: 24px;
             background: #00ff9d;
             border-radius: 50%;
             display: flex;
@@ -204,7 +211,7 @@
             justify-content: center;
             cursor: pointer;
             color: #0a0a0f;
-            font-size: 0.8rem;
+            font-size: 0.65rem;
             transition: all 0.3s;
             z-index: 10;
         }
@@ -214,52 +221,51 @@
         }
 
         .nav-item {
-            padding: 1rem 1.2rem;
-            margin-bottom: 0.3rem;
-            border-radius: 10px;
+            padding: 0.55rem 0.8rem;
+            margin-bottom: 1px;
+            border-radius: 6px;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
             display: flex;
             align-items: center;
-            gap: 1rem;
+            gap: 0.65rem;
             color: #8b8b9a;
-            font-size: 0.95rem;
+            font-size: 0.8rem;
         }
 
         .nav-item:hover {
-            background: rgba(0, 255, 157, 0.1);
+            background: rgba(0, 255, 157, 0.08);
             color: #00ff9d;
-            transform: translateX(5px);
         }
 
         .nav-item.active {
-            background: linear-gradient(135deg, rgba(0, 255, 157, 0.2), rgba(0, 240, 255, 0.2));
+            background: rgba(0, 255, 157, 0.12);
             color: #00ff9d;
-            border-left: 3px solid #00ff9d;
+            border-left: 2px solid #00ff9d;
         }
 
         .nav-item i {
-            width: 20px;
+            width: 16px;
             text-align: center;
-            font-size: 1.1rem;
+            font-size: 0.85rem;
         }
 
         .user-section {
             margin-top: auto;
-            padding-top: 1.5rem;
-            border-top: 1px solid rgba(0, 255, 157, 0.1);
+            padding-top: 0.75rem;
+            border-top: 1px solid rgba(255,255,255,0.04);
         }
 
         .user-info {
             display: flex;
             align-items: center;
-            gap: 1rem;
-            margin-bottom: 1rem;
+            gap: 0.6rem;
+            margin-bottom: 0.5rem;
         }
 
         .user-avatar {
-            width: 45px;
-            height: 45px;
+            width: 30px;
+            height: 30px;
             border-radius: 50%;
             background: linear-gradient(135deg, #00ff9d, #00f0ff);
             display: flex;
@@ -267,7 +273,7 @@
             justify-content: center;
             font-weight: 700;
             color: #0a0a0f;
-            font-size: 1.2rem;
+            font-size: 0.8rem;
             flex-shrink: 0;
         }
 
@@ -276,50 +282,52 @@
         }
 
         .user-name {
-            font-size: 1rem;
+            font-size: 0.8rem;
             font-weight: 600;
-            margin-bottom: 0.2rem;
+            margin-bottom: 0.1rem;
         }
 
         .user-status {
-            font-size: 0.75rem;
+            font-size: 0.65rem;
             color: #8b8b9a;
         }
 
         .btn-logout {
             width: 100%;
-            padding: 0.9rem;
-            background: rgba(255, 0, 110, 0.1);
-            border: 1px solid #ff006e;
-            border-radius: 10px;
+            padding: 0.5rem;
+            background: rgba(255, 0, 110, 0.08);
+            border: 1px solid rgba(255,0,110,0.3);
+            border-radius: 6px;
             color: #ff006e;
             font-weight: 600;
+            font-size: 0.75rem;
             cursor: pointer;
             transition: all 0.3s;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 0.5rem;
+            gap: 0.4rem;
         }
 
         .btn-logout:hover {
-            background: rgba(255, 0, 110, 0.2);
-            transform: translateY(-2px);
+            background: rgba(255, 0, 110, 0.15);
         }
 
-        /* Main Content - COMPLETELY FIXED */
+        /* Main Content - COMPACT */
         .main-content {
             flex: 1;
             min-width: 0;
-            padding: 2rem;
+            padding: 1.25rem 1.5rem;
             overflow-y: auto;
             overflow-x: hidden;
-            background: #0a0a0f;
+            background: #0d0d14;
             height: 100vh;
             max-width: 100%;
             width: 100%;
             box-sizing: border-box;
         }
+        .main-content::-webkit-scrollbar { width: 5px; }
+        .main-content::-webkit-scrollbar-thumb { background: rgba(0,255,157,0.12); border-radius: 3px; }
 
         .page {
             display: none;
@@ -331,24 +339,24 @@
 
         .page.active {
             display: block;
-            animation: fadeIn 0.3s ease;
+            animation: fadeIn 0.25s ease;
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(6px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
         .page-header {
-            margin-bottom: 2rem;
+            margin-bottom: 1.25rem;
             max-width: 100%;
             overflow: hidden;
         }
 
         .page-title {
-            font-size: 2rem;
+            font-size: 1.35rem;
             font-weight: 700;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.25rem;
             color: #fff;
             line-height: 1.2;
             word-wrap: break-word;
@@ -356,39 +364,28 @@
 
         .page-subtitle {
             color: #8b8b9a;
-            font-size: 1rem;
-            line-height: 1.5;
+            font-size: 0.82rem;
+            line-height: 1.4;
             word-wrap: break-word;
         }
 
-        /* Responsive Adjustments */
         @media (max-width: 1200px) {
-            .main-content {
-                padding: 1.5rem;
-            }
-            .page-title {
-                font-size: 1.75rem;
-            }
+            .main-content { padding: 1rem; }
+            .page-title { font-size: 1.2rem; }
         }
 
         @media (max-width: 768px) {
-            .main-content {
-                padding: 1rem;
-            }
-            .page-title {
-                font-size: 1.5rem;
-            }
-            .page-subtitle {
-                font-size: 0.9rem;
-            }
+            .main-content { padding: 0.75rem; }
+            .page-title { font-size: 1.1rem; }
+            .page-subtitle { font-size: 0.78rem; }
         }
 
-        /* Stats Grid - OPTIMIZED */
+        /* Stats Grid - COMPACT */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
+            grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
             width: 100%;
             max-width: 100%;
             box-sizing: border-box;
@@ -396,29 +393,23 @@
         }
 
         @media (max-width: 768px) {
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 1rem;
-            }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
         }
-
         @media (max-width: 480px) {
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
+            .stats-grid { grid-template-columns: 1fr; }
         }
 
         .stat-card {
             background: #13131a;
-            border: 1px solid rgba(0, 255, 157, 0.1);
-            border-radius: 15px;
-            padding: 1.5rem;
+            border: 1px solid rgba(255,255,255,0.04);
+            border-radius: 10px;
+            padding: 0.9rem;
             text-align: center;
             width: 100%;
             max-width: 100%;
             box-sizing: border-box;
-            transition: all 0.3s ease;
-            min-height: 120px;
+            transition: all 0.2s ease;
+            min-height: 80px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -426,147 +417,135 @@
         }
 
         .stat-card:hover {
-            border-color: #00ff9d;
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(0, 255, 157, 0.15);
+            border-color: rgba(0,255,157,0.2);
+            transform: translateY(-2px);
         }
 
         .stat-icon {
-            font-size: 2rem;
-            margin-bottom: 0.75rem;
+            font-size: 1.3rem;
+            margin-bottom: 0.4rem;
             color: #00ff9d;
             opacity: 0.9;
         }
 
         .stat-value {
-            font-size: 2.2rem;
+            font-size: 1.6rem;
             font-weight: 700;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.25rem;
             line-height: 1;
             color: #fff;
         }
 
         .stat-label {
             color: #8b8b9a;
-            font-size: 0.85rem;
+            font-size: 0.7rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             word-wrap: break-word;
             text-align: center;
         }
 
-        /* Profile Page - Clean & Simple */
+        /* Profile Page - Compact */
         .profile-header {
             background: #13131a;
-            border: 1px solid rgba(0, 255, 157, 0.2);
-            border-radius: 20px;
-            padding: 2.5rem;
-            margin-bottom: 2rem;
+            border: 1px solid rgba(255,255,255,0.04);
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
             display: flex;
             align-items: center;
-            gap: 2.5rem;
+            gap: 1.25rem;
         }
 
-        .profile-avatar-wrapper {
-            flex-shrink: 0;
-        }
+        .profile-avatar-wrapper { flex-shrink: 0; }
 
         .profile-avatar {
-            width: 120px;
-            height: 120px;
+            width: 70px;
+            height: 70px;
             background: linear-gradient(135deg, #00ff9d, #00f0ff);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 3rem;
+            font-size: 1.8rem;
             font-weight: 700;
             color: #0a0a0f;
-            box-shadow: 0 8px 30px rgba(0, 255, 157, 0.3);
         }
 
-        .profile-info {
-            flex: 1;
-        }
+        .profile-info { flex: 1; }
 
         .profile-name {
-            font-size: 2rem;
+            font-size: 1.3rem;
             font-weight: 700;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.2rem;
             color: #fff;
         }
 
         .profile-email {
             color: #8b8b9a;
-            font-size: 1rem;
-            margin-bottom: 1.5rem;
+            font-size: 0.82rem;
+            margin-bottom: 0.75rem;
         }
 
         .profile-badge {
             display: inline-flex;
             align-items: center;
-            gap: 0.8rem;
-            background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(189, 0, 255, 0.15));
-            border: 1px solid rgba(255, 215, 0, 0.3);
-            padding: 0.8rem 1.5rem;
+            gap: 0.5rem;
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(189, 0, 255, 0.1));
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            padding: 0.4rem 0.9rem;
             border-radius: 50px;
             font-weight: 600;
+            font-size: 0.8rem;
         }
 
         .profile-actions {
             display: flex;
-            gap: 1rem;
-            margin-top: 1.5rem;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
         }
 
         .info-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 1.2rem;
+            padding: 0.7rem;
             background: rgba(255, 255, 255, 0.02);
-            border-radius: 12px;
-            transition: all 0.3s;
+            border-radius: 8px;
+            transition: all 0.2s;
         }
 
-        .info-row:hover {
-            background: rgba(255, 255, 255, 0.04);
-        }
+        .info-row:hover { background: rgba(255, 255, 255, 0.04); }
 
         .info-label {
             font-weight: 600;
-            margin-bottom: 0.3rem;
+            margin-bottom: 0.15rem;
             color: #fff;
+            font-size: 0.85rem;
         }
 
-        .info-value {
-            color: #8b8b9a;
-            font-size: 0.95rem;
-        }
+        .info-value { color: #8b8b9a; font-size: 0.82rem; }
 
         .stat-mini {
             text-align: center;
-            padding: 1.5rem;
+            padding: 0.85rem;
             background: rgba(255, 255, 255, 0.02);
-            border-radius: 15px;
-            border: 1px solid rgba(0, 255, 157, 0.1);
-            transition: all 0.3s;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.04);
+            transition: all 0.2s;
         }
 
-        .stat-mini:hover {
-            border-color: rgba(0, 255, 157, 0.3);
-            transform: translateY(-3px);
-        }
+        .stat-mini:hover { border-color: rgba(0, 255, 157, 0.2); }
 
         .stat-mini-value {
-            font-size: 2.5rem;
+            font-size: 1.6rem;
             font-weight: 700;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.2rem;
         }
 
         .stat-mini-label {
             color: #8b8b9a;
-            font-size: 0.9rem;
+            font-size: 0.7rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
@@ -585,28 +564,28 @@
         /* Card Styles */
         .card {
             background: #13131a;
-            border: 1px solid rgba(0, 255, 157, 0.1);
-            border-radius: 20px;
-            padding: 2rem;
+            border: 1px solid rgba(255,255,255,0.04);
+            border-radius: 10px;
+            padding: 1.15rem;
             box-sizing: border-box;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
             width: 100%;
             overflow: hidden;
-            margin-bottom: 2rem;
+            margin-bottom: 1rem;
         }
 
         .card:hover {
-            border-color: rgba(0, 255, 157, 0.3);
+            border-color: rgba(0, 255, 157, 0.15);
         }
 
         .card-header-title {
-            font-size: 1.3rem;
+            font-size: 1rem;
             font-weight: 700;
-            margin-bottom: 1.5rem;
+            margin-bottom: 0.85rem;
             color: #00ff9d;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.4rem;
         }
 
         /* Grid içindeki grid'ler için responsive */
@@ -637,18 +616,18 @@
         /* Settings Page */
         .settings-section {
             background: #13131a;
-            border: 1px solid rgba(0, 255, 157, 0.1);
-            border-radius: 15px;
-            padding: 2rem;
-            margin-bottom: 1.5rem;
+            border: 1px solid rgba(255,255,255,0.04);
+            border-radius: 10px;
+            padding: 1.15rem;
+            margin-bottom: 0.85rem;
             max-width: 100%;
             box-sizing: border-box;
         }
 
         .settings-section h3 {
             color: #00ff9d;
-            font-size: 1.3rem;
-            margin-bottom: 1.5rem;
+            font-size: 1rem;
+            margin-bottom: 0.85rem;
             font-weight: 700;
         }
 
@@ -657,34 +636,30 @@
             flex-wrap: wrap;
             justify-content: space-between;
             align-items: center;
-            padding: 1.2rem 0;
-            border-bottom: 1px solid rgba(139, 139, 154, 0.1);
+            padding: 0.65rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
         }
 
-        .setting-item:last-child {
-            border-bottom: none;
-        }
+        .setting-item:last-child { border-bottom: none; }
 
-        .setting-info {
-            flex: 1;
-        }
+        .setting-info { flex: 1; }
 
         .setting-title {
-            font-size: 1rem;
+            font-size: 0.85rem;
             font-weight: 600;
-            margin-bottom: 0.3rem;
+            margin-bottom: 0.15rem;
         }
 
         .setting-desc {
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             color: #8b8b9a;
         }
 
         /* Toggle Switch */
         .toggle-switch {
             position: relative;
-            width: 50px;
-            height: 26px;
+            width: 38px;
+            height: 20px;
             flex-shrink: 0;
         }
 
@@ -701,16 +676,16 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: #8b8b9a;
+            background-color: #555;
             transition: 0.3s;
-            border-radius: 26px;
+            border-radius: 20px;
         }
 
         .toggle-slider:before {
             position: absolute;
             content: "";
-            height: 20px;
-            width: 20px;
+            height: 14px;
+            width: 14px;
             left: 3px;
             bottom: 3px;
             background-color: white;
@@ -723,7 +698,7 @@
         }
 
         input:checked+.toggle-slider:before {
-            transform: translateX(24px);
+            transform: translateX(18px);
         }
 
         /* Mod Cards - COMPLETELY FIXED */
@@ -762,11 +737,11 @@
 
         .mod-card {
             background: #13131a;
-            border: 1px solid rgba(0, 255, 157, 0.1);
-            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.04);
+            border-radius: 10px;
             overflow: hidden;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
             position: relative;
             box-sizing: border-box;
             width: 100%;
@@ -777,9 +752,8 @@
         }
 
         .mod-card:hover {
-            transform: translateY(-5px);
-            border-color: #00ff9d;
-            box-shadow: 0 10px 30px rgba(0, 255, 157, 0.2);
+            transform: translateY(-3px);
+            border-color: rgba(0,255,157,0.2);
         }
 
         .mod-badge {
@@ -798,13 +772,13 @@
 
         .mod-image {
             width: 100%;
-            height: 180px;
+            height: 140px;
             object-fit: cover;
             flex-shrink: 0;
         }
 
         .mod-content {
-            padding: 1.25rem;
+            padding: 0.85rem;
             flex: 1;
             display: flex;
             flex-direction: column;
@@ -814,10 +788,10 @@
         }
 
         .mod-title {
-            font-size: 1.2rem;
+            font-size: 0.95rem;
             font-weight: 700;
             color: #00ff9d;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.3rem;
             word-wrap: break-word;
             overflow-wrap: break-word;
         }
@@ -861,10 +835,10 @@
 
         .modal-content {
             background: #13131a;
-            border: 2px solid var(--primary);
-            border-radius: 20px;
-            padding: 2rem;
-            max-width: 900px;
+            border: 1px solid rgba(0,255,157,0.2);
+            border-radius: 12px;
+            padding: 1.25rem;
+            max-width: 800px;
             width: 90%;
             max-height: 85vh;
             overflow-y: auto;
@@ -874,25 +848,25 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
         }
 
         .modal-title {
-            font-size: 1.8rem;
+            font-size: 1.2rem;
             font-weight: 700;
-            color: var(--primary);
+            color: #00ff9d;
         }
 
         .modal-close {
-            width: 40px;
-            height: 40px;
+            width: 30px;
+            height: 30px;
             border-radius: 50%;
-            background: rgba(255, 0, 110, 0.2);
-            border: 1px solid #ff006e;
+            background: rgba(255, 0, 110, 0.15);
+            border: 1px solid rgba(255,0,110,0.3);
             color: #ff006e;
-            font-size: 1.2rem;
+            font-size: 0.9rem;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
         }
 
         .modal-close:hover {
@@ -981,41 +955,38 @@
         }
 
         .btn-secondary {
-            padding: 1rem 2rem;
-            background: rgba(139, 139, 154, 0.2);
-            border: 1px solid #8b8b9a;
-            border-radius: 10px;
+            padding: 0.5rem 1rem;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 6px;
             color: #8b8b9a;
             font-weight: 600;
+            font-size: 0.8rem;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
         }
 
         .btn-secondary:hover {
-            background: rgba(139, 139, 154, 0.3);
+            background: rgba(255,255,255,0.08);
         }
 
         .btn-success {
-            padding: 1rem 2rem;
-            background: linear-gradient(135deg, #00ff9d 0%, #00f0ff 100%);
-            border: 2px solid rgba(0, 255, 157, 0.5);
-            border-radius: 10px;
+            padding: 0.55rem 1.2rem;
+            background: linear-gradient(135deg, #00ff9d, #00f0ff);
+            border: none;
+            border-radius: 6px;
             color: #000;
             font-weight: 700;
-            font-size: 1rem;
+            font-size: 0.82rem;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            box-shadow: 0 4px 15px rgba(0, 255, 157, 0.3);
+            gap: 0.4rem;
         }
 
         .btn-success:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(0, 255, 157, 0.6);
-            background: linear-gradient(135deg, #00ffaa 0%, #00ffff 100%);
-            border-color: #00ff9d;
+            box-shadow: 0 4px 15px rgba(0, 255, 157, 0.3);
         }
 
         @keyframes shimmer {
@@ -1042,20 +1013,19 @@
 
         .stat-box {
             background: #13131a;
-            border: 1px solid rgba(0, 255, 157, 0.1);
-            border-radius: 15px;
-            padding: 1.5rem;
+            border: 1px solid rgba(255,255,255,0.04);
+            border-radius: 10px;
+            padding: 0.9rem;
             position: relative;
             overflow: hidden;
-            transition: all 0.3s;
+            transition: all 0.2s;
             box-sizing: border-box;
             max-width: 100%;
         }
 
         .stat-box:hover {
-            transform: translateY(-5px);
-            border-color: #00ff9d;
-            box-shadow: 0 10px 30px rgba(0, 255, 157, 0.2);
+            transform: translateY(-2px);
+            border-color: rgba(0,255,157,0.15);
         }
 
         .stat-box::before {
@@ -1069,38 +1039,38 @@
         }
 
         .stat-box-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 12px;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            margin-bottom: 0.6rem;
             color: white;
         }
 
         .stat-box-value {
-            font-size: 2rem;
+            font-size: 1.4rem;
             font-weight: 700;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.25rem;
             display: flex;
             align-items: baseline;
-            gap: 0.5rem;
+            gap: 0.3rem;
         }
 
         .stat-box-label {
             color: #8b8b9a;
-            font-size: 0.85rem;
+            font-size: 0.7rem;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
         }
 
         .history-section {
             background: #13131a;
-            border: 1px solid rgba(0, 255, 157, 0.1);
-            border-radius: 15px;
-            padding: 2rem;
+            border: 1px solid rgba(255,255,255,0.04);
+            border-radius: 10px;
+            padding: 1rem;
             max-width: 100%;
             box-sizing: border-box;
         }
@@ -1173,59 +1143,60 @@
         /* TikTok Page */
         .tiktok-status-card {
             background: #13131a;
-            border: 1px solid rgba(0, 255, 157, 0.1);
-            border-radius: 15px;
-            padding: 3rem;
+            border: 1px solid rgba(255,255,255,0.04);
+            border-radius: 10px;
+            padding: 1.5rem;
             text-align: center;
-            margin-bottom: 2rem;
+            margin-bottom: 1rem;
         }
 
         .status-icon-wrapper {
-            width: 100px;
-            height: 100px;
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
-            background: rgba(255, 0, 110, 0.1);
-            border: 2px solid #ff006e;
+            background: rgba(255, 0, 110, 0.08);
+            border: 1px solid rgba(255,0,110,0.3);
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 1.5rem;
-            font-size: 2.5rem;
+            margin: 0 auto 0.85rem;
+            font-size: 1.5rem;
             color: #ff006e;
         }
 
         .status-text {
-            font-size: 1.5rem;
+            font-size: 1.1rem;
             font-weight: 700;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.3rem;
         }
 
         .status-subtext {
             color: #8b8b9a;
+            font-size: 0.82rem;
         }
 
         .tiktok-connect-card {
             background: #13131a;
-            border: 1px solid rgba(0, 255, 157, 0.1);
-            border-radius: 15px;
-            padding: 2rem;
-            margin-bottom: 2rem;
+            border: 1px solid rgba(255,255,255,0.04);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1rem;
         }
 
         .tiktok-input-group {
             display: flex;
-            gap: 1rem;
-            margin-top: 1.5rem;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
         }
 
         .tiktok-input {
             flex: 1;
             background: #0a0a0f;
-            border: 1px solid rgba(0, 255, 157, 0.2);
-            border-radius: 10px;
-            padding: 1rem;
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 6px;
+            padding: 0.5rem;
             color: white;
-            font-size: 1rem;
+            font-size: 0.85rem;
         }
 
         .tiktok-input:focus {
@@ -1254,21 +1225,21 @@
 
         .info-card {
             background: #13131a;
-            border: 1px solid rgba(0, 255, 157, 0.1);
-            border-radius: 15px;
-            padding: 2rem;
+            border: 1px solid rgba(255,255,255,0.04);
+            border-radius: 10px;
+            padding: 1rem;
             max-width: 100%;
             box-sizing: border-box;
         }
 
         .info-title {
-            font-size: 1.2rem;
+            font-size: 0.95rem;
             font-weight: 700;
-            color: var(--primary);
-            margin-bottom: 1rem;
+            color: #00ff9d;
+            margin-bottom: 0.65rem;
             display: flex;
             align-items: center;
-            gap: 0.8rem;
+            gap: 0.5rem;
             flex-wrap: wrap;
         }
 
@@ -1302,43 +1273,43 @@
 
         .contact-card {
             background: #13131a;
-            border: 1px solid rgba(0, 255, 157, 0.1);
-            border-radius: 15px;
-            padding: 2rem;
+            border: 1px solid rgba(255,255,255,0.04);
+            border-radius: 10px;
+            padding: 1.15rem;
             text-align: center;
-            transition: all 0.3s;
+            transition: all 0.2s;
             max-width: 100%;
             box-sizing: border-box;
         }
 
         .contact-card:hover {
-            transform: translateY(-5px);
-            border-color: #00ff9d;
-            box-shadow: 0 8px 20px rgba(0, 255, 157, 0.15);
+            transform: translateY(-2px);
+            border-color: rgba(0,255,157,0.15);
         }
 
         .contact-icon {
-            width: 80px;
-            height: 80px;
-            background: rgba(0, 255, 157, 0.1);
+            width: 50px;
+            height: 50px;
+            background: rgba(0, 255, 157, 0.08);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 1.5rem;
-            font-size: 2rem;
-            color: var(--primary);
+            margin: 0 auto 0.85rem;
+            font-size: 1.3rem;
+            color: #00ff9d;
         }
 
         .contact-title {
-            font-size: 1.2rem;
+            font-size: 0.95rem;
             font-weight: 700;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.3rem;
         }
 
         .contact-text {
             color: #8b8b9a;
-            margin-bottom: 1.5rem;
+            margin-bottom: 0.85rem;
+            font-size: 0.8rem;
         }
 
         .contact-link {
@@ -1397,46 +1368,44 @@
 
         .sound-option {
             background: rgba(255, 255, 255, 0.02);
-            border: 2px solid rgba(0, 255, 157, 0.1);
-            border-radius: 12px;
-            padding: 1rem;
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 8px;
+            padding: 0.6rem;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
             display: flex;
             align-items: center;
-            gap: 0.8rem;
+            gap: 0.5rem;
         }
 
         .sound-option:hover {
-            border-color: #00ff9d;
-            background: rgba(0, 255, 157, 0.05);
-            transform: translateY(-2px);
+            border-color: rgba(0,255,157,0.2);
+            background: rgba(0, 255, 157, 0.04);
         }
 
         .sound-option.active {
-            border-color: #00ff9d;
-            background: rgba(0, 255, 157, 0.15);
-            box-shadow: 0 0 20px rgba(0, 255, 157, 0.3);
+            border-color: rgba(0,255,157,0.3);
+            background: rgba(0, 255, 157, 0.08);
         }
 
         .sound-play-btn {
-            width: 40px;
-            height: 40px;
+            width: 30px;
+            height: 30px;
             border-radius: 50%;
             background: linear-gradient(135deg, #00ff9d, #00f0ff);
             border: none;
             color: #000;
-            font-size: 1rem;
+            font-size: 0.75rem;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.3s;
+            transition: all 0.2s;
+            flex-shrink: 0;
         }
 
         .sound-play-btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 4px 15px rgba(0, 255, 157, 0.5);
+            transform: scale(1.05);
         }
 
         .sound-info {
@@ -1445,12 +1414,13 @@
 
         .sound-name {
             font-weight: 700;
-            margin-bottom: 0.2rem;
+            margin-bottom: 0.1rem;
             color: #fff;
+            font-size: 0.8rem;
         }
 
         .sound-desc {
-            font-size: 0.8rem;
+            font-size: 0.68rem;
             color: #8b8b9a;
         }
 
@@ -1458,45 +1428,43 @@
         .profile-input {
             flex: 1;
             width: 100%;
-            padding: 0.75rem 1rem;
+            padding: 0.45rem 0.65rem;
             background: rgba(0, 0, 0, 0.3);
-            border: 2px solid rgba(0, 255, 157, 0.2);
-            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 6px;
             color: #fff;
-            font-size: 0.95rem;
-            transition: all 0.3s;
+            font-size: 0.82rem;
+            transition: all 0.2s;
         }
 
         .profile-input:focus {
             outline: none;
             border-color: #00ff9d;
-            box-shadow: 0 0 15px rgba(0, 255, 157, 0.3);
         }
 
         .profile-input:read-only {
-            opacity: 0.6;
+            opacity: 0.5;
             cursor: not-allowed;
         }
 
         .btn-update-field {
-            padding: 0.75rem 1rem;
-            background: rgba(0, 255, 157, 0.2);
-            border: 2px solid #00ff9d;
-            border-radius: 10px;
+            padding: 0.45rem 0.65rem;
+            background: rgba(0, 255, 157, 0.1);
+            border: 1px solid rgba(0,255,157,0.2);
+            border-radius: 6px;
             color: #00ff9d;
             cursor: pointer;
-            transition: all 0.3s;
-            font-size: 1rem;
-            min-width: 50px;
+            transition: all 0.2s;
+            font-size: 0.82rem;
+            min-width: 36px;
         }
 
         .btn-update-field:hover {
-            background: rgba(0, 255, 157, 0.3);
-            transform: scale(1.05);
+            background: rgba(0, 255, 157, 0.2);
         }
 
         .btn-update-field:disabled {
-            opacity: 0.5;
+            opacity: 0.4;
             cursor: not-allowed;
         }
 
@@ -1603,24 +1571,24 @@
         }
 
         .stat-emoji {
-            font-size: 1.5rem;
+            font-size: 1.1rem;
         }
 
         .stat-num {
-            font-size: 1.5rem;
+            font-size: 1.2rem;
             font-weight: 900;
             color: #fff;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
         }
 
         .tiktok-event-container {
             background: #13131a;
-            border: 1px solid rgba(0, 255, 157, 0.2);
-            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.04);
+            border-radius: 8px;
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            height: calc(100vh - 280px);
+            height: calc(100vh - 240px);
             width: 100%;
             max-width: 100%;
             box-sizing: border-box;
@@ -1813,6 +1781,1126 @@
                 grid-template-columns: 1fr !important;
             }
         }
+
+        /* Overlay System Styles */
+        .nav-section-label {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #00ff9d;
+            padding: 0.75rem 0.8rem 0.3rem;
+            font-weight: 700;
+            opacity: 0.6;
+        }
+        .sidebar.collapsed .nav-section-label { display: none; }
+
+        .nav-accordion-header {
+            padding: 0.5rem 0.8rem;
+            margin-bottom: 1px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #8b8b9a;
+            font-size: 0.78rem;
+            user-select: none;
+        }
+        .nav-accordion-header:hover { background: rgba(0,255,157,0.08); color: #00ff9d; }
+        .nav-accordion-header.active, .nav-accordion-header.open { color: #00ff9d; }
+        .nav-accordion-header i.nav-acc-icon { width: 14px; text-align: center; font-size: 0.82rem; }
+        .nav-accordion-header .acc-arrow {
+            margin-left: auto;
+            font-size: 0.55rem;
+            transition: transform 0.2s;
+        }
+        .nav-accordion-header.open .acc-arrow { transform: rotate(90deg); }
+
+        .nav-accordion-body { display: none; }
+        .nav-accordion-body.open { display: block; }
+
+        .nav-sub-item {
+            padding: 0.35rem 0.8rem 0.35rem 2rem;
+            margin-bottom: 0;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            color: #6b6b7a;
+            font-size: 0.72rem;
+        }
+        .nav-sub-item:hover { background: rgba(0,255,157,0.06); color: #00ff9d; }
+        .nav-sub-item.active {
+            background: rgba(0,255,157,0.1);
+            color: #00ff9d;
+            border-left: 2px solid #00ff9d;
+        }
+        .sidebar.collapsed .nav-accordion-header span,
+        .sidebar.collapsed .nav-accordion-header .acc-arrow,
+        .sidebar.collapsed .nav-accordion-body { display: none; }
+
+        /* Overlay Settings Panel - TikFinity Style */
+        .overlay-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        @media (max-width: 1200px) { .overlay-panel { grid-template-columns: 1fr; } }
+
+        .overlay-settings {
+            background: #13131a;
+            border: 1px solid rgba(255,255,255,0.04);
+            border-radius: 10px;
+            padding: 1rem;
+        }
+
+        .overlay-preview-card {
+            background: #13131a;
+            border: 1px solid rgba(255,255,255,0.04);
+            border-radius: 10px;
+            padding: 1rem;
+            position: sticky;
+            top: 1rem;
+        }
+
+        .overlay-preview-frame {
+            background: #0d0d18;
+            border: 1px dashed rgba(0,255,157,0.12);
+            border-radius: 8px;
+            min-height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .style-carousel {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            margin-top: 0.5rem;
+        }
+        .style-carousel button {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.05);
+            color: #8b8b9a;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            transition: all 0.2s;
+        }
+        .style-carousel button:hover { border-color: #00ff9d; color: #00ff9d; }
+        .style-carousel span { font-size: 0.72rem; color: #8b8b9a; }
+
+        .setting-group {
+            margin-bottom: 0.85rem;
+        }
+        .setting-group label {
+            display: block;
+            font-size: 0.7rem;
+            color: #8b8b9a;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.3rem;
+            font-weight: 600;
+        }
+
+        .setting-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .setting-row label {
+            min-width: 80px;
+            margin-bottom: 0;
+            font-size: 0.72rem;
+        }
+
+        .ov-input {
+            width: 100%;
+            padding: 0.45rem 0.65rem;
+            background: #0a0a0f;
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 0.8rem;
+            transition: border-color 0.2s;
+        }
+        .ov-input:focus { outline: none; border-color: #00ff9d; }
+
+        .ov-select {
+            width: 100%;
+            padding: 0.45rem 0.65rem;
+            background: #0a0a0f;
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+        .ov-select:focus { outline: none; border-color: #00ff9d; }
+
+        .ov-color {
+            width: 32px;
+            height: 26px;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 4px;
+            cursor: pointer;
+            padding: 0;
+            background: transparent;
+        }
+
+        .ov-range {
+            width: 100%;
+            -webkit-appearance: none;
+            height: 4px;
+            border-radius: 2px;
+            background: #1a1a2e;
+            outline: none;
+        }
+        .ov-range::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #00ff9d;
+            cursor: pointer;
+        }
+
+        .ov-range-value {
+            font-size: 0.72rem;
+            color: #00ff9d;
+            font-weight: 700;
+            min-width: 32px;
+            text-align: center;
+        }
+
+        .url-copy-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            background: #0a0a0f;
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 6px;
+            padding: 0.3rem 0.4rem;
+        }
+        .url-copy-bar input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #00ff9d;
+            font-family: 'Courier New', monospace;
+            font-size: 0.7rem;
+            padding: 0.25rem;
+        }
+        .url-copy-bar input:focus { outline: none; }
+
+        .btn-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.06);
+            background: rgba(255,255,255,0.03);
+            color: #8b8b9a;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            transition: all 0.2s;
+        }
+        .btn-icon:hover { background: rgba(0,255,157,0.1); color: #00ff9d; border-color: rgba(0,255,157,0.2); }
+
+        .overlay-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+        .btn-ov-save {
+            flex: 1;
+            padding: 0.5rem 1rem;
+            background: linear-gradient(135deg, #00ff9d, #00f0ff);
+            border: none;
+            border-radius: 6px;
+            color: #0a0a0f;
+            font-weight: 700;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-ov-save:hover { box-shadow: 0 4px 12px rgba(0,255,157,0.25); }
+        .btn-ov-reset {
+            padding: 0.5rem 1rem;
+            background: rgba(255,0,110,0.08);
+            border: 1px solid rgba(255,0,110,0.2);
+            border-radius: 6px;
+            color: #ff006e;
+            font-weight: 600;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-ov-reset:hover { background: rgba(255,0,110,0.15); }
+
+        .btn-ov-test {
+            padding: 0.5rem 1rem;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 6px;
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-ov-test:hover { background: rgba(255,255,255,0.08); }
+
+        .btn-ov-customize {
+            padding: 0.5rem 1rem;
+            background: rgba(0,255,157,0.08);
+            border: 1px solid rgba(0,255,157,0.15);
+            border-radius: 6px;
+            color: #00ff9d;
+            font-weight: 600;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .btn-ov-customize:hover { background: rgba(0,255,157,0.15); }
+
+        .overlay-list { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
+        .overlay-list-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.04);
+            border-radius: 8px;
+            padding: 0.6rem 0.75rem;
+            transition: all 0.2s;
+        }
+        .overlay-list-item:hover { border-color: rgba(0,255,157,0.15); }
+        .overlay-list-item .oli-title { flex: 1; font-weight: 600; font-size: 0.82rem; }
+        .overlay-list-item .oli-type { color: #8b8b9a; font-size: 0.7rem; }
+        .overlay-list-item .oli-active { color: #00ff9d; font-size: 0.65rem; }
+        .overlay-list-item .oli-inactive { color: #ff006e; font-size: 0.65rem; }
+
+        /* Custom CSS Import Section */
+        .custom-import-section {
+            background: rgba(255,255,255,0.02);
+            border: 1px dashed rgba(0,255,157,0.12);
+            border-radius: 8px;
+            padding: 0.75rem;
+            margin-top: 0.75rem;
+        }
+        .custom-import-section h5 {
+            color: #00ff9d;
+            font-size: 0.78rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .custom-css-textarea {
+            width: 100%;
+            min-height: 80px;
+            padding: 0.5rem;
+            background: #0a0a0f;
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 6px;
+            color: #00ff9d;
+            font-family: 'Courier New', monospace;
+            font-size: 0.72rem;
+            resize: vertical;
+        }
+        .custom-css-textarea:focus { outline: none; border-color: #00ff9d; }
+        .import-export-btns {
+            display: flex;
+            gap: 0.4rem;
+            margin-top: 0.4rem;
+        }
+        .btn-import-file {
+            padding: 0.35rem 0.7rem;
+            background: rgba(0,255,157,0.08);
+            border: 1px solid rgba(0,255,157,0.15);
+            border-radius: 4px;
+            color: #00ff9d;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-import-file:hover { background: rgba(0,255,157,0.15); }
+
+        /* Gallery Cards - Compact */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 0.75rem;
+        }
+        .gallery-card {
+            background: #13131a;
+            border: 1px solid rgba(255,255,255,0.04);
+            border-radius: 10px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .gallery-card:hover { transform: translateY(-2px); border-color: rgba(0,255,157,0.2); }
+        .gallery-card-preview {
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem;
+            position: relative;
+        }
+        .gallery-card-info { padding: 0.6rem 0.85rem; }
+        .gallery-card-title { font-weight: 700; font-size: 0.82rem; margin-bottom: 0.15rem; }
+        .gallery-card-desc { color: #8b8b9a; font-size: 0.7rem; }
+
+        /* Event log for gift scanner - Compact */
+        .scanner-log {
+            background: #0a0a0f;
+            border: 1px solid rgba(255,255,255,0.04);
+            border-radius: 8px;
+            height: 350px;
+            overflow-y: auto;
+            padding: 0.65rem;
+        }
+        .scanner-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.02);
+            font-size: 0.78rem;
+        }
+        .scanner-row .sr-time { color: #8b8b9a; font-size: 0.65rem; min-width: 50px; }
+        .scanner-row .sr-user { color: #00ff9d; font-weight: 600; }
+        .scanner-row .sr-gift { color: #ff006e; }
+        .scanner-row .sr-value { color: #ffd700; margin-left: auto; font-weight: 700; }
+
+        /* ─── Overlay Drafts / Saved Overlays ─── */
+        .ov-drafts-section {
+            margin-top: 1.25rem;
+            background: #13131a;
+            border: 1px solid rgba(255,255,255,0.04);
+            border-radius: 12px;
+            padding: 1rem 1.1rem;
+        }
+        .ov-drafts-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 0.85rem;
+            flex-wrap: wrap;
+        }
+        .ov-drafts-title {
+            color: #00ff9d;
+            font-size: 0.95rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            margin: 0 0 0.2rem 0;
+        }
+        .ov-drafts-sub {
+            color: #8b8b9a;
+            font-size: 0.72rem;
+        }
+        .btn-new-draft {
+            background: linear-gradient(135deg, #00ff9d, #00f0ff);
+            color: #0a0a0f;
+            border: none;
+            border-radius: 8px;
+            padding: 0.5rem 0.9rem;
+            font-weight: 700;
+            font-size: 0.78rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .btn-new-draft:hover {
+            box-shadow: 0 4px 14px rgba(0,255,157,0.3);
+            transform: translateY(-1px);
+        }
+        .ov-drafts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 0.65rem;
+        }
+        .ov-drafts-empty {
+            grid-column: 1 / -1;
+            color: #8b8b9a;
+            text-align: center;
+            padding: 1.5rem 0.5rem;
+            font-size: 0.82rem;
+            font-style: italic;
+        }
+        .draft-card {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 0.75rem;
+            transition: all 0.2s;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        .draft-card:hover {
+            border-color: rgba(0,255,157,0.25);
+            background: rgba(255,255,255,0.04);
+            transform: translateY(-2px);
+        }
+        .draft-card.active {
+            border-color: #00ff9d;
+            box-shadow: 0 0 0 1px #00ff9d44, 0 0 18px #00ff9d22;
+        }
+        .draft-card.active::after {
+            content: 'DÜZENLENİYOR';
+            position: absolute;
+            top: 0.4rem;
+            right: 0.4rem;
+            font-size: 0.55rem;
+            color: #00ff9d;
+            background: rgba(0,255,157,0.08);
+            border: 1px solid rgba(0,255,157,0.3);
+            padding: 2px 6px;
+            border-radius: 999px;
+            letter-spacing: 0.5px;
+            font-weight: 700;
+        }
+        .draft-title {
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.88rem;
+            margin-bottom: 0.35rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .draft-progress-track {
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255,255,255,0.06);
+            overflow: hidden;
+            margin-bottom: 0.4rem;
+        }
+        .draft-progress-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+        .draft-meta {
+            color: #8b8b9a;
+            font-size: 0.7rem;
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.55rem;
+            font-variant-numeric: tabular-nums;
+        }
+        .draft-meta b { color: #00ff9d; font-weight: 700; }
+        .draft-actions {
+            display: flex;
+            gap: 0.3rem;
+            flex-wrap: wrap;
+        }
+        .btn-draft {
+            flex: 1;
+            min-width: 0;
+            padding: 0.35rem 0.4rem;
+            border-radius: 6px;
+            font-size: 0.68rem;
+            font-weight: 700;
+            cursor: pointer;
+            border: 1px solid;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .btn-draft.btn-resume {
+            background: rgba(0,255,157,0.08);
+            border-color: rgba(0,255,157,0.3);
+            color: #00ff9d;
+        }
+        .btn-draft.btn-resume:hover { background: rgba(0,255,157,0.18); }
+        .btn-draft.btn-reset {
+            background: rgba(255,215,0,0.08);
+            border-color: rgba(255,215,0,0.3);
+            color: #ffd700;
+        }
+        .btn-draft.btn-reset:hover { background: rgba(255,215,0,0.18); }
+        .btn-draft.btn-delete {
+            background: rgba(255,0,110,0.08);
+            border-color: rgba(255,0,110,0.3);
+            color: #ff006e;
+            flex: 0 0 auto;
+            padding: 0.35rem 0.55rem;
+        }
+        .btn-draft.btn-delete:hover { background: rgba(255,0,110,0.2); }
+
+        /* ─── Statistics page ─── */
+        .stats-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        .stat-box {
+            background: #13131a;
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 0.9rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.2s;
+        }
+        .stat-box:hover {
+            border-color: rgba(0,255,157,0.2);
+            transform: translateY(-2px);
+        }
+        .stat-box-icon {
+            width: 36px; height: 36px;
+            border-radius: 9px;
+            display: flex; align-items: center; justify-content: center;
+            color: #0a0a0f;
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .stat-box-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #fff;
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+        }
+        .stat-box-label {
+            color: #8b8b9a;
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 0.25rem;
+            font-weight: 600;
+        }
+        .stat-box-sub {
+            color: #00ff9d;
+            font-size: 0.7rem;
+            margin-top: 0.35rem;
+            font-weight: 600;
+            opacity: 0.8;
+        }
+
+        .stats-two-col {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr));
+            gap: 0.75rem;
+            margin-top: 0.5rem;
+        }
+        .stats-card {
+            background: #13131a;
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .stats-card-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .stats-card-head h3 {
+            color: #00ff9d;
+            font-size: 0.85rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin: 0;
+        }
+        .stats-card-count {
+            background: rgba(0,255,157,0.08);
+            border: 1px solid rgba(0,255,157,0.2);
+            color: #00ff9d;
+            padding: 0.15rem 0.55rem;
+            border-radius: 999px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+        .stats-card-body {
+            padding: 0.5rem 0;
+        }
+        .stats-empty {
+            color: #8b8b9a;
+            text-align: center;
+            padding: 1.5rem 1rem;
+            font-size: 0.78rem;
+            font-style: italic;
+        }
+        .stat-row {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            padding: 0.6rem 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            transition: background 0.15s;
+        }
+        .stat-row:hover { background: rgba(255,255,255,0.02); }
+        .stat-row:last-child { border-bottom: none; }
+        .stat-row .sr-icon {
+            font-size: 1.1rem;
+            width: 32px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .stat-row .sr-rank {
+            color: #ffd700;
+            font-size: 1rem;
+            font-weight: 800;
+            width: 28px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .stat-row .sr-main {
+            flex: 1;
+            min-width: 0;
+        }
+        .stat-row .sr-user {
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.85rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .stat-row .sr-sub {
+            color: #8b8b9a;
+            font-size: 0.68rem;
+            margin-top: 0.1rem;
+        }
+        .stat-row .sr-value {
+            color: #00ff9d;
+            font-weight: 800;
+            font-size: 0.85rem;
+            font-variant-numeric: tabular-nums;
+            text-align: right;
+            white-space: nowrap;
+        }
+        .stat-row .sr-value.gold { color: #ffd700; }
+        .stat-row .sr-time {
+            color: #8b8b9a;
+            font-size: 0.68rem;
+            flex-shrink: 0;
+            min-width: 60px;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+        .session-row {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            padding: 0.7rem 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+        }
+        .session-row:last-child { border-bottom: none; }
+        .session-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: #00ff9d;
+            box-shadow: 0 0 8px #00ff9d;
+            flex-shrink: 0;
+        }
+        .session-main { flex: 1; min-width: 0; }
+        .session-date { color: #fff; font-weight: 600; font-size: 0.82rem; }
+        .session-info { color: #8b8b9a; font-size: 0.7rem; margin-top: 0.15rem; display: flex; gap: 0.75rem; flex-wrap: wrap; }
+        .session-info b { color: #00ff9d; }
+
+        /* ─── Gift Sound Map grid ─── */
+        .gift-map-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 0.6rem;
+            max-height: 520px;
+            overflow-y: auto;
+            padding-right: 0.35rem;
+        }
+        .gift-map-grid::-webkit-scrollbar { width: 6px; }
+        .gift-map-grid::-webkit-scrollbar-thumb { background: rgba(0,255,157,0.2); border-radius: 3px; }
+        .gift-map-row {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 0.55rem 0.65rem;
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+            transition: all 0.2s;
+        }
+        .gift-map-row:hover { border-color: rgba(0,255,157,0.2); }
+        .gift-map-row.mapped { border-color: rgba(0,255,157,0.3); background: rgba(0,255,157,0.04); }
+        .gift-map-row img.gift-icon-sm {
+            width: 38px; height: 38px; object-fit: contain; flex-shrink: 0;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+        }
+        .gift-map-meta { flex: 1; min-width: 0; }
+        .gift-map-name {
+            color: #fff; font-weight: 700; font-size: 0.82rem;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .gift-map-coins {
+            color: #ffd700; font-size: 0.68rem; font-weight: 600;
+            margin-top: 0.1rem; display: flex; align-items: center; gap: 3px;
+        }
+        .gift-map-controls {
+            display: flex; gap: 0.3rem; align-items: center;
+            flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end;
+        }
+        .gift-map-select {
+            background: #0a0a0f;
+            border: 1px solid rgba(255,255,255,0.08);
+            color: #fff;
+            border-radius: 6px;
+            padding: 0.3rem 0.4rem;
+            font-size: 0.7rem;
+            max-width: 110px;
+        }
+        .gift-map-btn {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            color: #e0e0e0;
+            border-radius: 6px;
+            padding: 0.25rem 0.45rem;
+            font-size: 0.65rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+        }
+        .gift-map-btn:hover { background: rgba(0,255,157,0.1); border-color: rgba(0,255,157,0.25); color: #00ff9d; }
+        .gift-map-btn.btn-preview { color: #00d9ff; }
+        .gift-map-btn.btn-preview:hover { background: rgba(0,217,255,0.1); border-color: rgba(0,217,255,0.3); color: #00d9ff; }
+        .gift-map-btn.btn-clear { color: #ff006e; }
+        .gift-map-btn.btn-clear:hover { background: rgba(255,0,110,0.1); border-color: rgba(255,0,110,0.3); color: #ff006e; }
+        .gift-map-chip-mp3 {
+            background: linear-gradient(135deg, #00ff9d, #00d9ff);
+            color: #0a0a0f;
+            font-size: 0.6rem;
+            font-weight: 800;
+            padding: 2px 6px;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+        }
+
+        /* ─── Mods Page (cards) ─── */
+        .mods-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+        }
+        .mod-card {
+            background: #13131a;
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 14px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+        }
+        .mod-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(0,255,157,0.3);
+            box-shadow: 0 8px 24px rgba(0,255,157,0.12), 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .mod-card-image {
+            width: 100%;
+            aspect-ratio: 16 / 10;
+            background: linear-gradient(135deg, #1a1a2e, #0a0a0f);
+            object-fit: cover;
+            display: block;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .mod-card-top-badges {
+            position: absolute;
+            top: 0.6rem;
+            left: 0.6rem;
+            display: flex;
+            gap: 0.3rem;
+            flex-wrap: wrap;
+            pointer-events: none;
+        }
+        .mod-card-badge {
+            background: rgba(0,0,0,0.65);
+            backdrop-filter: blur(8px);
+            color: #00ff9d;
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            border: 1px solid rgba(0,255,157,0.3);
+        }
+        .mod-card-badge.installed {
+            background: rgba(0,255,157,0.9);
+            color: #0a0a0f;
+            border-color: rgba(0,255,157,0.6);
+        }
+        .mod-card-body {
+            padding: 0.85rem 1rem 1rem;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            gap: 0.5rem;
+        }
+        .mod-card-game {
+            color: #8b8b9a;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+        .mod-card-title {
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 800;
+            line-height: 1.2;
+            margin: 0.1rem 0 0.25rem;
+        }
+        .mod-card-desc {
+            color: #8b8b9a;
+            font-size: 0.78rem;
+            line-height: 1.4;
+            flex: 1;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .mod-card-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-top: 0.5rem;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            gap: 0.5rem;
+        }
+        .mod-card-stats {
+            color: #8b8b9a;
+            font-size: 0.68rem;
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        .mod-card-stats b { color: #00ff9d; font-variant-numeric: tabular-nums; }
+        .mod-card-arrow {
+            color: #00ff9d;
+            font-size: 0.8rem;
+            transition: transform 0.2s;
+        }
+        .mod-card:hover .mod-card-arrow { transform: translateX(4px); }
+
+        /* ─── Mod Detail Page ─── */
+        .mod-hero {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            min-height: 220px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .mod-hero-bg {
+            position: absolute;
+            inset: 0;
+            background-size: cover;
+            background-position: center;
+            filter: blur(2px) brightness(0.55);
+            transform: scale(1.05);
+        }
+        .mod-hero-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(10,10,15,0.6), rgba(10,10,15,0.92));
+        }
+        .mod-hero-content {
+            position: relative;
+            padding: 1.5rem 1.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .mod-hero-meta {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+        }
+        .mod-hero-chip {
+            background: rgba(0,255,157,0.12);
+            border: 1px solid rgba(0,255,157,0.3);
+            color: #00ff9d;
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 999px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .mod-hero-chip-version {
+            background: rgba(189,0,255,0.12);
+            border-color: rgba(189,0,255,0.3);
+            color: #bd00ff;
+        }
+        .mod-hero-chip-installs {
+            background: rgba(255,215,0,0.1);
+            border-color: rgba(255,215,0,0.3);
+            color: #ffd700;
+        }
+        .mod-hero-title {
+            color: #fff;
+            font-size: 1.85rem;
+            font-weight: 900;
+            margin: 0;
+            line-height: 1.1;
+        }
+        .mod-hero-game {
+            color: #00ff9d;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .mod-hero-desc {
+            color: #d0d0d0;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            max-width: 700px;
+            margin: 0.25rem 0 0.75rem;
+        }
+        .mod-hero-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 0.25rem;
+        }
+
+        /* ─── Gift Action Grid ─── */
+        .md-gift-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 0.6rem;
+            max-height: 640px;
+            overflow-y: auto;
+            padding-right: 0.35rem;
+        }
+        .md-gift-grid::-webkit-scrollbar { width: 6px; }
+        .md-gift-grid::-webkit-scrollbar-thumb { background: rgba(0,255,157,0.2); border-radius: 3px; }
+        .md-gift-row {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 0.55rem 0.7rem;
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+            transition: all 0.2s;
+        }
+        .md-gift-row:hover { border-color: rgba(0,255,157,0.2); }
+        .md-gift-row.mapped { border-color: rgba(0,255,157,0.3); background: rgba(0,255,157,0.04); }
+        .md-gift-row img.md-gift-icon {
+            width: 34px; height: 34px; object-fit: contain; flex-shrink: 0;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+        }
+        .md-gift-info { flex: 1; min-width: 0; }
+        .md-gift-name {
+            color: #fff; font-weight: 700; font-size: 0.8rem;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .md-gift-coins {
+            color: #ffd700; font-size: 0.65rem; font-weight: 600;
+            margin-top: 0.1rem;
+        }
+        .md-action-controls {
+            display: flex;
+            gap: 0.3rem;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .md-action-type {
+            background: #0a0a0f;
+            border: 1px solid rgba(255,255,255,0.08);
+            color: #fff;
+            border-radius: 6px;
+            padding: 0.3rem 0.35rem;
+            font-size: 0.68rem;
+            max-width: 80px;
+        }
+        .md-shortcut-input {
+            width: 120px;
+            background: #0a0a0f;
+            border: 1px solid rgba(255,255,255,0.08);
+            color: #00ff9d;
+            border-radius: 6px;
+            padding: 0.35rem 0.5rem;
+            font-size: 0.72rem;
+            font-family: 'Courier New', monospace;
+            font-weight: 700;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .md-shortcut-input:hover { border-color: rgba(0,255,157,0.3); background: rgba(0,255,157,0.04); }
+        .md-shortcut-input:focus,
+        .md-shortcut-input.capturing {
+            outline: none;
+            border-color: #00ff9d;
+            box-shadow: 0 0 0 2px rgba(0,255,157,0.25), 0 0 12px rgba(0,255,157,0.3);
+            color: #ffd700;
+            background: rgba(0,255,157,0.08);
+            animation: capturePulse 1.2s ease infinite;
+        }
+        @keyframes capturePulse {
+            0%, 100% { box-shadow: 0 0 0 2px rgba(0,255,157,0.25), 0 0 12px rgba(0,255,157,0.3); }
+            50% { box-shadow: 0 0 0 2px rgba(0,255,157,0.5), 0 0 20px rgba(0,255,157,0.5); }
+        }
+        .md-gift-btn {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            color: #e0e0e0;
+            border-radius: 6px;
+            padding: 0.3rem 0.5rem;
+            font-size: 0.65rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .md-gift-btn:hover { background: rgba(255,0,110,0.1); border-color: rgba(255,0,110,0.3); color: #ff006e; }
     </style>
 </head>
 
@@ -1828,7 +2916,7 @@
                     <label>E-POSTA</label>
                     <div class="input-wrapper">
                         <i class="fas fa-envelope"></i>
-                        <input type="email" id="email" placeholder="ornek@ornek.com" required>
+                        <input type="email" id="email" placeholder="ornek@ornek.com" value="admin@seligames.com" required>
                     </div>
                 </div>
 
@@ -1836,7 +2924,7 @@
                     <label>ŞİFRE</label>
                     <div class="input-wrapper">
                         <i class="fas fa-lock"></i>
-                        <input type="password" id="password" placeholder="........" required>
+                        <input type="password" id="password" placeholder="........" value="XkWT7eMFjRKXPKb3" required>
                     </div>
                 </div>
 
@@ -1871,6 +2959,90 @@
                 <i class="fab fa-tiktok"></i>
                 <span>TikTok Canlı</span>
             </div>
+
+            <div class="nav-section-label">OBS Katmanları</div>
+
+            <div class="nav-accordion-header open" onclick="toggleAccordion(this)">
+                <i class="fas fa-images nav-acc-icon"></i>
+                <span>Kaplama Galerisi</span>
+                <i class="fas fa-chevron-right acc-arrow"></i>
+            </div>
+            <div class="nav-accordion-body open">
+                <div class="nav-sub-item" onclick="navigateOverlay('gallery-templates')">Hazır Şablonlar</div>
+                <div class="nav-sub-item" onclick="navigateOverlay('gallery-my')">Kaplamalarım</div>
+            </div>
+
+            <div class="nav-accordion-header" onclick="toggleAccordion(this)">
+                <i class="fas fa-bullseye nav-acc-icon"></i>
+                <span>Hedef Katmanları</span>
+                <i class="fas fa-chevron-right acc-arrow"></i>
+            </div>
+            <div class="nav-accordion-body">
+                <div class="nav-sub-item" onclick="navigateOverlay('goal-likes')">❤️ Likes</div>
+                <div class="nav-sub-item" onclick="navigateOverlay('goal-shares')">🔁 Shares</div>
+                <div class="nav-sub-item" onclick="navigateOverlay('goal-follows')">➕ Follows</div>
+                <div class="nav-sub-item" onclick="navigateOverlay('goal-viewers')">👁️ Viewer Count</div>
+                <div class="nav-sub-item" onclick="navigateOverlay('goal-coins')">🪙 Coins Earned</div>
+                <div class="nav-sub-item" onclick="navigateOverlay('goal-subscribers')">⭐ New Subscribers</div>
+                <div class="nav-sub-item" onclick="navigateOverlay('goal-custom1')">🎯 Custom Goal 1</div>
+                <div class="nav-sub-item" onclick="navigateOverlay('goal-custom2')">🎯 Custom Goal 2</div>
+                <div class="nav-sub-item" onclick="navigateOverlay('goal-custom3')">🎯 Custom Goal 3</div>
+            </div>
+
+            <div class="nav-accordion-header" onclick="toggleAccordion(this)">
+                <i class="fas fa-gift nav-acc-icon"></i>
+                <span>Hediye Katmanları</span>
+                <i class="fas fa-chevron-right acc-arrow"></i>
+            </div>
+            <div class="nav-accordion-body">
+                <div class="nav-sub-item" onclick="navigateOverlay('gift-alert')">🎁 Hediye Alert</div>
+                <div class="nav-sub-item" onclick="navigateOverlay('gift-ticker')">📜 Hediye Ticker</div>
+            </div>
+
+            <div class="nav-accordion-header" onclick="toggleAccordion(this)">
+                <i class="fas fa-clock nav-acc-icon"></i>
+                <span>Son X Katman</span>
+                <i class="fas fa-chevron-right acc-arrow"></i>
+            </div>
+            <div class="nav-accordion-body">
+                <div class="nav-sub-item" onclick="navigateOverlay('lastx-follower')">➕ Son Takipçi</div>
+                <div class="nav-sub-item" onclick="navigateOverlay('lastx-gift')">🎁 Son Hediye</div>
+                <div class="nav-sub-item" onclick="navigateOverlay('lastx-like')">❤️ Son Beğenen</div>
+                <div class="nav-sub-item" onclick="navigateOverlay('lastx-share')">🔁 Son Paylaşan</div>
+            </div>
+
+            <div class="nav-accordion-header" onclick="toggleAccordion(this)">
+                <i class="fas fa-chart-bar nav-acc-icon"></i>
+                <span>Grafik Bindirmeleri</span>
+                <i class="fas fa-chevron-right acc-arrow"></i>
+            </div>
+            <div class="nav-accordion-body">
+                <div class="nav-sub-item" onclick="navigateOverlay('lb-gifters')">🏆 Top Gifters</div>
+                <div class="nav-sub-item" onclick="navigateOverlay('lb-likers')">❤️ Top Likers</div>
+                <div class="nav-sub-item" onclick="navigateOverlay('chart-viewers')">📊 Viewer Grafiği</div>
+            </div>
+
+            <div class="nav-accordion-header" onclick="toggleAccordion(this)">
+                <i class="fas fa-tv nav-acc-icon"></i>
+                <span>OBS Dockları</span>
+                <i class="fas fa-chevron-right acc-arrow"></i>
+            </div>
+            <div class="nav-accordion-body">
+                <div class="nav-sub-item" onclick="navigateOverlay('dock-chat')">💬 Chat Dock</div>
+                <div class="nav-sub-item" onclick="navigateOverlay('dock-events')">📋 Event Feed</div>
+            </div>
+
+            <div class="nav-item" onclick="navigateTo('gift-scanner')">
+                <i class="fas fa-search"></i>
+                <span>Hediye Tarayıcı</span>
+            </div>
+            <div class="nav-item" onclick="navigateTo('gift-sounds')">
+                <i class="fas fa-music"></i>
+                <span>Hediye Sesleri</span>
+            </div>
+
+            <div class="nav-section-label">Genel</div>
+
             <div class="nav-item" onclick="navigateTo('profile')">
                 <i class="fas fa-user"></i>
                 <span>Profil</span>
@@ -1917,141 +3089,229 @@
 
                 <!-- Welcome Banner -->
                 <div
-                    style="background: linear-gradient(135deg, rgba(0, 255, 157, 0.1), rgba(0, 240, 255, 0.1)); border: 1px solid rgba(0, 255, 157, 0.2); border-radius: 20px; padding: 2.5rem; margin-bottom: 2rem; position: relative; overflow: hidden;">
-                    <div
-                        style="position: absolute; top: -50px; right: -50px; width: 200px; height: 200px; background: radial-gradient(circle, rgba(0, 255, 157, 0.2), transparent); border-radius: 50%;">
-                    </div>
+                    style="background: linear-gradient(135deg, rgba(0, 255, 157, 0.06), rgba(0, 240, 255, 0.06)); border: 1px solid rgba(0, 255, 157, 0.1); border-radius: 10px; padding: 1.25rem; margin-bottom: 1.25rem; position: relative; overflow: hidden;">
                     <div style="position: relative; z-index: 1;">
                         <h2
-                            style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; background: linear-gradient(135deg, #00ff9d, #00f0ff); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">
-                            🎮 Oyun Deneyiminizi Güçlendirin!
+                            style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.3rem; background: linear-gradient(135deg, #00ff9d, #00f0ff); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">
+                            Oyun Deneyiminizi Güçlendirin
                         </h2>
-                        <p style="color: #8b8b9a; font-size: 1.1rem; margin-bottom: 1.5rem;">
-                            TikTok izleyicilerinizle etkileşimli oyun deneyimi yaşatın. Modlarınızı yükleyin, ayarlayın
-                            ve canlı yayınlarınızı eğlenceye dönüştürün!
+                        <p style="color: #8b8b9a; font-size: 0.8rem; margin-bottom: 0.85rem;">
+                            TikTok izleyicilerinizle etkileşimli oyun deneyimi yaşatın.
                         </p>
-                        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
                             <button onclick="navigateTo('mods')"
-                                style="background: linear-gradient(135deg, #00ff9d, #00f0ff); color: #0a0a0f; border: none; padding: 1rem 2rem; border-radius: 10px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                                style="background: linear-gradient(135deg, #00ff9d, #00f0ff); color: #0a0a0f; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.3rem; font-size: 0.78rem;">
                                 <i class="fas fa-rocket"></i> Modları Keşfet
                             </button>
                             <button onclick="navigateTo('guide')"
-                                style="background: rgba(255, 255, 255, 0.05); color: #00ff9d; border: 1px solid rgba(0, 255, 157, 0.3); padding: 1rem 2rem; border-radius: 10px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                                style="background: rgba(255, 255, 255, 0.04); color: #00ff9d; border: 1px solid rgba(0, 255, 157, 0.15); padding: 0.5rem 1rem; border-radius: 6px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.3rem; font-size: 0.78rem;">
                                 <i class="fas fa-book"></i> Kullanım Kılavuzu
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Stats Overview -->
+                <!-- Stats Overview (live from backend) -->
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-icon"><i class="fas fa-puzzle-piece"></i></div>
-                        <div class="stat-value" id="stat-mods">2</div>
+                        <div class="stat-value" id="stat-mods">—</div>
                         <div class="stat-label">MEVCUT MODLAR</div>
                     </div>
                     <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-layer-group"></i></div>
+                        <div class="stat-value" id="stat-overlays">—</div>
+                        <div class="stat-label">KAYITLI OVERLAY</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="color:#ff006e"><i class="fas fa-gift"></i></div>
+                        <div class="stat-value" id="stat-total-gifts">—</div>
+                        <div class="stat-label">TOPLAM HEDİYE</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="color:#ffd700"><i class="fas fa-gem"></i></div>
+                        <div class="stat-value" id="stat-total-diamonds">—</div>
+                        <div class="stat-label">KAZANILAN ELMAS</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="color:#00d9ff"><i class="fas fa-heart"></i></div>
+                        <div class="stat-value" id="stat-total-likes">—</div>
+                        <div class="stat-label">TOPLAM BEĞENİ</div>
+                    </div>
+                    <div class="stat-card">
                         <div class="stat-icon"><i class="fab fa-tiktok"></i></div>
-                        <div class="stat-value"><i class="fas fa-circle" style="font-size: 1rem; color: #ff006e;"></i>
-                        </div>
-                        <div class="stat-label">TIKTOK DURUMU</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon"><i class="fas fa-download"></i></div>
-                        <div class="stat-value">0</div>
-                        <div class="stat-label">İNDİRMELER</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon"><i class="fas fa-star"></i></div>
-                        <div class="stat-value">Premium</div>
-                        <div class="stat-label">ÜYELİK</div>
+                        <div class="stat-value" id="stat-tiktok-status" style="font-size:0.9rem;">—</div>
+                        <div class="stat-label">TIKTOK</div>
                     </div>
                 </div>
 
                 <!-- Quick Actions -->
-                <div style="margin: 2rem 0;">
-                    <h3 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 1.5rem; color: #00ff9d;">⚡ Hızlı
-                        Aksiyonlar</h3>
-                    <div
-                        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr)); gap: 1.5rem; width: 100%; max-width: 100%; overflow: hidden;">
+                <div style="margin: 1rem 0;">
+                    <h3 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 0.75rem; color: #00ff9d;">Hızlı Aksiyonlar</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr)); gap: 0.65rem; width: 100%; max-width: 100%; overflow: hidden;">
                         <div onclick="navigateTo('tiktok')"
-                            style="background: #13131a; border: 1px solid rgba(0, 255, 157, 0.1); border-radius: 15px; padding: 1.5rem; cursor: pointer; transition: all 0.3s;"
-                            onmouseover="this.style.transform='translateY(-5px)'; this.style.borderColor='#00ff9d';"
-                            onmouseout="this.style.transform=''; this.style.borderColor='rgba(0, 255, 157, 0.1)';">
-                            <div
-                                style="width: 50px; height: 50px; background: rgba(255, 0, 80, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
-                                <i class="fab fa-tiktok"
-                                    style="font-size: 1.5rem; background: linear-gradient(135deg, #ff0050, #00f2ea); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;"></i>
+                            style="background: #13131a; border: 1px solid rgba(255,255,255,0.04); border-radius: 8px; padding: 0.85rem; cursor: pointer; transition: all 0.2s;"
+                            onmouseover="this.style.borderColor='rgba(0,255,157,0.15)';"
+                            onmouseout="this.style.borderColor='rgba(255,255,255,0.04)';">
+                            <div style="width: 32px; height: 32px; background: rgba(255, 0, 80, 0.08); border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem;">
+                                <i class="fab fa-tiktok" style="font-size: 0.9rem; background: linear-gradient(135deg, #ff0050, #00f2ea); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;"></i>
                             </div>
-                            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">TikTok Bağla</h4>
-                            <p style="color: #8b8b9a; font-size: 0.9rem;">Hesabınızı bağlayarak canlı yayınlarınıza mod
-                                entegrasyonu sağlayın</p>
+                            <h4 style="font-weight: 700; margin-bottom: 0.2rem; font-size: 0.82rem;">TikTok Bağla</h4>
+                            <p style="color: #8b8b9a; font-size: 0.7rem;">Canlı yayına mod entegrasyonu</p>
                         </div>
 
-                        <div onclick="document.getElementById('mods-grid') && loadMods() || navigateTo('mods')"
-                            style="background: #13131a; border: 1px solid rgba(0, 255, 157, 0.1); border-radius: 15px; padding: 1.5rem; cursor: pointer; transition: all 0.3s;"
-                            onmouseover="this.style.transform='translateY(-5px)'; this.style.borderColor='#00ff9d';"
-                            onmouseout="this.style.transform=''; this.style.borderColor='rgba(0, 255, 157, 0.1)';">
-                            <div
-                                style="width: 50px; height: 50px; background: rgba(0, 255, 157, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
-                                <i class="fas fa-download" style="font-size: 1.5rem; color: #00ff9d;"></i>
+                        <div onclick="navigateTo('mods')"
+                            style="background: #13131a; border: 1px solid rgba(255,255,255,0.04); border-radius: 8px; padding: 0.85rem; cursor: pointer; transition: all 0.2s;"
+                            onmouseover="this.style.borderColor='rgba(0,255,157,0.15)';"
+                            onmouseout="this.style.borderColor='rgba(255,255,255,0.04)';">
+                            <div style="width: 32px; height: 32px; background: rgba(0, 255, 157, 0.08); border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem;">
+                                <i class="fas fa-download" style="font-size: 0.9rem; color: #00ff9d;"></i>
                             </div>
-                            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">Mod İndir</h4>
-                            <p style="color: #8b8b9a; font-size: 0.9rem;">Yeni modlar indirin ve oyun deneyiminizi
-                                geliştirin</p>
+                            <h4 style="font-weight: 700; margin-bottom: 0.2rem; font-size: 0.82rem;">Mod İndir</h4>
+                            <p style="color: #8b8b9a; font-size: 0.7rem;">Yeni modlar indirin</p>
                         </div>
 
                         <div onclick="navigateTo('statistics')"
-                            style="background: #13131a; border: 1px solid rgba(0, 255, 157, 0.1); border-radius: 15px; padding: 1.5rem; cursor: pointer; transition: all 0.3s;"
-                            onmouseover="this.style.transform='translateY(-5px)'; this.style.borderColor='#00ff9d';"
-                            onmouseout="this.style.transform=''; this.style.borderColor='rgba(0, 255, 157, 0.1)';">
-                            <div
-                                style="width: 50px; height: 50px; background: rgba(0, 240, 255, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
-                                <i class="fas fa-chart-line" style="font-size: 1.5rem; color: #00f0ff;"></i>
+                            style="background: #13131a; border: 1px solid rgba(255,255,255,0.04); border-radius: 8px; padding: 0.85rem; cursor: pointer; transition: all 0.2s;"
+                            onmouseover="this.style.borderColor='rgba(0,255,157,0.15)';"
+                            onmouseout="this.style.borderColor='rgba(255,255,255,0.04)';">
+                            <div style="width: 32px; height: 32px; background: rgba(0, 240, 255, 0.08); border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem;">
+                                <i class="fas fa-chart-line" style="font-size: 0.9rem; color: #00f0ff;"></i>
                             </div>
-                            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">İstatistikleri Gör</h4>
-                            <p style="color: #8b8b9a; font-size: 0.9rem;">Kullanım istatistiklerinizi ve performans
-                                metriklerini inceleyin</p>
+                            <h4 style="font-weight: 700; margin-bottom: 0.2rem; font-size: 0.82rem;">İstatistikler</h4>
+                            <p style="color: #8b8b9a; font-size: 0.7rem;">Performans metrikleri</p>
                         </div>
 
                         <div onclick="navigateTo('settings')"
-                            style="background: #13131a; border: 1px solid rgba(0, 255, 157, 0.1); border-radius: 15px; padding: 1.5rem; cursor: pointer; transition: all 0.3s;"
-                            onmouseover="this.style.transform='translateY(-5px)'; this.style.borderColor='#00ff9d';"
-                            onmouseout="this.style.transform=''; this.style.borderColor='rgba(0, 255, 157, 0.1)';">
-                            <div
-                                style="width: 50px; height: 50px; background: rgba(189, 0, 255, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
-                                <i class="fas fa-cog" style="font-size: 1.5rem; color: #bd00ff;"></i>
+                            style="background: #13131a; border: 1px solid rgba(255,255,255,0.04); border-radius: 8px; padding: 0.85rem; cursor: pointer; transition: all 0.2s;"
+                            onmouseover="this.style.borderColor='rgba(0,255,157,0.15)';"
+                            onmouseout="this.style.borderColor='rgba(255,255,255,0.04)';">
+                            <div style="width: 32px; height: 32px; background: rgba(189, 0, 255, 0.08); border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem;">
+                                <i class="fas fa-cog" style="font-size: 0.9rem; color: #bd00ff;"></i>
                             </div>
-                            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">Ayarları Düzenle</h4>
-                            <p style="color: #8b8b9a; font-size: 0.9rem;">Uygulama tercihlerinizi ve mod ayarlarınızı
-                                yönetin</p>
+                            <h4 style="font-weight: 700; margin-bottom: 0.2rem; font-size: 0.82rem;">Ayarlar</h4>
+                            <p style="color: #8b8b9a; font-size: 0.7rem;">Uygulama tercihleri</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Recent Activity -->
-                <div
-                    style="background: #13131a; border: 1px solid rgba(0, 255, 157, 0.1); border-radius: 15px; padding: 2rem;">
-                    <h3
-                        style="font-size: 1.3rem; font-weight: 700; margin-bottom: 1.5rem; color: #00ff9d; display: flex; align-items: center; gap: 0.8rem;">
+                <div style="background: #13131a; border: 1px solid rgba(255,255,255,0.04); border-radius: 8px; padding: 1rem;">
+                    <h3 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 0.75rem; color: #00ff9d; display: flex; align-items: center; gap: 0.5rem;">
                         <i class="fas fa-clock"></i> Son Aktiviteler
                     </h3>
-                    <div id="recent-activity" style="color: #8b8b9a; text-align: center; padding: 2rem;">
-                        <i class="fas fa-inbox" style="font-size: 3rem; opacity: 0.3; margin-bottom: 1rem;"></i>
-                        <p>Henüz aktivite yok. Bir mod yükleyerek başlayın!</p>
+                    <div id="recent-activity" style="color: #8b8b9a; text-align: center; padding: 1.25rem;">
+                        <i class="fas fa-inbox" style="font-size: 1.8rem; opacity: 0.3; margin-bottom: 0.5rem;"></i>
+                        <p style="font-size: 0.78rem;">Henüz aktivite yok. Bir mod yükleyerek başlayın!</p>
                     </div>
                 </div>
             </div>
 
             <!-- Mods Page -->
             <div class="page" id="mods-page">
-                <div class="page-header">
-                    <div class="page-title">Oyun Modları</div>
-                    <div class="page-subtitle">Mevcut modlara göz atın ve ind irin</div>
+                <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap;">
+                    <div>
+                        <div class="page-title">🎮 Oyun Modları</div>
+                        <div class="page-subtitle">TikTok canlı yayınında izleyicilerinin hediyeleriyle oyunları kontrol et. <span id="mods-total-count" style="color:#00ff9d;font-weight:700;">—</span> mod mevcut.</div>
+                    </div>
+                    <button class="btn-new-draft" onclick="openAddGameModal()" style="margin-top:0.25rem;">
+                        <i class="fas fa-plus-circle"></i> Oyun Ekle
+                    </button>
+                </div>
+
+                <!-- Filter/search bar -->
+                <div style="display:flex;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap;align-items:center;">
+                    <input type="text" id="mod-search" placeholder="🔍 Oyun ara..."
+                        style="flex:1;min-width:220px;padding:0.6rem 0.85rem;background:#0a0a0f;border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#fff;font-size:0.85rem;"
+                        oninput="filterMods()">
+                    <select id="mod-category" onchange="filterMods()"
+                        style="padding:0.6rem 0.85rem;background:#0a0a0f;border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#fff;font-size:0.82rem;">
+                        <option value="all">Tüm Kategoriler</option>
+                        <option value="open-world">Açık Dünya</option>
+                        <option value="fps">FPS</option>
+                        <option value="battle-royale">Battle Royale</option>
+                        <option value="moba">MOBA</option>
+                        <option value="sandbox">Sandbox</option>
+                        <option value="sports">Spor</option>
+                        <option value="party">Parti</option>
+                    </select>
+                    <select id="mod-filter" onchange="filterMods()"
+                        style="padding:0.6rem 0.85rem;background:#0a0a0f;border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#fff;font-size:0.82rem;">
+                        <option value="all">Hepsi</option>
+                        <option value="installed">Yüklü</option>
+                        <option value="not-installed">Yüklü Değil</option>
+                    </select>
+                    <span id="mod-result-count" style="color:#8b8b9a;font-size:0.78rem;margin-left:auto;"></span>
                 </div>
 
                 <div class="mods-grid" id="mods-grid">
-                    <!-- Mods will be loaded here -->
+                    <div style="grid-column:1/-1;text-align:center;color:#8b8b9a;padding:3rem;">
+                        <i class="fas fa-spinner fa-spin" style="font-size:2rem;opacity:0.5;"></i>
+                        <p style="margin-top:0.75rem;">Yükleniyor...</p>
+                    </div>
+                </div>
+                <div id="no-mods" style="display:none;text-align:center;color:#8b8b9a;padding:3rem;">
+                    <i class="fas fa-gamepad" style="font-size:2.5rem;opacity:0.3;display:block;margin-bottom:1rem;"></i>
+                    <p>Eşleşen mod bulunamadı</p>
+                </div>
+            </div>
+
+            <!-- Add Game Modal -->
+            <div class="modal" id="add-game-modal">
+                <div class="modal-content" style="max-width:540px;">
+                    <div class="modal-header">
+                        <h2 class="modal-title">➕ Yeni Oyun Ekle</h2>
+                        <button class="modal-close" onclick="closeAddGameModal()"><i class="fas fa-times"></i></button>
+                    </div>
+                    <form id="add-game-form" onsubmit="event.preventDefault();submitAddGame();" style="display:grid;gap:0.75rem;">
+                        <div>
+                            <label style="display:block;margin-bottom:0.25rem;color:#8b8b9a;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;">Mod Başlığı</label>
+                            <input type="text" id="ag-title" class="profile-input" placeholder="Örn: GTA V Kaos Modu" required>
+                        </div>
+                        <div>
+                            <label style="display:block;margin-bottom:0.25rem;color:#8b8b9a;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;">Oyun Adı</label>
+                            <input type="text" id="ag-game" class="profile-input" placeholder="Örn: Grand Theft Auto V" required>
+                        </div>
+                        <div>
+                            <label style="display:block;margin-bottom:0.25rem;color:#8b8b9a;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;">Açıklama</label>
+                            <textarea id="ag-description" class="profile-input" rows="3" placeholder="Kısa açıklama..." style="resize:vertical;font-family:inherit;"></textarea>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;">
+                            <div>
+                                <label style="display:block;margin-bottom:0.25rem;color:#8b8b9a;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;">Kategori</label>
+                                <select id="ag-category" class="profile-input">
+                                    <option value="open-world">Açık Dünya</option>
+                                    <option value="fps">FPS</option>
+                                    <option value="battle-royale">Battle Royale</option>
+                                    <option value="moba">MOBA</option>
+                                    <option value="sandbox">Sandbox</option>
+                                    <option value="sports">Spor</option>
+                                    <option value="party">Parti</option>
+                                    <option value="other">Diğer</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="display:block;margin-bottom:0.25rem;color:#8b8b9a;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;">Versiyon</label>
+                                <input type="text" id="ag-version" class="profile-input" value="1.0.0">
+                            </div>
+                        </div>
+                        <div>
+                            <label style="display:block;margin-bottom:0.25rem;color:#8b8b9a;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;">Kapak Görseli URL'si</label>
+                            <input type="url" id="ag-image" class="profile-input" placeholder="https://...">
+                        </div>
+                        <div>
+                            <label style="display:block;margin-bottom:0.25rem;color:#8b8b9a;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;">İndirme URL'si (VPS)</label>
+                            <input type="url" id="ag-download" class="profile-input" placeholder="https://vps.seligames.com/mods/xxx.zip" required>
+                        </div>
+                        <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
+                            <button type="button" class="btn-secondary" onclick="closeAddGameModal()" style="flex:1;">
+                                <i class="fas fa-times"></i> İptal
+                            </button>
+                            <button type="submit" class="btn-success" style="flex:2;">
+                                <i class="fas fa-plus-circle"></i> Oyun Ekle
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
 
@@ -2098,6 +3358,33 @@
                     <div class="compact-stat" style="background: linear-gradient(135deg, #ffa500, #ff8c00);">
                         <span class="stat-emoji">👥</span>
                         <span class="stat-num" id="live-viewers">0</span>
+                    </div>
+                </div>
+
+                <!-- Mod Action Dispatcher -->
+                <div style="background:#13131a;border:1px solid rgba(255,255,255,0.05);border-radius:12px;padding:1rem;margin-bottom:1rem;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;">
+                        <div>
+                            <h3 style="color:#00ff9d;margin:0 0 0.2rem 0;font-size:0.9rem;font-weight:700;display:flex;align-items:center;gap:0.4rem;">
+                                <i class="fas fa-gamepad"></i> Mod Aksiyonları
+                                <span id="mod-armed-status" style="font-size:0.72rem;font-weight:700;margin-left:0.35rem;"><span style="color:#8b8b9a;">● Pasif</span></span>
+                            </h3>
+                            <div style="color:#8b8b9a;font-size:0.72rem;">
+                                Başlattığında gelen hediyelere göre oyuna otomatik tuş basılır.
+                                <span id="mod-armed-count" style="color:#00ff9d;font-weight:700;margin-left:0.35rem;"></span>
+                            </div>
+                        </div>
+                        <button id="mod-armed-toggle" onclick="toggleModActions()" style="padding:0.65rem 1.1rem;border:none;border-radius:8px;color:#0a0a0f;font-weight:800;font-size:0.82rem;cursor:pointer;background:linear-gradient(135deg,#00ff9d,#00f0ff);display:inline-flex;align-items:center;gap:0.4rem;">
+                            <i class="fas fa-play-circle"></i> Mod Aksiyonlarını Başlat
+                        </button>
+                    </div>
+                    <div style="margin-top:0.75rem;">
+                        <div style="color:#8b8b9a;font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:0.35rem;">
+                            <i class="fas fa-bolt"></i> Son Fire Edilen Aksiyonlar
+                        </div>
+                        <div id="mod-action-log" style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:8px;max-height:180px;overflow-y:auto;">
+                            <div style="color:#8b8b9a;text-align:center;padding:1rem;font-size:0.75rem;font-style:italic;">Henüz fire edilen aksiyon yok</div>
+                        </div>
                     </div>
                 </div>
 
@@ -2181,10 +3468,10 @@
         <!-- Account Info - EDITABLE -->
         <div class="card">
             <h3 class="card-header-title">🔐 Hesap Bilgileri</h3>
-            <form id="profile-form" style="display: grid; gap: 1rem;">
+            <form id="profile-form" style="display: grid; gap: 0.6rem;">
                 <!-- Username -->
                 <div class="form-group">
-                    <label style="display: block; margin-bottom: 0.5rem; color: #8b8b9a; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Kullanıcı Adı</label>
+                    <label style="display: block; margin-bottom: 0.25rem; color: #8b8b9a; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Kullanıcı Adı</label>
                     <div style="display: flex; gap: 0.5rem;">
                         <input type="text" id="profile-username-edit" class="profile-input" placeholder="Kullanıcı adınız" />
                         <button type="button" onclick="updateProfileField('username')" class="btn-update-field">
@@ -2195,7 +3482,7 @@
 
                 <!-- Full Name -->
                 <div class="form-group">
-                    <label style="display: block; margin-bottom: 0.5rem; color: #8b8b9a; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Tam Ad</label>
+                    <label style="display: block; margin-bottom: 0.25rem; color: #8b8b9a; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Tam Ad</label>
                     <div style="display: flex; gap: 0.5rem;">
                         <input type="text" id="profile-fullname-edit" class="profile-input" placeholder="Ad Soyad" />
                         <button type="button" onclick="updateProfileField('fullName')" class="btn-update-field">
@@ -2206,7 +3493,7 @@
 
                 <!-- TikTok Username -->
                 <div class="form-group">
-                    <label style="display: block; margin-bottom: 0.5rem; color: #8b8b9a; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">
+                    <label style="display: block; margin-bottom: 0.25rem; color: #8b8b9a; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">
                         <i class="fab fa-tiktok" style="color: #ff0050;"></i> TikTok Kullanıcı Adı
                     </label>
                     <div style="display: flex; gap: 0.5rem;">
@@ -2219,7 +3506,7 @@
 
                 <!-- Phone Number -->
                 <div class="form-group">
-                    <label style="display: block; margin-bottom: 0.5rem; color: #8b8b9a; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Telefon</label>
+                    <label style="display: block; margin-bottom: 0.25rem; color: #8b8b9a; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Telefon</label>
                     <div style="display: flex; gap: 0.5rem;">
                         <input type="tel" id="profile-phone-edit" class="profile-input" placeholder="+90 5XX XXX XX XX" />
                         <button type="button" onclick="updateProfileField('phoneNumber')" class="btn-update-field">
@@ -2230,7 +3517,7 @@
 
                 <!-- Email (Read Only) -->
                 <div class="form-group">
-                    <label style="display: block; margin-bottom: 0.5rem; color: #8b8b9a; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">E-posta (Değiştirilemez)</label>
+                    <label style="display: block; margin-bottom: 0.25rem; color: #8b8b9a; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">E-posta (Değiştirilemez)</label>
                     <input type="email" id="profile-email-detail" class="profile-input" readonly style="opacity: 0.6; cursor: not-allowed;" />
                 </div>
             </form>
@@ -2239,17 +3526,17 @@
         <!-- Change Password -->
         <div class="card">
             <h3 class="card-header-title">🔑 Şifre Değiştir</h3>
-            <form id="password-form" style="display: grid; gap: 1rem;">
+            <form id="password-form" style="display: grid; gap: 0.6rem;">
                 <div class="form-group">
-                    <label style="display: block; margin-bottom: 0.5rem; color: #8b8b9a; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Mevcut Şifre</label>
+                    <label style="display: block; margin-bottom: 0.25rem; color: #8b8b9a; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Mevcut Şifre</label>
                     <input type="password" id="current-password" class="profile-input" placeholder="••••••••" />
                 </div>
                 <div class="form-group">
-                    <label style="display: block; margin-bottom: 0.5rem; color: #8b8b9a; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Yeni Şifre</label>
+                    <label style="display: block; margin-bottom: 0.25rem; color: #8b8b9a; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Yeni Şifre</label>
                     <input type="password" id="new-password" class="profile-input" placeholder="••••••••" />
                 </div>
                 <div class="form-group">
-                    <label style="display: block; margin-bottom: 0.5rem; color: #8b8b9a; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Yeni Şifre (Tekrar)</label>
+                    <label style="display: block; margin-bottom: 0.25rem; color: #8b8b9a; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Yeni Şifre (Tekrar)</label>
                     <input type="password" id="new-password-confirm" class="profile-input" placeholder="••••••••" />
                 </div>
                 <button type="button" onclick="changePassword()" class="btn-success" style="width: 100%;">
@@ -2289,63 +3576,92 @@
 
     <!-- Statistics Page -->
     <div class="page" id="statistics-page">
-        <div class="page-header">
-            <div class="page-title">İstatistikler</div>
-            <div class="page-subtitle">Mod kullanım geçmişiniz ve etkileşim istatistikleri</div>
+        <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap;">
+            <div>
+                <div class="page-title">İstatistikler</div>
+                <div class="page-subtitle">Canlı yayınlarının özeti, geçmişin ve en aktif izleyiciler</div>
+            </div>
+            <button onclick="loadStatistics()" class="btn-new-draft" style="margin-top:0.25rem;">
+                <i class="fas fa-sync-alt"></i> Yenile
+            </button>
         </div>
 
-        <div class="stats-overview">
-            <div class="stat-box">
-                <div class="stat-box-icon" style="background: #00ff9d;">
-                    <i class="fas fa-puzzle-piece"></i>
-                </div>
-                <div class="stat-box-value">
-                    <i class="fas fa-slash" style="font-size: 1rem; opacity: 0.5;"></i>
-                </div>
-                <div class="stat-box-label">KULLANILAN MODLAR</div>
+        <!-- 6 stat cards -->
+        <div class="stats-overview" id="stats-overview">
+            <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#ff006e,#ff5722);"><i class="fas fa-gift"></i></div>
+                <div class="stat-box-value" id="stat-gifts">—</div><div class="stat-box-label">HEDİYE</div>
+                <div class="stat-box-sub" id="stat-gifts-sub">—</div>
             </div>
-
-            <div class="stat-box">
-                <div class="stat-box-icon" style="background: #00f0ff;">
-                    <i class="fas fa-bolt"></i>
-                </div>
-                <div class="stat-box-value">
-                    <i class="fas fa-slash" style="font-size: 1rem; opacity: 0.5;"></i>
-                </div>
-                <div class="stat-box-label">TOPLAM ETKİLEŞİM</div>
+            <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#ffd700,#ff9800);"><i class="fas fa-gem"></i></div>
+                <div class="stat-box-value" id="stat-diamonds">—</div><div class="stat-box-label">ELMAS</div>
+                <div class="stat-box-sub" id="stat-diamonds-sub">Toplam değer</div>
             </div>
-
-            <div class="stat-box">
-                <div class="stat-box-icon" style="background: #00ff9d;">
-                    <i class="fas fa-gift"></i>
-                </div>
-                <div class="stat-box-value">
-                    <i class="fas fa-slash" style="font-size: 1rem; opacity: 0.5;"></i>
-                </div>
-                <div class="stat-box-label">HEDİYELER</div>
+            <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#00d9ff,#0099ff);"><i class="fas fa-heart"></i></div>
+                <div class="stat-box-value" id="stat-likes">—</div><div class="stat-box-label">BEĞENİ</div>
+                <div class="stat-box-sub" id="stat-likes-sub">—</div>
             </div>
-
-            <div class="stat-box">
-                <div class="stat-box-icon" style="background: #00f0ff;">
-                    <i class="fas fa-comment"></i>
-                </div>
-                <div class="stat-box-value">
-                    <i class="fas fa-slash" style="font-size: 1rem; opacity: 0.5;"></i>
-                </div>
-                <div class="stat-box-label">YORUMLAR</div>
+            <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#00ff9d,#00d9ff);"><i class="fas fa-user-plus"></i></div>
+                <div class="stat-box-value" id="stat-follows">—</div><div class="stat-box-label">TAKİPÇİ</div>
+                <div class="stat-box-sub" id="stat-follows-sub">Yeni takipçi</div>
+            </div>
+            <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#bd00ff,#ff006e);"><i class="fas fa-comment"></i></div>
+                <div class="stat-box-value" id="stat-chat">—</div><div class="stat-box-label">YORUM</div>
+                <div class="stat-box-sub" id="stat-chat-sub">—</div>
+            </div>
+            <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#ffa500,#ff5722);"><i class="fas fa-share"></i></div>
+                <div class="stat-box-value" id="stat-shares">—</div><div class="stat-box-label">PAYLAŞIM</div>
+                <div class="stat-box-sub" id="stat-shares-sub">—</div>
             </div>
         </div>
 
-        <div class="history-section">
-            <div class="history-header">
-                <div class="history-title">
-                    <i class="fas fa-history"></i> Mod Kullanım Geçmişi
+        <!-- Two-column layout for sessions + leaderboard -->
+        <div class="stats-two-col">
+            <div class="stats-card">
+                <div class="stats-card-head">
+                    <h3><i class="fas fa-broadcast-tower"></i> Canlı Yayın Geçmişi</h3>
+                    <span class="stats-card-count" id="stats-sessions-count">0</span>
+                </div>
+                <div class="stats-card-body" id="stats-sessions">
+                    <div class="stats-empty">Henüz veri yok — ilk yayınını başlattığında burada görünecek</div>
                 </div>
             </div>
 
-            <div class="empty-state">
-                <i class="fas fa-inbox empty-icon"></i>
-                <p>Henüz veri yok</p>
+            <div class="stats-card">
+                <div class="stats-card-head">
+                    <h3><i class="fas fa-crown" style="color:#ffd700"></i> Top Hediye Gönderenler</h3>
+                </div>
+                <div class="stats-card-body" id="stats-top-gifters">
+                    <div class="stats-empty">Henüz hediye alınmadı</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent events timeline -->
+        <div class="stats-card" style="margin-top:1rem;">
+            <div class="stats-card-head">
+                <h3><i class="fas fa-stream"></i> Son Event'ler</h3>
+                <div style="display:flex;gap:0.35rem;flex-wrap:wrap;">
+                    <button class="event-filter-btn active" data-statfilter="all" onclick="filterStatEvents('all')">Tümü</button>
+                    <button class="event-filter-btn" data-statfilter="gift" onclick="filterStatEvents('gift')">🎁</button>
+                    <button class="event-filter-btn" data-statfilter="like" onclick="filterStatEvents('like')">❤️</button>
+                    <button class="event-filter-btn" data-statfilter="follow" onclick="filterStatEvents('follow')">➕</button>
+                    <button class="event-filter-btn" data-statfilter="chat" onclick="filterStatEvents('chat')">💬</button>
+                    <button class="event-filter-btn" data-statfilter="share" onclick="filterStatEvents('share')">🔁</button>
+                </div>
+            </div>
+            <div class="stats-card-body" id="stats-events-list" style="max-height:420px;overflow-y:auto;">
+                <div class="stats-empty">Yükleniyor...</div>
+            </div>
+        </div>
+
+        <!-- Completed goals history -->
+        <div class="stats-card" style="margin-top:1rem;">
+            <div class="stats-card-head">
+                <h3><i class="fas fa-trophy" style="color:#ffd700"></i> Tamamlanan Hedefler</h3>
+                <span class="stats-card-count" id="stats-goals-count">0</span>
+            </div>
+            <div class="stats-card-body" id="stats-completed-goals">
+                <div class="stats-empty">Henüz tamamlanan hedef yok</div>
             </div>
         </div>
     </div>
@@ -2357,103 +3673,54 @@
             <div class="page-subtitle">SeliGames'i nasıl kullanacağınızı öğrenin</div>
         </div>
 
-        <div
-            style="background: #13131a; border: 1px solid rgba(0, 255, 157, 0.1); border-radius: 15px; padding: 2rem; margin-bottom: 2rem;">
-            <h3 style="color: #00ff9d; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem;">
+        <div style="background: #13131a; border: 1px solid rgba(255,255,255,0.04); border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+            <h3 style="color: #00ff9d; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem;">
                 <i class="fas fa-download"></i> Mod Kurulumu
             </h3>
-            <div style="display: flex; flex-direction: column; gap: 1rem;">
-                <div style="display: flex; align-items: start; gap: 1rem;">
-                    <div
-                        style="background: #00ff9d; color: #0a0a0f; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">
-                        1</div>
-                    <div>
-                        <div style="font-weight: 600; margin-bottom: 0.3rem;">Modlar</div>
-                        <div style="color: #8b8b9a;">bölümünde mevcut modlara göz atın</div>
-                    </div>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <div style="display: flex; align-items: start; gap: 0.6rem;">
+                    <div style="background: #00ff9d; color: #0a0a0f; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; font-size: 0.7rem;">1</div>
+                    <div style="font-size: 0.78rem;"><b>Modlar</b> bölümünde mevcut modlara göz atın</div>
                 </div>
-                <div style="display: flex; align-items: start; gap: 1rem;">
-                    <div
-                        style="background: #00ff9d; color: #0a0a0f; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">
-                        2</div>
-                    <div>
-                        <div style="font-weight: 600; margin-bottom: 0.3rem;">İstediğiniz modun üzerine tıklayın
-                        </div>
-                        <div style="color: #8b8b9a;"></div>
-                    </div>
+                <div style="display: flex; align-items: start; gap: 0.6rem;">
+                    <div style="background: #00ff9d; color: #0a0a0f; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; font-size: 0.7rem;">2</div>
+                    <div style="font-size: 0.78rem;">İstediğiniz modun üzerine tıklayın</div>
                 </div>
-                <div style="display: flex; align-items: start; gap: 1rem;">
-                    <div
-                        style="background: #00ff9d; color: #0a0a0f; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">
-                        3</div>
-                    <div>
-                        <div style="font-weight: 600; margin-bottom: 0.3rem;">Ayarlar</div>
-                        <div style="color: #8b8b9a;">butonuna tıklayarak TikTok hediye eşleştirmelerini yapın
-                        </div>
-                    </div>
+                <div style="display: flex; align-items: start; gap: 0.6rem;">
+                    <div style="background: #00ff9d; color: #0a0a0f; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; font-size: 0.7rem;">3</div>
+                    <div style="font-size: 0.78rem;"><b>Ayarlar</b> butonuna tıklayarak TikTok hediye eşleştirmelerini yapın</div>
                 </div>
-                <div style="display: flex; align-items: start; gap: 1rem;">
-                    <div
-                        style="background: #00ff9d; color: #0a0a0f; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">
-                        4</div>
-                    <div>
-                        <div style="font-weight: 600; margin-bottom: 0.3rem;">Modu Yükle</div>
-                        <div style="color: #8b8b9a;">butonuna tıklayın</div>
-                    </div>
+                <div style="display: flex; align-items: start; gap: 0.6rem;">
+                    <div style="background: #00ff9d; color: #0a0a0f; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; font-size: 0.7rem;">4</div>
+                    <div style="font-size: 0.78rem;"><b>Modu Yükle</b> butonuna tıklayın</div>
                 </div>
-                <div style="display: flex; align-items: start; gap: 1rem;">
-                    <div
-                        style="background: #00ff9d; color: #0a0a0f; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">
-                        5</div>
-                    <div>
-                        <div style="font-weight: 600; margin-bottom: 0.3rem;"></div>
-                        <div style="color: #8b8b9a;">Mod otomatik olarak oyun dizininize kurulacaktır</div>
-                    </div>
+                <div style="display: flex; align-items: start; gap: 0.6rem;">
+                    <div style="background: #00ff9d; color: #0a0a0f; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; font-size: 0.7rem;">5</div>
+                    <div style="font-size: 0.78rem;">Mod otomatik olarak oyun dizininize kurulacaktır</div>
                 </div>
             </div>
         </div>
 
-        <div style="background: #13131a; border: 1px solid rgba(0, 255, 157, 0.1); border-radius: 15px; padding: 2rem;">
-            <h3 style="color: #00ff9d; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem;">
+        <div style="background: #13131a; border: 1px solid rgba(255,255,255,0.04); border-radius: 8px; padding: 1rem;">
+            <h3 style="color: #00ff9d; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem;">
                 <i class="fab fa-tiktok"></i> TikTok Bağlantısı
             </h3>
-            <div style="display: flex; flex-direction: column; gap: 1rem;">
-                <div style="display: flex; align-items: start; gap: 1rem;">
-                    <div
-                        style="background: #00ff9d; color: #0a0a0f; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">
-                        1</div>
-                    <div>
-                        <div style="font-weight: 600; margin-bottom: 0.3rem;">TikTok Canlı</div>
-                        <div style="color: #8b8b9a;">bölümüne gidin</div>
-                    </div>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <div style="display: flex; align-items: start; gap: 0.6rem;">
+                    <div style="background: #00ff9d; color: #0a0a0f; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; font-size: 0.7rem;">1</div>
+                    <div style="font-size: 0.78rem;"><b>TikTok Canlı</b> bölümüne gidin</div>
                 </div>
-                <div style="display: flex; align-items: start; gap: 1rem;">
-                    <div
-                        style="background: #00ff9d; color: #0a0a0f; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">
-                        2</div>
-                    <div>
-                        <div style="font-weight: 600; margin-bottom: 0.3rem;">TikToku Bağla</div>
-                        <div style="color: #8b8b9a;">butonuna tıklayın</div>
-                    </div>
+                <div style="display: flex; align-items: start; gap: 0.6rem;">
+                    <div style="background: #00ff9d; color: #0a0a0f; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; font-size: 0.7rem;">2</div>
+                    <div style="font-size: 0.78rem;"><b>TikToku Bağla</b> butonuna tıklayın</div>
                 </div>
-                <div style="display: flex; align-items: start; gap: 1rem;">
-                    <div
-                        style="background: #00ff9d; color: #0a0a0f; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">
-                        3</div>
-                    <div>
-                        <div style="font-weight: 600; margin-bottom: 0.3rem;"></div>
-                        <div style="color: #8b8b9a;">SeliGames'in TikTok hesabınıza erişmesine izin verin</div>
-                    </div>
+                <div style="display: flex; align-items: start; gap: 0.6rem;">
+                    <div style="background: #00ff9d; color: #0a0a0f; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; font-size: 0.7rem;">3</div>
+                    <div style="font-size: 0.78rem;">SeliGames'in TikTok hesabınıza erişmesine izin verin</div>
                 </div>
-                <div style="display: flex; align-items: start; gap: 1rem;">
-                    <div
-                        style="background: #00ff9d; color: #0a0a0f; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">
-                        4</div>
-                    <div>
-                        <div style="font-weight: 600; margin-bottom: 0.3rem;"></div>
-                        <div style="color: #8b8b9a;">Hangi olayların hangi oyun aksiyonlarını tetikleyeceğini
-                            yapılandırın</div>
-                    </div>
+                <div style="display: flex; align-items: start; gap: 0.6rem;">
+                    <div style="background: #00ff9d; color: #0a0a0f; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; font-size: 0.7rem;">4</div>
+                    <div style="font-size: 0.78rem;">Hangi olayların hangi oyun aksiyonlarını tetikleyeceğini yapılandırın</div>
                 </div>
             </div>
         </div>
@@ -2604,11 +3871,11 @@
         <!-- Hediye Ses Ayarları -->
         <div class="settings-section">
             <h3>🎁 Hediye Ses Ayarları</h3>
-            <p style="color: #8b8b9a; margin-bottom: 1.5rem;">Her hediye türü için farklı bildirim sesi seçin</p>
+            <p style="color: #8b8b9a; margin-bottom: 0.75rem; font-size: 0.78rem;">Her hediye türü için farklı bildirim sesi seçin</p>
 
             <!-- Small Gifts -->
-            <div style="margin-bottom: 2rem;">
-                <h4 style="color: #00ff9d; margin-bottom: 1rem; font-size: 1.1rem;">💚 Küçük Hediyeler (1-10 coin)</h4>
+            <div style="margin-bottom: 1rem;">
+                <h4 style="color: #00ff9d; margin-bottom: 0.5rem; font-size: 0.85rem;">💚 Küçük Hediyeler (1-10 coin)</h4>
                 <div class="sound-selector">
                     <div class="sound-option active" onclick="selectSound('small', 'bell')" data-category="small" data-sound="bell">
                         <button class="sound-play-btn" onclick="event.stopPropagation(); playSound('bell')"><i class="fas fa-play"></i></button>
@@ -2636,7 +3903,7 @@
 
             <!-- Medium Gifts -->
             <div style="margin-bottom: 2rem;">
-                <h4 style="color: #00d9ff; margin-bottom: 1rem; font-size: 1.1rem;">💙 Orta Hediyeler (10-100 coin)</h4>
+                <h4 style="color: #00d9ff; margin-bottom: 0.5rem; font-size: 0.85rem;">💙 Orta Hediyeler (10-100 coin)</h4>
                 <div class="sound-selector">
                     <div class="sound-option active" onclick="selectSound('medium', 'chime')" data-category="medium" data-sound="chime">
                         <button class="sound-play-btn" onclick="event.stopPropagation(); playSound('chime')"><i class="fas fa-play"></i></button>
@@ -2664,7 +3931,7 @@
 
             <!-- Large Gifts -->
             <div style="margin-bottom: 2rem;">
-                <h4 style="color: #ff006e; margin-bottom: 1rem; font-size: 1.1rem;">❤️ Büyük Hediyeler (100-1000 coin)</h4>
+                <h4 style="color: #ff006e; margin-bottom: 0.5rem; font-size: 0.85rem;">❤️ Büyük Hediyeler (100-1000 coin)</h4>
                 <div class="sound-selector">
                     <div class="sound-option active" onclick="selectSound('large', 'fanfare')" data-category="large" data-sound="fanfare">
                         <button class="sound-play-btn" onclick="event.stopPropagation(); playSound('fanfare')"><i class="fas fa-play"></i></button>
@@ -2692,7 +3959,7 @@
 
             <!-- Epic Gifts -->
             <div>
-                <h4 style="color: #ffd700; margin-bottom: 1rem; font-size: 1.1rem;">👑 Epic Hediyeler (1000+ coin)</h4>
+                <h4 style="color: #ffd700; margin-bottom: 0.5rem; font-size: 0.85rem;">👑 Epic Hediyeler (1000+ coin)</h4>
                 <div class="sound-selector">
                     <div class="sound-option active" onclick="selectSound('epic', 'victory')" data-category="epic" data-sound="victory">
                         <button class="sound-play-btn" onclick="event.stopPropagation(); playSound('victory')"><i class="fas fa-play"></i></button>
@@ -2718,9 +3985,410 @@
                 </div>
             </div>
         </div>
+
     </div>
     <!-- End Settings Page -->
-    
+
+    <!-- Gift Sounds Page (dedicated) -->
+    <div class="page" id="gift-sounds-page">
+        <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap;">
+            <div>
+                <div class="page-title">🎁 Hediye Sesleri</div>
+                <div class="page-subtitle">Her TikTok hediyesine özel bir ses ata. MP3 yükleyebilirsin — atanmayanlar tier (coin) bazlı varsayılanı çalar.</div>
+            </div>
+            <button onclick="renderGiftSoundMap()" class="btn-new-draft" style="margin-top:0.25rem;">
+                <i class="fas fa-sync-alt"></i> Yenile
+            </button>
+        </div>
+
+        <!-- Quick tier defaults reminder -->
+        <div style="background:#13131a;border:1px solid rgba(255,255,255,0.04);border-radius:10px;padding:0.75rem 1rem;margin-bottom:1rem;">
+            <div style="color:#00ff9d;font-size:0.78rem;font-weight:700;margin-bottom:0.35rem;">
+                <i class="fas fa-info-circle"></i> Önce Tier Varsayılanları
+            </div>
+            <p style="color:#8b8b9a;font-size:0.72rem;line-height:1.55;margin:0;">
+                Küçük / Orta / Büyük / Epic coin aralıkları için genel sesleri
+                <a href="#" onclick="event.preventDefault();navigateTo('settings');setTimeout(()=>document.querySelector('.settings-section:nth-child(3)')?.scrollIntoView({behavior:'smooth'}),100);" style="color:#00ff9d;font-weight:700;">Ayarlar → 🎁 Hediye Ses Ayarları</a>'ndan seçebilirsin.
+                Aşağıda tek tek hediye bazında bunları override edebilirsin.
+            </p>
+        </div>
+
+        <!-- Stat badges -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0.6rem;margin-bottom:1rem;">
+            <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#00ff9d,#00d9ff);"><i class="fas fa-list"></i></div>
+                <div class="stat-box-value" id="gift-total">—</div><div class="stat-box-label">Toplam Hediye</div>
+            </div>
+            <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#ffd700,#ff9800);"><i class="fas fa-music"></i></div>
+                <div class="stat-box-value" id="gift-mapped-count">—</div><div class="stat-box-label">Atanmış Ses</div>
+            </div>
+            <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#bd00ff,#ff006e);"><i class="fas fa-file-audio"></i></div>
+                <div class="stat-box-value" id="gift-mp3-count">—</div><div class="stat-box-label">Özel MP3</div>
+            </div>
+            <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#ff006e,#ff5722);"><i class="fas fa-ban"></i></div>
+                <div class="stat-box-value" id="gift-unmapped-count">—</div><div class="stat-box-label">Atanmayan</div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem;flex-wrap:wrap;align-items:center;">
+            <input type="text" id="gift-map-search" placeholder="🔍 Hediye ara (ad veya coin)..."
+                style="flex:1;min-width:220px;padding:0.6rem 0.85rem;background:#0a0a0f;border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#fff;font-size:0.85rem;"
+                oninput="filterGiftSoundMap()">
+            <select id="gift-map-filter" onchange="filterGiftSoundMap()"
+                style="padding:0.6rem 0.85rem;background:#0a0a0f;border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#fff;font-size:0.82rem;">
+                <option value="all">Tümü</option>
+                <option value="mapped">Sadece atananlar</option>
+                <option value="unmapped">Sadece atanmayanlar</option>
+                <option value="low">Düşük (1–10 coin)</option>
+                <option value="mid">Orta (10–100 coin)</option>
+                <option value="high">Yüksek (100–1000 coin)</option>
+                <option value="epic">Epic (1000+ coin)</option>
+            </select>
+            <button class="gift-map-btn btn-clear" onclick="clearAllGiftMappings()" style="padding:0.55rem 0.85rem;font-size:0.75rem;">
+                <i class="fas fa-trash-alt"></i> Tümünü Temizle
+            </button>
+            <span id="gift-map-count" style="color:#8b8b9a;font-size:0.78rem;margin-left:auto;"></span>
+        </div>
+
+        <div id="gift-map-list" class="gift-map-grid" style="max-height:none;">
+            <div style="grid-column:1/-1;text-align:center;color:#8b8b9a;padding:2rem;">Yükleniyor...</div>
+        </div>
+    </div>
+    <!-- End Gift Sounds Page -->
+
+    <!-- Mod Detail / Settings Page (per-mod gift → keyboard shortcut mapping) -->
+    <div class="page" id="mod-detail-page">
+        <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.75rem;">
+            <button onclick="navigateTo('mods')" class="btn-secondary" style="padding:0.4rem 0.75rem;font-size:0.75rem;">
+                <i class="fas fa-arrow-left"></i> Modlara Dön
+            </button>
+            <span id="md-breadcrumb" style="color:#8b8b9a;font-size:0.75rem;"></span>
+        </div>
+
+        <!-- Hero -->
+        <div id="md-hero" class="mod-hero">
+            <div class="mod-hero-bg" id="md-hero-bg"></div>
+            <div class="mod-hero-overlay"></div>
+            <div class="mod-hero-content">
+                <div class="mod-hero-meta">
+                    <span class="mod-hero-chip" id="md-category">—</span>
+                    <span class="mod-hero-chip mod-hero-chip-version" id="md-version">v—</span>
+                    <span class="mod-hero-chip mod-hero-chip-installs" id="md-installs">— indirme</span>
+                </div>
+                <h1 class="mod-hero-title" id="md-title">—</h1>
+                <div class="mod-hero-game" id="md-game">—</div>
+                <p class="mod-hero-desc" id="md-description">—</p>
+                <div class="mod-hero-actions">
+                    <button id="md-install-btn" class="btn-success" onclick="installModAction()" style="min-width:180px;">
+                        <i class="fas fa-download"></i> Kur
+                    </button>
+                    <button id="md-uninstall-btn" class="btn-secondary" onclick="uninstallModAction()" style="display:none;min-width:160px;">
+                        <i class="fas fa-trash"></i> Kaldır
+                    </button>
+                    <button class="btn-secondary" onclick="saveAllGiftActions()">
+                        <i class="fas fa-save"></i> Tüm Eşlemeleri Kaydet
+                    </button>
+                    <button class="btn-secondary" onclick="exportModActions()" style="padding:0.55rem 0.85rem;">
+                        <i class="fas fa-file-export"></i> Config Export
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats badges -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0.6rem;margin-top:1rem;">
+            <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#00ff9d,#00d9ff);"><i class="fas fa-list"></i></div>
+                <div class="stat-box-value" id="md-gifts-total">—</div><div class="stat-box-label">Toplam Hediye</div>
+            </div>
+            <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#ffd700,#ff9800);"><i class="fas fa-bolt"></i></div>
+                <div class="stat-box-value" id="md-actions-count">—</div><div class="stat-box-label">Atanmış Aksiyon</div>
+            </div>
+            <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#bd00ff,#ff006e);"><i class="fas fa-keyboard"></i></div>
+                <div class="stat-box-value" id="md-kb-count">—</div><div class="stat-box-label">Klavye Kısayolu</div>
+            </div>
+            <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#ff006e,#ff5722);"><i class="fas fa-ban"></i></div>
+                <div class="stat-box-value" id="md-unmapped-count">—</div><div class="stat-box-label">Atanmayan</div>
+            </div>
+        </div>
+
+        <!-- Gift → action grid -->
+        <div style="margin-top:1rem;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;gap:0.5rem;flex-wrap:wrap;">
+                <h3 style="color:#00ff9d;margin:0;font-size:0.95rem;font-weight:700;">
+                    <i class="fas fa-gamepad"></i> Hediye → Aksiyon Eşleştirmesi
+                </h3>
+                <div style="display:flex;gap:0.35rem;flex-wrap:wrap;align-items:center;">
+                    <input type="text" id="md-search" placeholder="🔍 Hediye ara..."
+                        style="padding:0.45rem 0.7rem;background:#0a0a0f;border:1px solid rgba(255,255,255,0.08);border-radius:6px;color:#fff;font-size:0.78rem;min-width:180px;"
+                        oninput="renderModGiftActions()">
+                    <select id="md-filter"
+                        style="padding:0.45rem 0.7rem;background:#0a0a0f;border:1px solid rgba(255,255,255,0.08);border-radius:6px;color:#fff;font-size:0.78rem;"
+                        onchange="renderModGiftActions()">
+                        <option value="all">Tümü</option>
+                        <option value="mapped">Atanmış</option>
+                        <option value="unmapped">Atanmamış</option>
+                        <option value="low">Düşük (1–10)</option>
+                        <option value="mid">Orta (10–100)</option>
+                        <option value="high">Yüksek (100–1000)</option>
+                        <option value="epic">Epic (1000+)</option>
+                    </select>
+                    <button class="gift-map-btn btn-clear" onclick="clearAllGiftActions()" style="padding:0.45rem 0.7rem;font-size:0.72rem;">
+                        <i class="fas fa-trash-alt"></i> Temizle
+                    </button>
+                </div>
+            </div>
+
+            <div style="background:#13131a;border:1px solid rgba(255,255,255,0.04);border-radius:10px;padding:0.65rem 0.85rem;margin-bottom:0.6rem;">
+                <p style="color:#8b8b9a;font-size:0.72rem;margin:0;line-height:1.55;">
+                    <strong style="color:#00ff9d;">💡 İpucu:</strong>
+                    Kısayol kutusuna tıkla ve istediğin tuş kombinasyonunu bas (örn. <code style="background:rgba(255,255,255,0.05);padding:2px 6px;border-radius:4px;color:#00ff9d;">Ctrl+1</code>, <code style="background:rgba(255,255,255,0.05);padding:2px 6px;border-radius:4px;color:#00ff9d;">Shift+F</code>). Otomatik yakalanacak.
+                    Aksiyon tipini değiştirip metin komut yazabilir veya fare tıklamaları ekleyebilirsin.
+                </p>
+            </div>
+
+            <div id="md-gift-grid" class="md-gift-grid">
+                <div style="grid-column:1/-1;text-align:center;color:#8b8b9a;padding:2rem;">Yükleniyor...</div>
+            </div>
+        </div>
+    </div>
+    <!-- End Mod Detail Page -->
+
+    <!-- Overlay Page (dynamic - shared for all overlay types) -->
+    <div class="page" id="overlay-page">
+        <div class="page-header">
+            <div class="page-title" id="ov-page-title">Overlay Ayarları</div>
+            <div class="page-subtitle" id="ov-page-subtitle">Overlay'inizi yapılandırın ve OBS URL'sini kopyalayın</div>
+        </div>
+
+        <div class="overlay-panel">
+            <div class="overlay-settings">
+                <h3 style="color:#00ff9d;margin-bottom:0.75rem;display:flex;align-items:center;gap:0.4rem;font-size:0.9rem;">
+                    <i class="fas fa-sliders-h"></i> Ayarlar
+                </h3>
+
+                <div class="setting-group">
+                    <label>Başlık</label>
+                    <input type="text" class="ov-input" id="ov-title" placeholder="Overlay başlığı" oninput="updateOverlayPreview()">
+                </div>
+
+                <div class="setting-group" id="ov-target-group">
+                    <label>Hedef Değer</label>
+                    <input type="number" class="ov-input" id="ov-target" value="100" min="1" oninput="updateOverlayPreview()">
+                </div>
+
+                <div class="setting-group" id="ov-current-group" style="display:none;">
+                    <label>Mevcut Değer (Test)</label>
+                    <div style="display:flex;gap:0.5rem;align-items:center;">
+                        <input type="number" class="ov-input" id="ov-current" value="0" min="0" oninput="updateOverlayPreview()">
+                        <button class="btn-icon" onclick="document.getElementById('ov-current').value=0;updateOverlayPreview();" title="Sıfırla"><i class="fas fa-undo"></i></button>
+                    </div>
+                </div>
+
+                <div class="setting-group" id="ov-maxitems-group" style="display:none;">
+                    <label>Gösterilecek Sayı</label>
+                    <input type="number" class="ov-input" id="ov-maxitems" value="5" min="1" max="20" oninput="updateOverlayPreview()">
+                </div>
+
+                <div class="setting-group" id="ov-duration-group" style="display:none;">
+                    <label>Gösterim Süresi (sn)</label>
+                    <input type="number" class="ov-input" id="ov-duration" value="5" min="1" max="30" oninput="updateOverlayPreview()">
+                </div>
+
+                <h4 style="color:#fff;margin:0.75rem 0 0.5rem;font-size:0.82rem;">Görünüm</h4>
+
+                <div class="setting-row">
+                    <label>Bar Rengi</label>
+                    <input type="color" class="ov-color" id="ov-barColor" value="#00ff9d" oninput="updateOverlayPreview()">
+                    <span style="color:#8b8b9a;font-size:0.82rem;" id="ov-barColor-hex">#00ff9d</span>
+                </div>
+
+                <div class="setting-row">
+                    <label>Yazı Rengi</label>
+                    <input type="color" class="ov-color" id="ov-textColor" value="#ffffff" oninput="updateOverlayPreview()">
+                    <span style="color:#8b8b9a;font-size:0.82rem;" id="ov-textColor-hex">#ffffff</span>
+                </div>
+
+                <div class="setting-row">
+                    <label>Arka Plan</label>
+                    <input type="color" class="ov-color" id="ov-bgColor" value="#000000" oninput="updateOverlayPreview()">
+                    <span style="color:#8b8b9a;font-size:0.82rem;" id="ov-bgColor-hex">#000000</span>
+                </div>
+
+                <div class="setting-row">
+                    <label>Font Boyutu</label>
+                    <input type="range" class="ov-range" id="ov-fontSize" min="10" max="48" value="18" oninput="document.getElementById('ov-fontSize-val').textContent=this.value+'px';updateOverlayPreview();">
+                    <span class="ov-range-value" id="ov-fontSize-val">18px</span>
+                </div>
+
+                <div class="setting-row">
+                    <label>Kenar Yuvarlama</label>
+                    <input type="range" class="ov-range" id="ov-borderRadius" min="0" max="30" value="12" oninput="document.getElementById('ov-borderRadius-val').textContent=this.value+'px';updateOverlayPreview();">
+                    <span class="ov-range-value" id="ov-borderRadius-val">12px</span>
+                </div>
+
+                <div class="setting-group">
+                    <label>Tema</label>
+                    <select class="ov-select" id="ov-theme" onchange="updateOverlayPreview()">
+                        <option value="neon">Neon</option>
+                        <option value="minimal">Minimal</option>
+                        <option value="gaming">Gaming</option>
+                        <option value="gradient">Gradient</option>
+                        <option value="glass">Glass</option>
+                    </select>
+                </div>
+
+                <div class="setting-group" id="ov-animation-group">
+                    <label>Animasyon</label>
+                    <select class="ov-select" id="ov-animation" onchange="updateOverlayPreview()">
+                        <option value="smooth">Smooth</option>
+                        <option value="bounce">Bounce</option>
+                        <option value="pulse">Pulse</option>
+                        <option value="none">Yok</option>
+                    </select>
+                </div>
+
+                <div class="setting-row" id="ov-showPct-group">
+                    <label>Yüzde Göster</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="ov-showPct" checked onchange="updateOverlayPreview()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="setting-row" id="ov-showNums-group">
+                    <label>Sayıları Göster</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="ov-showNums" checked onchange="updateOverlayPreview()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="overlay-actions">
+                    <button class="btn-ov-save" onclick="saveCurrentOverlay()">
+                        <i class="fas fa-save"></i> Kaydet
+                    </button>
+                    <button class="btn-ov-reset" onclick="resetCurrentOverlay()">
+                        <i class="fas fa-undo"></i> Sıfırla
+                    </button>
+                </div>
+            </div>
+
+            <div class="overlay-preview-card">
+                <h3 style="color:#00ff9d;margin-bottom:0.75rem;display:flex;align-items:center;gap:0.4rem;font-size:0.9rem;">
+                    <i class="fas fa-eye"></i> Canlı Önizleme
+                </h3>
+                <div class="overlay-preview-frame" id="ov-preview"></div>
+
+                <div class="style-carousel">
+                    <button onclick="prevOverlayStyle()" title="Önceki stil"><i class="fas fa-chevron-left"></i></button>
+                    <span id="ov-style-label">Style: 1/7</span>
+                    <button onclick="nextOverlayStyle()" title="Sonraki stil"><i class="fas fa-chevron-right"></i></button>
+                </div>
+
+                <div style="margin-top:0.75rem;">
+                    <div class="url-copy-bar">
+                        <input type="text" id="ov-url" readonly placeholder="Önce kaydedin...">
+                        <button class="btn-icon" onclick="copyOverlayUrl()" title="URL'yi Kopyala"><i class="fas fa-copy"></i></button>
+                        <button class="btn-ov-test" onclick="testOverlay()"><i class="fas fa-play"></i> Test</button>
+                        <button class="btn-ov-customize" onclick="openOverlayUrl()" title="Tarayıcıda Aç"><i class="fas fa-cog"></i> Özelleştir</button>
+                    </div>
+                </div>
+
+                <div class="custom-import-section">
+                    <h5><i class="fas fa-code"></i> Özel CSS / Tasarım İçe Aktar</h5>
+                    <textarea class="custom-css-textarea" id="ov-custom-css" placeholder="Kendi CSS kodunuzu buraya yapıştırın veya dosyadan yükleyin..." oninput="updateOverlayPreview()"></textarea>
+                    <div class="import-export-btns">
+                        <button class="btn-import-file" onclick="importCustomCSS()"><i class="fas fa-upload"></i> Dosyadan Yükle</button>
+                        <button class="btn-import-file" onclick="exportOverlayConfig()"><i class="fas fa-download"></i> Ayarları Dışa Aktar</button>
+                        <button class="btn-import-file" onclick="importOverlayConfig()"><i class="fas fa-file-import"></i> Ayarları İçe Aktar</button>
+                    </div>
+                </div>
+
+                <div style="margin-top:0.65rem;padding:0.65rem;background:rgba(255,255,255,0.02);border-radius:6px;border:1px solid rgba(255,255,255,0.04);">
+                    <p style="color:#8b8b9a;font-size:0.68rem;line-height:1.5;">
+                        <strong style="color:#00ff9d;">Nasıl Kullanılır:</strong>
+                        Ayarları yapılandırın → Kaydet → URL'yi kopyalayın → OBS'de "Browser Source" ekleyin → URL'yi yapıştırın (400x200)
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Drafts / saved overlays of the same type + subType -->
+        <div class="ov-drafts-section">
+            <div class="ov-drafts-header">
+                <div>
+                    <h3 class="ov-drafts-title"><i class="fas fa-layer-group"></i> Kayıtlı Taslaklarım</h3>
+                    <div class="ov-drafts-sub" id="ov-drafts-sub">Bu tip için kaydettiğin overlay'ler</div>
+                </div>
+                <button class="btn-new-draft" onclick="newOverlayDraft()">
+                    <i class="fas fa-plus-circle"></i> Yeni Taslak
+                </button>
+            </div>
+            <div class="ov-drafts-grid" id="ov-drafts-list">
+                <div class="ov-drafts-empty">Yükleniyor...</div>
+            </div>
+        </div>
+    </div>
+    <!-- End Overlay Page -->
+
+    <!-- Overlay Gallery Page -->
+    <div class="page" id="overlay-gallery-page">
+        <div class="page-header">
+            <div class="page-title"><i class="fas fa-images" style="color:#00ff9d;"></i> Kaplama Galerisi</div>
+            <div class="page-subtitle">Hazır overlay şablonlarını tek tıkla uygulayın</div>
+        </div>
+
+        <div class="gallery-grid" id="gallery-grid"></div>
+    </div>
+    <!-- End Gallery Page -->
+
+    <!-- Gift Scanner Page -->
+    <div class="page" id="gift-scanner-page">
+        <div class="page-header">
+            <div class="page-title"><i class="fas fa-search" style="color:#00ff9d;"></i> Hediye Tarayıcı</div>
+            <div class="page-subtitle">Gelen hediyeleri gerçek zamanlı takip edin</div>
+        </div>
+
+        <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem;flex-wrap:wrap;align-items:center;">
+            <select class="ov-select" id="scanner-filter" style="max-width:160px;" onchange="filterScannerLog()">
+                <option value="all">Tüm Hediyeler</option>
+                <option value="high">Yüksek (100+)</option>
+                <option value="medium">Orta (10-99)</option>
+                <option value="low">Düşük (1-9)</option>
+            </select>
+            <button class="btn-ov-reset" onclick="clearScannerLog()">
+                <i class="fas fa-trash"></i> Temizle
+            </button>
+            <div style="margin-left:auto;display:flex;align-items:center;gap:0.35rem;">
+                <div id="scanner-status-dot" style="width:8px;height:8px;border-radius:50%;background:#ff006e;"></div>
+                <span id="scanner-status-text" style="color:#8b8b9a;font-size:0.72rem;">Bekleniyor...</span>
+            </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:0.5rem;margin-bottom:0.75rem;">
+            <div style="background:#13131a;border:1px solid rgba(255,255,255,0.04);border-radius:8px;padding:0.65rem;text-align:center;">
+                <div style="font-size:1.3rem;font-weight:700;color:#00ff9d;" id="scanner-total">0</div>
+                <div style="color:#8b8b9a;font-size:0.65rem;text-transform:uppercase;">Toplam Hediye</div>
+            </div>
+            <div style="background:#13131a;border:1px solid rgba(255,255,255,0.04);border-radius:8px;padding:0.65rem;text-align:center;">
+                <div style="font-size:1.3rem;font-weight:700;color:#ffd700;" id="scanner-coins">0</div>
+                <div style="color:#8b8b9a;font-size:0.65rem;text-transform:uppercase;">Toplam Coin</div>
+            </div>
+            <div style="background:#13131a;border:1px solid rgba(255,255,255,0.04);border-radius:8px;padding:0.65rem;text-align:center;">
+                <div style="font-size:1.3rem;font-weight:700;color:#ff006e;" id="scanner-top-gifter">-</div>
+                <div style="color:#8b8b9a;font-size:0.65rem;text-transform:uppercase;">Top Gifter</div>
+            </div>
+        </div>
+
+        <div class="scanner-log" id="scanner-log">
+            <div style="text-align:center;color:#8b8b9a;padding:3rem;">
+                <i class="fas fa-gift" style="font-size:2.5rem;opacity:0.3;margin-bottom:1rem;display:block;"></i>
+                <p>TikTok Live'a bağlandığınızda hediyeler burada görünecek</p>
+            </div>
+        </div>
+    </div>
+    <!-- End Gift Scanner Page -->
+
         </div>
         <!-- End main-content -->
     </div>
@@ -2757,22 +4425,6 @@
                     </div>
                 </button>
             </div>
-        </div>
-    </div>
-
-    <!-- Performance Monitor -->
-    <div class="perf-monitor" id="perf-monitor">
-        <div class="perf-item">
-            <span class="perf-label">CPU:</span>
-            <span class="perf-value" id="perf-cpu">0%</span>
-        </div>
-        <div class="perf-item">
-            <span class="perf-label">RAM:</span>
-            <span class="perf-value" id="perf-ram">0GB</span>
-        </div>
-        <div class="perf-item">
-            <span class="perf-label">FPS:</span>
-            <span class="perf-value" id="perf-fps">60</span>
         </div>
     </div>
 

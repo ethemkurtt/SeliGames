@@ -20,8 +20,12 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as NewsIndexRouteImport } from './routes/news/index'
 import { Route as ModsIndexRouteImport } from './routes/mods/index'
+import { Route as GoalsIndexRouteImport } from './routes/goals/index'
 import { Route as NewsNewsIdRouteImport } from './routes/news/$newsId'
 import { Route as ModsModIdRouteImport } from './routes/mods/$modId'
+import { Route as LiveOverlayIdRouteImport } from './routes/live/$overlayId'
+import { Route as OverlayGoalOverlayIdRouteImport } from './routes/overlay/goal/$overlayId'
+import { Route as LiveLikesOverlayIdRouteImport } from './routes/live/likes/$overlayId'
 
 const TipsRoute = TipsRouteImport.update({
   id: '/tips',
@@ -78,6 +82,11 @@ const ModsIndexRoute = ModsIndexRouteImport.update({
   path: '/mods/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GoalsIndexRoute = GoalsIndexRouteImport.update({
+  id: '/goals/',
+  path: '/goals/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const NewsNewsIdRoute = NewsNewsIdRouteImport.update({
   id: '/news/$newsId',
   path: '/news/$newsId',
@@ -86,6 +95,21 @@ const NewsNewsIdRoute = NewsNewsIdRouteImport.update({
 const ModsModIdRoute = ModsModIdRouteImport.update({
   id: '/mods/$modId',
   path: '/mods/$modId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LiveOverlayIdRoute = LiveOverlayIdRouteImport.update({
+  id: '/live/$overlayId',
+  path: '/live/$overlayId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OverlayGoalOverlayIdRoute = OverlayGoalOverlayIdRouteImport.update({
+  id: '/overlay/goal/$overlayId',
+  path: '/overlay/goal/$overlayId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LiveLikesOverlayIdRoute = LiveLikesOverlayIdRouteImport.update({
+  id: '/live/likes/$overlayId',
+  path: '/live/likes/$overlayId',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -99,10 +123,14 @@ export interface FileRoutesByFullPath {
   '/register': typeof RegisterRoute
   '/subscription': typeof SubscriptionRoute
   '/tips': typeof TipsRoute
+  '/live/$overlayId': typeof LiveOverlayIdRoute
   '/mods/$modId': typeof ModsModIdRoute
   '/news/$newsId': typeof NewsNewsIdRoute
+  '/goals': typeof GoalsIndexRoute
   '/mods': typeof ModsIndexRoute
   '/news': typeof NewsIndexRoute
+  '/live/likes/$overlayId': typeof LiveLikesOverlayIdRoute
+  '/overlay/goal/$overlayId': typeof OverlayGoalOverlayIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -114,10 +142,14 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute
   '/subscription': typeof SubscriptionRoute
   '/tips': typeof TipsRoute
+  '/live/$overlayId': typeof LiveOverlayIdRoute
   '/mods/$modId': typeof ModsModIdRoute
   '/news/$newsId': typeof NewsNewsIdRoute
+  '/goals': typeof GoalsIndexRoute
   '/mods': typeof ModsIndexRoute
   '/news': typeof NewsIndexRoute
+  '/live/likes/$overlayId': typeof LiveLikesOverlayIdRoute
+  '/overlay/goal/$overlayId': typeof OverlayGoalOverlayIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -130,10 +162,14 @@ export interface FileRoutesById {
   '/register': typeof RegisterRoute
   '/subscription': typeof SubscriptionRoute
   '/tips': typeof TipsRoute
+  '/live/$overlayId': typeof LiveOverlayIdRoute
   '/mods/$modId': typeof ModsModIdRoute
   '/news/$newsId': typeof NewsNewsIdRoute
+  '/goals/': typeof GoalsIndexRoute
   '/mods/': typeof ModsIndexRoute
   '/news/': typeof NewsIndexRoute
+  '/live/likes/$overlayId': typeof LiveLikesOverlayIdRoute
+  '/overlay/goal/$overlayId': typeof OverlayGoalOverlayIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -147,10 +183,14 @@ export interface FileRouteTypes {
     | '/register'
     | '/subscription'
     | '/tips'
+    | '/live/$overlayId'
     | '/mods/$modId'
     | '/news/$newsId'
+    | '/goals'
     | '/mods'
     | '/news'
+    | '/live/likes/$overlayId'
+    | '/overlay/goal/$overlayId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -162,10 +202,14 @@ export interface FileRouteTypes {
     | '/register'
     | '/subscription'
     | '/tips'
+    | '/live/$overlayId'
     | '/mods/$modId'
     | '/news/$newsId'
+    | '/goals'
     | '/mods'
     | '/news'
+    | '/live/likes/$overlayId'
+    | '/overlay/goal/$overlayId'
   id:
     | '__root__'
     | '/'
@@ -177,10 +221,14 @@ export interface FileRouteTypes {
     | '/register'
     | '/subscription'
     | '/tips'
+    | '/live/$overlayId'
     | '/mods/$modId'
     | '/news/$newsId'
+    | '/goals/'
     | '/mods/'
     | '/news/'
+    | '/live/likes/$overlayId'
+    | '/overlay/goal/$overlayId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -193,10 +241,14 @@ export interface RootRouteChildren {
   RegisterRoute: typeof RegisterRoute
   SubscriptionRoute: typeof SubscriptionRoute
   TipsRoute: typeof TipsRoute
+  LiveOverlayIdRoute: typeof LiveOverlayIdRoute
   ModsModIdRoute: typeof ModsModIdRoute
   NewsNewsIdRoute: typeof NewsNewsIdRoute
+  GoalsIndexRoute: typeof GoalsIndexRoute
   ModsIndexRoute: typeof ModsIndexRoute
   NewsIndexRoute: typeof NewsIndexRoute
+  LiveLikesOverlayIdRoute: typeof LiveLikesOverlayIdRoute
+  OverlayGoalOverlayIdRoute: typeof OverlayGoalOverlayIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -278,6 +330,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ModsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/goals/': {
+      id: '/goals/'
+      path: '/goals'
+      fullPath: '/goals'
+      preLoaderRoute: typeof GoalsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/news/$newsId': {
       id: '/news/$newsId'
       path: '/news/$newsId'
@@ -290,6 +349,27 @@ declare module '@tanstack/react-router' {
       path: '/mods/$modId'
       fullPath: '/mods/$modId'
       preLoaderRoute: typeof ModsModIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/live/$overlayId': {
+      id: '/live/$overlayId'
+      path: '/live/$overlayId'
+      fullPath: '/live/$overlayId'
+      preLoaderRoute: typeof LiveOverlayIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/overlay/goal/$overlayId': {
+      id: '/overlay/goal/$overlayId'
+      path: '/overlay/goal/$overlayId'
+      fullPath: '/overlay/goal/$overlayId'
+      preLoaderRoute: typeof OverlayGoalOverlayIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/live/likes/$overlayId': {
+      id: '/live/likes/$overlayId'
+      path: '/live/likes/$overlayId'
+      fullPath: '/live/likes/$overlayId'
+      preLoaderRoute: typeof LiveLikesOverlayIdRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -305,10 +385,14 @@ const rootRouteChildren: RootRouteChildren = {
   RegisterRoute: RegisterRoute,
   SubscriptionRoute: SubscriptionRoute,
   TipsRoute: TipsRoute,
+  LiveOverlayIdRoute: LiveOverlayIdRoute,
   ModsModIdRoute: ModsModIdRoute,
   NewsNewsIdRoute: NewsNewsIdRoute,
+  GoalsIndexRoute: GoalsIndexRoute,
   ModsIndexRoute: ModsIndexRoute,
   NewsIndexRoute: NewsIndexRoute,
+  LiveLikesOverlayIdRoute: LiveLikesOverlayIdRoute,
+  OverlayGoalOverlayIdRoute: OverlayGoalOverlayIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -1,9 +1,10 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const ModUsage = require('../models/ModUsage');
+require('dotenv').config();
 
 const router = express.Router();
-const SECRET_KEY = 'super_secret_key_for_seligames';
+const SECRET_KEY = process.env.JWT_SECRET || 'super_secret_key_for_seligames';
 
 // Middleware to verify token
 const verifyToken = (req, res, next) => {
@@ -13,7 +14,7 @@ const verifyToken = (req, res, next) => {
     }
     try {
         const decoded = jwt.verify(token, SECRET_KEY);
-        req.userId = decoded.id;
+        req.userId = decoded.userId;
         next();
     } catch (error) {
         return res.status(401).json({ error: 'Invalid token' });

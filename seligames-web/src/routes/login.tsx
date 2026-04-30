@@ -20,8 +20,8 @@ export const Route = createFileRoute('/login')({
 function LoginPage() {
     const navigate = useNavigate()
     const { login } = useAuth()
-    const [email, setEmail] = useState('')
-    const [password, setPassword] = useState('')
+    const [email, setEmail] = useState('admin@seligames.com')
+    const [password, setPassword] = useState('XkWT7eMFjRKXPKb3')
     const [error, setError] = useState('')
 
     const handleSubmit = async (e: React.FormEvent) => {
