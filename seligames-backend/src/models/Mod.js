@@ -41,7 +41,14 @@ const modSchema = new mongoose.Schema({
     downloadCount: {
         type: Number,
         default: 0
-    }
+    },
+    // File storage — populated after admin upload via /api/admin/mods/:id/upload.
+    // If unset, the public `downloadUrl` (external CDN) is used as fallback.
+    fileName: { type: String },
+    fileSize: { type: Number },
+    fileMimeType: { type: String },
+    fileUploadedAt: { type: Date },
+    fileChecksum: { type: String }
 }, {
     timestamps: true
 });

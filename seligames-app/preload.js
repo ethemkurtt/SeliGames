@@ -65,5 +65,7 @@ contextBridge.exposeInMainWorld('api', {
     uninstallMod: (modId) => ipcRenderer.invoke('uninstall-mod', modId),
     getInstalledMods: () => ipcRenderer.invoke('get-installed-mods'),
     pickInstallDirectory: (modTitle) => ipcRenderer.invoke('pick-install-directory', modTitle),
-    executeAction: (action) => ipcRenderer.invoke('execute-action', action)
+    executeAction: (action) => ipcRenderer.invoke('execute-action', action),
+    deleteModFile: (modId) => ipcRenderer.invoke('delete-mod-file', modId),
+    onInstallProgress: (callback) => ipcRenderer.on('install-progress', (event, data) => callback(data))
 });

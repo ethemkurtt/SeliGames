@@ -1365,16 +1365,135 @@ async function installModAction() {
     if (!currentModDetail) return;
     const dirRes = await window.api.pickInstallDirectory(currentModDetail.title);
     if (!dirRes.success) return;
+
+    showInstallProgress(currentModDetail);
     const installRes = await window.api.installMod(currentModDetail._id, dirRes.data.installPath);
+
     if (installRes.success) {
         currentModConfig = installRes.data.config;
         currentModDetail.downloadCount = (currentModDetail.downloadCount || 0) + 1;
         installedModIdSet.add(currentModDetail._id);
         renderModDetailHero();
-        showToast(`"${currentModDetail.title}" kuruldu → ${dirRes.data.installPath}`);
+
+        const meta = installRes.meta || {};
+        if (meta.archiveDownloaded) {
+            const sizeStr = meta.archiveBytes ? ` (${humanBytes(meta.archiveBytes)})` : '';
+            updateInstallProgress({ phase: 'done', percentage: 100, message: `✓ Kuruldu${sizeStr}` });
+            setTimeout(closeInstallProgress, 1800);
+            showToast(`"${currentModDetail.title}" kuruldu → ${dirRes.data.installPath}`);
+        } else {
+            updateInstallProgress({
+                phase: 'warn',
+                percentage: 100,
+                message: `⚠️ Mod metadata kuruldu ama dosya inmedi: ${meta.archiveError || 'bilinmeyen hata'}`,
+            });
+            setTimeout(closeInstallProgress, 3500);
+        }
     } else {
-        showToast('Kurulum hatası: ' + installRes.error, true);
+        updateInstallProgress({ phase: 'error', percentage: 0, message: '✗ ' + installRes.error });
+        setTimeout(closeInstallProgress, 3000);
     }
+}
+
+// ─── Install progress modal ─────────────────────────────────────────
+
+let _installProgressEl = null;
+
+function showInstallProgress(mod) {
+    closeInstallProgress();
+    const el = document.createElement('div');
+    el.id = 'install-progress-modal';
+    el.style.cssText = `
+        position:fixed;inset:0;background:rgba(0,0,0,0.78);backdrop-filter:blur(8px);
+        z-index:10000;display:flex;align-items:center;justify-content:center;padding:1rem;
+    `;
+    el.innerHTML = `
+        <div style="background:#13131a;border:1px solid rgba(0,255,157,0.25);border-radius:16px;padding:1.5rem 1.75rem;max-width:480px;width:100%;box-shadow:0 0 40px rgba(0,255,157,0.15);">
+            <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem;">
+                <div style="width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,#00ff9d,#00f0ff);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="fas fa-download" style="color:#0a0a0f;font-size:1.1rem;"></i>
+                </div>
+                <div style="min-width:0;flex:1;">
+                    <div style="color:#fff;font-weight:700;font-size:1rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(mod.title)}</div>
+                    <div id="ip-phase" style="color:#8b8b9a;font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;margin-top:0.15rem;">Hazırlanıyor...</div>
+                </div>
+                <div id="ip-pct" style="color:#00ff9d;font-weight:800;font-size:1.4rem;font-variant-numeric:tabular-nums;">0%</div>
+            </div>
+            <div style="height:8px;border-radius:4px;background:rgba(255,255,255,0.06);overflow:hidden;margin-bottom:0.5rem;">
+                <div id="ip-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#00ff9d,#00f0ff);box-shadow:0 0 12px #00ff9d88;transition:width 0.2s ease;"></div>
+            </div>
+            <div id="ip-meta" style="color:#8b8b9a;font-size:0.72rem;font-variant-numeric:tabular-nums;text-align:right;">—</div>
+            <div id="ip-msg" style="display:none;margin-top:0.75rem;padding:0.55rem 0.75rem;border-radius:8px;font-size:0.78rem;"></div>
+        </div>
+    `;
+    document.body.appendChild(el);
+    _installProgressEl = el;
+}
+
+function updateInstallProgress(p) {
+    if (!_installProgressEl) return;
+    const phaseLabels = {
+        metadata: 'Metadata alınıyor',
+        token: 'İndirme yetkisi alınıyor',
+        download: 'Dosya indiriliyor',
+        config: 'Yapılandırma yazılıyor',
+        finalize: 'Kayıt tamamlanıyor',
+        done: 'Tamamlandı',
+        warn: 'Uyarı',
+        error: 'Hata',
+    };
+    const phaseEl = document.getElementById('ip-phase');
+    const pctEl = document.getElementById('ip-pct');
+    const barEl = document.getElementById('ip-bar');
+    const metaEl = document.getElementById('ip-meta');
+    const msgEl = document.getElementById('ip-msg');
+
+    if (phaseEl && p.phase) phaseEl.textContent = phaseLabels[p.phase] || p.phase;
+    if (typeof p.percentage === 'number') {
+        if (pctEl) pctEl.textContent = `${p.percentage}%`;
+        if (barEl) barEl.style.width = `${p.percentage}%`;
+    }
+    if (metaEl) {
+        if (p.totalBytes) {
+            const dl = humanBytes(p.downloadedBytes || 0);
+            const tot = humanBytes(p.totalBytes);
+            metaEl.textContent = `${dl} / ${tot}`;
+        } else if (p.phase === 'done') {
+            metaEl.textContent = '';
+        }
+    }
+    if (msgEl && p.message) {
+        msgEl.style.display = 'block';
+        const colors = p.phase === 'error'
+            ? 'background:rgba(255,0,110,0.1);color:#ff6b9d;border:1px solid rgba(255,0,110,0.3);'
+            : p.phase === 'warn'
+                ? 'background:rgba(255,165,0,0.1);color:#ffa500;border:1px solid rgba(255,165,0,0.3);'
+                : 'background:rgba(0,255,157,0.1);color:#00ff9d;border:1px solid rgba(0,255,157,0.3);';
+        msgEl.style.cssText += colors;
+        msgEl.textContent = p.message;
+    }
+}
+
+function closeInstallProgress() {
+    if (_installProgressEl) {
+        _installProgressEl.remove();
+        _installProgressEl = null;
+    }
+}
+
+function humanBytes(bytes) {
+    if (!bytes || bytes < 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    let v = bytes, i = 0;
+    while (v >= 1024 && i < units.length - 1) { v /= 1024; i++; }
+    return `${v.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
+}
+
+// Wire up the IPC progress event once on app load
+if (typeof window !== 'undefined' && window.api?.onInstallProgress) {
+    window.api.onInstallProgress((data) => {
+        if (_installProgressEl) updateInstallProgress(data);
+    });
 }
 
 async function uninstallModAction() {

@@ -847,45 +847,100 @@ ipcMain.handle('set-mod-gift-action', async (event, modId, giftName, action) => 
 });
 
 ipcMain.handle('install-mod', async (event, modId, installPath) => {
+    const sendProgress = (payload) => {
+        if (mainWindow) mainWindow.webContents.send('install-progress', { modId, ...payload });
+    };
+
     try {
         const token = await getAuthToken();
 
-        // 1. Fetch mod metadata + user's current gift-action config
+        // 1. Fetch mod metadata + user's current gift-action config in parallel
+        sendProgress({ phase: 'metadata', percentage: 0 });
         const [modResp, cfgResp] = await Promise.all([
-            axios.get(`http://localhost:3000/api/mods/${modId}`),
-            axios.get(`http://localhost:3000/api/mods/${modId}/config`, {
+            axios.get(`${BACKEND_URL}/api/mods/${modId}`),
+            axios.get(`${BACKEND_URL}/api/mods/${modId}/config`, {
                 headers: { Authorization: `Bearer ${token}` }
             })
         ]);
         const mod = modResp.data;
         const userConfig = cfgResp.data || { giftActions: {} };
 
-        let archiveDownloaded = false;
-        let archiveError = null;
-
-        // 2. Attempt to download mod archive from VPS. Non-fatal if it fails —
-        //    config file still lands and the DB is updated, so users see progress
-        //    even while the VPS hosting is being set up.
-        if (installPath && mod.downloadUrl) {
-            try {
-                if (!fs.existsSync(installPath)) fs.mkdirSync(installPath, { recursive: true });
-                const archiveResp = await axios.get(mod.downloadUrl, {
-                    responseType: 'arraybuffer',
-                    timeout: 15000,
-                    validateStatus: (s) => s >= 200 && s < 300
-                });
-                const archivePath = path.join(installPath, `${mod.title.replace(/\s+/g, '_')}.zip`);
-                fs.writeFileSync(archivePath, Buffer.from(archiveResp.data));
-                archiveDownloaded = true;
-                console.log(`✓ Archive downloaded: ${archivePath} (${archiveResp.data.byteLength} bytes)`);
-            } catch (dlErr) {
-                archiveError = dlErr.message;
-                console.warn(`⚠️ Archive download failed (VPS likely not ready): ${dlErr.message}`);
-            }
+        // 2. Get short-lived signed download URL. Backend returns either
+        //    a signed `/api/mods/files/...?t=<jwt>` URL (uploaded file)
+        //    or the legacy public `downloadUrl` (external CDN fallback).
+        sendProgress({ phase: 'token', percentage: 5 });
+        let downloadUrl = null;
+        let expectedSize = null;
+        try {
+            const dlResp = await axios.get(`${BACKEND_URL}/api/mods/${modId}/download-token`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            downloadUrl = dlResp.data.url;
+            expectedSize = dlResp.data.fileSize || null;
+        } catch (e) {
+            console.warn(`⚠️ download-token failed: ${e.response?.data?.error || e.message}`);
         }
 
-        // 3. Write seligames-config.json with mod info + gift-action map so the
-        //    mod's runtime can read it and know what each gift should trigger.
+        let archiveDownloaded = false;
+        let archiveError = null;
+        let archivePath = null;
+        let archiveBytes = 0;
+
+        // 3. Stream-download — pipes straight to disk so 2GB+ files don't
+        //    blow up renderer memory. Throttled progress events.
+        if (downloadUrl && installPath) {
+            try {
+                if (!fs.existsSync(installPath)) fs.mkdirSync(installPath, { recursive: true });
+                archivePath = path.join(installPath, `${mod.title.replace(/\s+/g, '_')}.zip`);
+
+                sendProgress({ phase: 'download', percentage: 5, downloadedBytes: 0, totalBytes: expectedSize || 0 });
+
+                const dlResp = await axios.get(downloadUrl, {
+                    responseType: 'stream',
+                    timeout: 0,
+                    validateStatus: (s) => s >= 200 && s < 300,
+                });
+
+                const totalBytes = expectedSize
+                    || parseInt(dlResp.headers['content-length'] || '0', 10) || 0;
+
+                let lastReport = Date.now();
+                dlResp.data.on('data', (chunk) => {
+                    archiveBytes += chunk.length;
+                    const now = Date.now();
+                    if (now - lastReport > 100 || archiveBytes === totalBytes) {
+                        lastReport = now;
+                        sendProgress({
+                            phase: 'download',
+                            downloadedBytes: archiveBytes,
+                            totalBytes,
+                            percentage: totalBytes ? Math.min(99, Math.round(5 + (archiveBytes / totalBytes) * 90)) : 50,
+                        });
+                    }
+                });
+
+                const writer = fs.createWriteStream(archivePath);
+                dlResp.data.pipe(writer);
+                await new Promise((resolve, reject) => {
+                    writer.on('finish', resolve);
+                    writer.on('error', reject);
+                    dlResp.data.on('error', reject);
+                });
+
+                archiveDownloaded = true;
+                console.log(`✓ Archive downloaded: ${archivePath} (${archiveBytes} bytes)`);
+            } catch (dlErr) {
+                archiveError = dlErr.message;
+                console.warn(`⚠️ Archive download failed: ${dlErr.message}`);
+                if (archivePath) try { fs.unlinkSync(archivePath); } catch { }
+            }
+        } else if (!downloadUrl) {
+            archiveError = 'Bu mod için yüklü dosya yok ya da erişim reddedildi';
+        }
+
+        // 4. Write seligames-config.json — mod info + user gift-action map +
+        //    forensic watermark so leaked configs trace back to source.
+        sendProgress({ phase: 'config', percentage: 96 });
         if (installPath) {
             try {
                 if (!fs.existsSync(installPath)) fs.mkdirSync(installPath, { recursive: true });
@@ -901,7 +956,12 @@ ipcMain.handle('install-mod', async (event, modId, installPath) => {
                     giftActions: userConfig.giftActions || {},
                     installedAt: new Date().toISOString(),
                     archiveDownloaded,
-                    archiveError
+                    archiveError,
+                    archiveBytes,
+                    _watermark: {
+                        backend: BACKEND_URL,
+                        machineHostname: require('os').hostname(),
+                    }
                 };
                 fs.writeFileSync(configFile, JSON.stringify(content, null, 2), 'utf-8');
                 console.log(`✓ Config written: ${configFile}`);
@@ -910,16 +970,33 @@ ipcMain.handle('install-mod', async (event, modId, installPath) => {
             }
         }
 
-        // 4. Mark installed in backend (increments downloadCount)
-        const response = await axios.post(`http://localhost:3000/api/mods/${modId}/install`,
+        // 5. Mark installed in backend
+        sendProgress({ phase: 'finalize', percentage: 99 });
+        const response = await axios.post(`${BACKEND_URL}/api/mods/${modId}/install`,
             { installPath },
             { headers: { Authorization: `Bearer ${token}` } }
         );
+
+        sendProgress({ phase: 'done', percentage: 100, archiveDownloaded });
         return {
             success: true,
             data: response.data,
-            meta: { archiveDownloaded, archiveError, installPath }
+            meta: { archiveDownloaded, archiveError, archivePath, archiveBytes, installPath }
         };
+    } catch (error) {
+        sendProgress({ phase: 'error', percentage: 0, error: error.message });
+        return { success: false, error: error.response?.data?.error || error.message };
+    }
+});
+
+// Admin: delete uploaded mod file (keeps mod metadata)
+ipcMain.handle('delete-mod-file', async (event, modId) => {
+    try {
+        const token = await getAuthToken();
+        const response = await axios.delete(`${BACKEND_URL}/api/mods/${modId}/file`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        return { success: true, data: response.data };
     } catch (error) {
         return { success: false, error: error.response?.data?.error || error.message };
     }

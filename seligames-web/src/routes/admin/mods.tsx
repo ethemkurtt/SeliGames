@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
-import { Plus, Edit2, Trash2, Loader2, X, Save, Image as ImageIcon } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Plus, Edit2, Trash2, Loader2, X, Save, Image as ImageIcon, Upload, FileArchive, FileX2, CheckCircle2 } from 'lucide-react'
 import api from '@/lib/api'
 
 export const Route = createFileRoute('/admin/mods')({
@@ -8,6 +8,14 @@ export const Route = createFileRoute('/admin/mods')({
 })
 
 const empty = { title: '', gameTitle: '', description: '', category: 'open-world', version: '1.0.0', imageUrl: '', downloadUrl: '', isActive: true, tags: [] as string[] }
+
+function humanBytes(b: number) {
+    if (!b || b < 0) return '0 B'
+    const units = ['B', 'KB', 'MB', 'GB']
+    let v = b, i = 0
+    while (v >= 1024 && i < units.length - 1) { v /= 1024; i++ }
+    return `${v.toFixed(i === 0 ? 0 : 1)} ${units[i]}`
+}
 
 function ModsAdmin() {
     const [mods, setMods] = useState<any[]>([])
@@ -66,7 +74,8 @@ function ModsAdmin() {
                                     <span>v{m.version || '1.0.0'}</span>
                                     <span>{m.downloadCount || 0} indirme</span>
                                 </div>
-                                <div className="flex gap-2 mt-3">
+                                <FileWidget mod={m} onUpdated={load} />
+                                <div className="flex gap-2 mt-2">
                                     <button onClick={() => setEditing({ ...m })} className="flex-1 inline-flex items-center justify-center gap-1 py-1.5 rounded bg-white/5 border border-white/10 text-xs font-semibold hover:bg-white/10"><Edit2 size={12} /> Düzenle</button>
                                     <button onClick={() => remove(m)} className="inline-flex items-center justify-center gap-1 py-1.5 px-3 rounded bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-semibold hover:bg-red-500/20"><Trash2 size={12} /></button>
                                 </div>
@@ -122,6 +131,100 @@ function Row({ label, children, wide }: { label: string; children: React.ReactNo
         <div className={wide ? 'sm:col-span-2' : ''}>
             <label className="block text-xs font-bold uppercase tracking-widest text-white/60 mb-1.5">{label}</label>
             {children}
+        </div>
+    )
+}
+
+function FileWidget({ mod, onUpdated }: { mod: any; onUpdated: () => void }) {
+    const inputRef = useRef<HTMLInputElement>(null)
+    const [progress, setProgress] = useState<number | null>(null)
+    const [error, setError] = useState('')
+
+    const hasFile = !!mod.fileUploadedAt
+
+    async function upload(e: React.ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0]
+        if (!file) return
+        e.target.value = ''
+        if (!file.name.toLowerCase().endsWith('.zip')) {
+            setError('Sadece .zip dosyası kabul ediliyor')
+            setTimeout(() => setError(''), 3000)
+            return
+        }
+        setError(''); setProgress(0)
+        const fd = new FormData()
+        fd.append('file', file)
+        try {
+            await api.post(`/mods/${mod._id}/upload`, fd, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+                // 30 min timeout for big uploads; can override per-mod if needed
+                timeout: 30 * 60 * 1000,
+                onUploadProgress: (ev) => {
+                    if (ev.total) setProgress(Math.round((ev.loaded / ev.total) * 100))
+                },
+            })
+            setProgress(100)
+            setTimeout(() => { setProgress(null); onUpdated() }, 600)
+        } catch (e: any) {
+            setError(e.response?.data?.error || e.message)
+            setProgress(null)
+            setTimeout(() => setError(''), 4000)
+        }
+    }
+
+    async function deleteFile() {
+        if (!confirm('Yüklenmiş dosya silinsin mi? Mod metadata kalır.')) return
+        try {
+            await api.delete(`/mods/${mod._id}/file`)
+            onUpdated()
+        } catch (e: any) { setError(e.response?.data?.error || e.message); setTimeout(() => setError(''), 3000) }
+    }
+
+    return (
+        <div className="mt-2 mb-2">
+            {progress !== null ? (
+                <div>
+                    <div className="flex items-center justify-between text-[10px] tracking-widest text-neon-green font-bold uppercase mb-1">
+                        <span>Yükleniyor…</span>
+                        <span>{progress}%</span>
+                    </div>
+                    <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-neon-green to-neon-blue transition-all duration-300" style={{ width: `${progress}%` }} />
+                    </div>
+                </div>
+            ) : hasFile ? (
+                <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-neon-green/5 border border-neon-green/20 text-xs">
+                    <CheckCircle2 size={14} className="text-neon-green flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                        <div className="text-neon-green font-semibold truncate" title={mod.fileName}>{mod.fileName || 'mod.zip'}</div>
+                        <div className="text-white/40 text-[10px]">{humanBytes(mod.fileSize || 0)} · {new Date(mod.fileUploadedAt).toLocaleDateString('tr-TR')}</div>
+                    </div>
+                    <button
+                        onClick={() => inputRef.current?.click()}
+                        title="Yenisini yükle (üstüne yazar)"
+                        className="text-white/60 hover:text-neon-green p-1 rounded hover:bg-white/5"
+                    ><Upload size={12} /></button>
+                    <button
+                        onClick={deleteFile}
+                        title="Dosyayı sil"
+                        className="text-white/60 hover:text-red-400 p-1 rounded hover:bg-white/5"
+                    ><FileX2 size={12} /></button>
+                </div>
+            ) : (
+                <button
+                    onClick={() => inputRef.current?.click()}
+                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-md border border-dashed border-white/15 hover:border-neon-green/50 hover:bg-neon-green/5 text-xs font-semibold text-white/60 hover:text-neon-green transition-all"
+                >
+                    <FileArchive size={14} /> ZIP Yükle
+                </button>
+            )}
+            {error && (
+                <div className="mt-1 text-[10px] text-red-400">{error}</div>
+            )}
+            <input
+                ref={inputRef} type="file" accept=".zip,application/zip"
+                className="hidden" onChange={upload}
+            />
         </div>
     )
 }

@@ -1,11 +1,38 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const fs = require('fs');
+const path = require('path');
+const multer = require('multer');
 const Mod = require('../models/Mod');
 const User = require('../models/User');
+const { requireAuth, requireAdmin } = require('../middleware/auth');
 require('dotenv').config();
 
 const router = express.Router();
 const SECRET_KEY = process.env.JWT_SECRET || 'super_secret_key_for_seligames';
+
+// Where uploaded mod ZIPs live on disk.
+// `/var/seligames/mods` on the VPS, override with MOD_FILES_DIR for dev.
+const MOD_FILES_DIR = process.env.MOD_FILES_DIR || '/var/seligames/mods';
+try { if (!fs.existsSync(MOD_FILES_DIR)) fs.mkdirSync(MOD_FILES_DIR, { recursive: true }); }
+catch (e) { console.warn(`⚠️ Could not create ${MOD_FILES_DIR}:`, e.message); }
+
+// Multer disk storage — streams large files (up to 5 GB) directly to disk
+// instead of buffering in memory. Filename is always `<modId>.zip` so re-uploads
+// overwrite the previous version.
+const upload = multer({
+    storage: multer.diskStorage({
+        destination: (req, file, cb) => cb(null, MOD_FILES_DIR),
+        filename: (req, file, cb) => cb(null, `${req.params.id}.zip`),
+    }),
+    limits: { fileSize: 5 * 1024 * 1024 * 1024 }, // 5 GB
+    fileFilter: (req, file, cb) => {
+        // Accept only .zip files (and a couple of permissive mime variants)
+        const ok = file.originalname.toLowerCase().endsWith('.zip')
+            || ['application/zip', 'application/x-zip-compressed', 'multipart/x-zip', 'application/octet-stream'].includes(file.mimetype);
+        cb(ok ? null : new Error('Sadece .zip dosyası yüklenebilir'), ok);
+    },
+});
 
 function auth(req, res, next) {
     const token = req.headers.authorization?.split(' ')[1];
@@ -189,6 +216,145 @@ router.get('/user/installed', auth, async (req, res) => {
         const mods = await Mod.find({ _id: { $in: installedIds } });
         res.json(mods.map(m => ({ ...m.toObject(), config: configs[m._id.toString()] })));
     } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ─── File upload (admin) + signed download (auth user) ────────────────
+
+// Admin: upload a mod ZIP. The file lands at MOD_FILES_DIR/<modId>.zip.
+// Existing file is overwritten. Updates the Mod doc with size/name/timestamp.
+router.post('/:id/upload', requireAdmin, (req, res) => {
+    upload.single('file')(req, res, async (uploadErr) => {
+        if (uploadErr) return res.status(400).json({ error: uploadErr.message });
+        if (!req.file) return res.status(400).json({ error: 'Dosya gönderilmedi' });
+        try {
+            const mod = await Mod.findById(req.params.id);
+            if (!mod) {
+                try { fs.unlinkSync(req.file.path); } catch { }
+                return res.status(404).json({ error: 'Mod bulunamadı' });
+            }
+            mod.fileName = req.file.originalname;
+            mod.fileSize = req.file.size;
+            mod.fileMimeType = req.file.mimetype;
+            mod.fileUploadedAt = new Date();
+            await mod.save();
+            res.json({ message: 'Dosya yüklendi', mod });
+        } catch (e) {
+            try { fs.unlinkSync(req.file.path); } catch { }
+            res.status(500).json({ error: e.message });
+        }
+    });
+});
+
+// Admin: delete the uploaded file (keeps the mod metadata)
+router.delete('/:id/file', requireAdmin, async (req, res) => {
+    try {
+        const filePath = path.join(MOD_FILES_DIR, `${req.params.id}.zip`);
+        try { fs.unlinkSync(filePath); } catch { }
+        await Mod.findByIdAndUpdate(req.params.id, {
+            $unset: { fileName: 1, fileSize: 1, fileMimeType: 1, fileUploadedAt: 1, fileChecksum: 1 }
+        });
+        res.json({ message: 'Dosya silindi' });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Authenticated user: get a short-lived signed URL for downloading.
+// Token contains {userId, modId, type, exp}; valid 5 minutes.
+router.get('/:id/download-token', requireAuth, async (req, res) => {
+    try {
+        const mod = await Mod.findById(req.params.id);
+        if (!mod) return res.status(404).json({ error: 'Mod bulunamadı' });
+
+        const filePath = path.join(MOD_FILES_DIR, `${mod._id}.zip`);
+        const hasUploadedFile = mod.fileUploadedAt && fs.existsSync(filePath);
+
+        // No uploaded file? Fall back to the external `downloadUrl` if set.
+        if (!hasUploadedFile) {
+            if (mod.downloadUrl) {
+                return res.json({
+                    url: mod.downloadUrl,
+                    external: true,
+                    expiresIn: null,
+                    fileSize: null,
+                    fileName: null
+                });
+            }
+            return res.status(404).json({ error: 'Bu mod için yüklü dosya yok' });
+        }
+
+        const token = jwt.sign(
+            { userId: req.userId, modId: mod._id.toString(), type: 'mod-download' },
+            SECRET_KEY,
+            { expiresIn: '5m' }
+        );
+
+        // Build absolute URL pointing back at us.
+        // PUBLIC_BACKEND_URL lets prod use https://api.seligame.com if needed,
+        // otherwise we reconstruct from the request.
+        const baseUrl = process.env.PUBLIC_BACKEND_URL
+            || `${req.protocol}://${req.get('host')}`;
+
+        res.json({
+            url: `${baseUrl}/api/mods/files/${mod._id}?t=${token}`,
+            external: false,
+            expiresIn: 300,
+            fileSize: mod.fileSize,
+            fileName: mod.fileName,
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Public-but-signed: stream the ZIP. Token is verified per-request.
+// `?t=<jwt>` instead of an Authorization header so download managers / browsers
+// can hit the URL without extra wiring.
+router.get('/files/:id', async (req, res) => {
+    const token = req.query.t;
+    if (!token) return res.status(401).send('no token');
+
+    let payload;
+    try { payload = jwt.verify(token, SECRET_KEY); }
+    catch { return res.status(401).send('invalid or expired token'); }
+
+    if (payload.type !== 'mod-download' || payload.modId !== req.params.id) {
+        return res.status(403).send('token mismatch');
+    }
+
+    try {
+        const filePath = path.join(MOD_FILES_DIR, `${req.params.id}.zip`);
+        if (!fs.existsSync(filePath)) return res.status(404).send('file missing');
+
+        const stat = fs.statSync(filePath);
+        const mod = await Mod.findById(req.params.id);
+        const safeTitle = (mod?.title || 'mod').replace(/[^a-zA-Z0-9]/g, '_');
+        const fileName = `${safeTitle}.zip`;
+
+        // Range-request support → resumable downloads + better UX for huge files
+        const range = req.headers.range;
+        if (range) {
+            const m = /bytes=(\d+)-(\d+)?/.exec(range);
+            const start = parseInt(m[1], 10);
+            const end = m[2] ? parseInt(m[2], 10) : stat.size - 1;
+            res.status(206);
+            res.setHeader('Content-Range', `bytes ${start}-${end}/${stat.size}`);
+            res.setHeader('Accept-Ranges', 'bytes');
+            res.setHeader('Content-Length', end - start + 1);
+            res.setHeader('Content-Type', 'application/zip');
+            res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+            fs.createReadStream(filePath, { start, end }).pipe(res);
+        } else {
+            res.setHeader('Content-Type', 'application/zip');
+            res.setHeader('Content-Length', stat.size);
+            res.setHeader('Accept-Ranges', 'bytes');
+            res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+            fs.createReadStream(filePath).pipe(res);
+        }
+
+        // Fire-and-forget: increment download counter
+        Mod.findByIdAndUpdate(req.params.id, { $inc: { downloadCount: 1 } }).catch(() => { });
+    } catch (e) {
+        if (!res.headersSent) res.status(500).send('error');
+    }
 });
 
 module.exports = router;
