@@ -15,6 +15,7 @@ import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as ModsRouteImport } from './routes/mods'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as GiftDesignerRouteImport } from './routes/gift-designer'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as FeaturesRouteImport } from './routes/features'
 import { Route as DownloadRouteImport } from './routes/download'
@@ -57,6 +58,11 @@ const ModsRoute = ModsRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GiftDesignerRoute = GiftDesignerRouteImport.update({
+  id: '/gift-designer',
+  path: '/gift-designer',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
@@ -131,6 +137,7 @@ export interface FileRoutesByFullPath {
   '/download': typeof DownloadRoute
   '/features': typeof FeaturesRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/gift-designer': typeof GiftDesignerRoute
   '/login': typeof LoginRoute
   '/mods': typeof ModsRoute
   '/pricing': typeof PricingRoute
@@ -152,6 +159,7 @@ export interface FileRoutesByTo {
   '/download': typeof DownloadRoute
   '/features': typeof FeaturesRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/gift-designer': typeof GiftDesignerRoute
   '/login': typeof LoginRoute
   '/mods': typeof ModsRoute
   '/pricing': typeof PricingRoute
@@ -174,6 +182,7 @@ export interface FileRoutesById {
   '/download': typeof DownloadRoute
   '/features': typeof FeaturesRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/gift-designer': typeof GiftDesignerRoute
   '/login': typeof LoginRoute
   '/mods': typeof ModsRoute
   '/pricing': typeof PricingRoute
@@ -197,6 +206,7 @@ export interface FileRouteTypes {
     | '/download'
     | '/features'
     | '/forgot-password'
+    | '/gift-designer'
     | '/login'
     | '/mods'
     | '/pricing'
@@ -218,6 +228,7 @@ export interface FileRouteTypes {
     | '/download'
     | '/features'
     | '/forgot-password'
+    | '/gift-designer'
     | '/login'
     | '/mods'
     | '/pricing'
@@ -239,6 +250,7 @@ export interface FileRouteTypes {
     | '/download'
     | '/features'
     | '/forgot-password'
+    | '/gift-designer'
     | '/login'
     | '/mods'
     | '/pricing'
@@ -261,6 +273,7 @@ export interface RootRouteChildren {
   DownloadRoute: typeof DownloadRoute
   FeaturesRoute: typeof FeaturesRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
+  GiftDesignerRoute: typeof GiftDesignerRoute
   LoginRoute: typeof LoginRoute
   ModsRoute: typeof ModsRoute
   PricingRoute: typeof PricingRoute
@@ -319,6 +332,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gift-designer': {
+      id: '/gift-designer'
+      path: '/gift-designer'
+      fullPath: '/gift-designer'
+      preLoaderRoute: typeof GiftDesignerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/forgot-password': {
@@ -421,6 +441,7 @@ const rootRouteChildren: RootRouteChildren = {
   DownloadRoute: DownloadRoute,
   FeaturesRoute: FeaturesRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
+  GiftDesignerRoute: GiftDesignerRoute,
   LoginRoute: LoginRoute,
   ModsRoute: ModsRoute,
   PricingRoute: PricingRoute,

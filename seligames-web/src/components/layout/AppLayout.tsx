@@ -1,11 +1,12 @@
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import { useEffect } from 'react'
-import { Home, User as UserIcon, CreditCard, Download, LogOut } from 'lucide-react'
+import { Home, User as UserIcon, CreditCard, Download, LogOut, Palette } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { cn } from '@/lib/utils'
 
 const items = [
     { to: '/dashboard', label: 'Dashboard', icon: Home },
+    { to: '/gift-designer', label: 'Hediye Tasarımı', icon: Palette },
     { to: '/profile', label: 'Profil', icon: UserIcon },
     { to: '/subscription', label: 'Abonelik', icon: CreditCard },
     { to: '/download', label: 'İndirme', icon: Download },

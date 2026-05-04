@@ -1436,6 +1436,7 @@ function updateInstallProgress(p) {
         metadata: 'Metadata alınıyor',
         token: 'İndirme yetkisi alınıyor',
         download: 'Dosya indiriliyor',
+        extract: 'ZIP açılıyor',
         config: 'Yapılandırma yazılıyor',
         finalize: 'Kayıt tamamlanıyor',
         done: 'Tamamlandı',

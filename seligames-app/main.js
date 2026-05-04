@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const { execFile } = require('child_process');
 const axios = require('axios');
+const extractZip = require('extract-zip');
 const { WebcastPushConnection } = require('tiktok-live-connector');
 const { io: ioClient } = require('socket.io-client');
 
@@ -938,6 +939,70 @@ ipcMain.handle('install-mod', async (event, modId, installPath) => {
             archiveError = 'Bu mod için yüklü dosya yok ya da erişim reddedildi';
         }
 
+        // 3.5. Auto-extract — install path is the user's GAME directory, so
+        //      we unzip directly into it. ZIP authors structure their archives
+        //      as if rooted at the game dir (e.g. `scripts/foo.asi` lands at
+        //      `<gameDir>/scripts/foo.asi`). Existing files are overwritten.
+        let extracted = false;
+        let extractedFiles = 0;
+        let extractError = null;
+
+        if (archiveDownloaded && archivePath) {
+            try {
+                sendProgress({ phase: 'extract', percentage: 95, message: 'ZIP açılıyor...' });
+                console.log(`→ Extracting ${archivePath} → ${installPath}`);
+
+                // Count files first for progress
+                const yauzl = require('yauzl');
+                const fileCount = await new Promise((resolve) => {
+                    yauzl.open(archivePath, { lazyEntries: true }, (err, zipfile) => {
+                        if (err) return resolve(0);
+                        let count = 0;
+                        zipfile.on('entry', () => { count++; zipfile.readEntry(); });
+                        zipfile.on('end', () => resolve(count));
+                        zipfile.readEntry();
+                    });
+                }).catch(() => 0);
+
+                let processed = 0;
+                await extractZip(archivePath, {
+                    dir: installPath,
+                    onEntry: (entry) => {
+                        processed++;
+                        if (fileCount && processed % 5 === 0) {
+                            sendProgress({
+                                phase: 'extract',
+                                percentage: 95 + Math.min(3, Math.round((processed / fileCount) * 3)),
+                                message: `Açılıyor: ${entry.fileName} (${processed}/${fileCount})`,
+                            });
+                        }
+                    },
+                });
+                extractedFiles = processed || fileCount;
+                extracted = true;
+                console.log(`✓ Extracted ${extractedFiles} entries to ${installPath}`);
+
+                // Optional: read manifest.json if mod author included one
+                const manifestPath = path.join(installPath, 'manifest.json');
+                if (fs.existsSync(manifestPath)) {
+                    try {
+                        const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+                        console.log(`📋 Manifest detected:`, manifest.modId || '(unnamed)');
+                        // Future: relocate files based on manifest.files mapping
+                    } catch (mfErr) {
+                        console.warn(`⚠️ manifest.json invalid: ${mfErr.message}`);
+                    }
+                }
+
+                // Clean up the zip — files are now extracted and the archive is
+                // pure overhead. Delete unless mod ships a `keep-archive` flag.
+                try { fs.unlinkSync(archivePath); } catch { }
+            } catch (exErr) {
+                extractError = exErr.message;
+                console.warn(`⚠️ Extract failed: ${exErr.message}`);
+            }
+        }
+
         // 4. Write seligames-config.json — mod info + user gift-action map +
         //    forensic watermark so leaked configs trace back to source.
         sendProgress({ phase: 'config', percentage: 96 });
@@ -958,6 +1023,9 @@ ipcMain.handle('install-mod', async (event, modId, installPath) => {
                     archiveDownloaded,
                     archiveError,
                     archiveBytes,
+                    extracted,
+                    extractedFiles,
+                    extractError,
                     _watermark: {
                         backend: BACKEND_URL,
                         machineHostname: require('os').hostname(),
@@ -977,11 +1045,11 @@ ipcMain.handle('install-mod', async (event, modId, installPath) => {
             { headers: { Authorization: `Bearer ${token}` } }
         );
 
-        sendProgress({ phase: 'done', percentage: 100, archiveDownloaded });
+        sendProgress({ phase: 'done', percentage: 100, archiveDownloaded, extracted, extractedFiles });
         return {
             success: true,
             data: response.data,
-            meta: { archiveDownloaded, archiveError, archivePath, archiveBytes, installPath }
+            meta: { archiveDownloaded, archiveError, archivePath, archiveBytes, extracted, extractedFiles, extractError, installPath }
         };
     } catch (error) {
         sendProgress({ phase: 'error', percentage: 0, error: error.message });
@@ -1041,9 +1109,9 @@ ipcMain.handle('execute-action', async (event, action) => {
 ipcMain.handle('pick-install-directory', async (event, modTitle) => {
     try {
         const result = await dialog.showOpenDialog(mainWindow, {
-            title: `${modTitle} — Kurulum Dizini Seç`,
-            buttonLabel: 'Buraya Kur',
-            message: `"${modTitle}" için kurulum klasörünü seçin`,
+            title: `${modTitle} — Oyun Dizinini Seç`,
+            buttonLabel: 'Bu Klasöre Kur',
+            message: `"${modTitle}" için oyunun yüklü olduğu klasörü seçin (örn. C:\\Program Files\\GTA V).\n\nMod ZIP'i bu klasöre otomatik açılacak.`,
             properties: ['openDirectory', 'createDirectory']
         });
         if (result.canceled || !result.filePaths?.length) {

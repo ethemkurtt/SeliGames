@@ -17,7 +17,7 @@ function RootLayout() {
         return <AdminLayout><Outlet /></AdminLayout>
     }
     // Authenticated user area
-    if (path.startsWith('/dashboard') || path.startsWith('/profile') || path.startsWith('/subscription') || path.startsWith('/billing')) {
+    if (path.startsWith('/dashboard') || path.startsWith('/profile') || path.startsWith('/subscription') || path.startsWith('/billing') || path.startsWith('/gift-designer')) {
         return <AppLayout><Outlet /></AppLayout>
     }
     // Default: marketing site (landing, pricing, features, mods, login, register, etc.)
