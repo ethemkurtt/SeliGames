@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('api', {
     getStatistics: (token) => ipcRenderer.invoke('get-statistics', token),
     openExternal: (url) => shell.openExternal(url),
     saveMod: (data) => ipcRenderer.invoke('save-mod', data),
+    saveDataUrl: (data) => ipcRenderer.invoke('save-data-url', data),
     
     // Settings API
     getSettings: () => ipcRenderer.invoke('get-settings'),

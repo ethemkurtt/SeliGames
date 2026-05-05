@@ -2901,6 +2901,262 @@
             transition: all 0.15s;
         }
         .md-gift-btn:hover { background: rgba(255,0,110,0.1); border-color: rgba(255,0,110,0.3); color: #ff006e; }
+
+        /* ─── Gift Designer (Hediye Tasarımı) ─── */
+        .gd-grid {
+            display: grid;
+            grid-template-columns: minmax(280px, 360px) 1fr;
+            gap: 1rem;
+            align-items: start;
+        }
+        @media (max-width: 1100px) { .gd-grid { grid-template-columns: 1fr; } }
+        .gd-slots-col {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            position: sticky;
+            top: 1rem;
+        }
+        .gd-right-col { display: flex; flex-direction: column; gap: 0.75rem; }
+        .gd-settings { padding: 1rem 1.1rem; }
+        .gd-settings h3 {
+            color: #00ff9d;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 800;
+            margin-bottom: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+        }
+        .gd-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; }
+        .gd-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.6rem; }
+        .gd-grid-6 { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 0.6rem; }
+        @media (max-width: 768px) {
+            .gd-grid-3, .gd-grid-4 { grid-template-columns: repeat(2, 1fr); }
+        }
+        .gd-settings label {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+            color: #8b8b9a;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+        .gd-settings input[type="text"],
+        .gd-settings input[type="number"],
+        .gd-settings select {
+            background: #0a0a0f;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 6px;
+            padding: 0.5rem 0.65rem;
+            color: #fff;
+            font-size: 0.82rem;
+            font-weight: 600;
+            text-transform: none;
+            letter-spacing: 0;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        .gd-settings input:focus,
+        .gd-settings select:focus { border-color: rgba(189,0,255,0.5); }
+        .gd-settings input[type="color"] {
+            background: #0a0a0f;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 6px;
+            height: 36px;
+            cursor: pointer;
+            padding: 2px;
+        }
+        .gd-settings input[type="checkbox"] {
+            accent-color: #00ff9d;
+            width: 18px;
+            height: 18px;
+            margin-top: 0.3rem;
+        }
+
+        .gd-slot-card {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 12px;
+            padding: 0.75rem 0.85rem;
+        }
+        .gd-slot-header {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-bottom: 0.6rem;
+            font-size: 0.78rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .gd-slot-row {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.35rem 0.45rem;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 8px;
+            margin-bottom: 0.4rem;
+        }
+        .gd-slot-row .gd-handle {
+            color: rgba(255,255,255,0.25);
+            cursor: grab;
+            font-size: 0.7rem;
+            line-height: 1;
+        }
+        .gd-slot-row img.gd-icon, .gd-slot-row .gd-icon-placeholder {
+            width: 32px; height: 32px;
+            background: #0a0a0f;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 6px;
+            object-fit: contain;
+            cursor: pointer;
+            flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.3);
+        }
+        .gd-slot-row img.gd-icon:hover { border-color: rgba(189,0,255,0.4); }
+        .gd-slot-row input[type="text"] {
+            flex: 1; min-width: 0;
+            background: #0a0a0f;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 6px;
+            padding: 0.4rem 0.55rem;
+            color: #fff;
+            font-size: 0.78rem;
+            outline: none;
+        }
+        .gd-slot-row input[type="color"] {
+            width: 28px; height: 28px;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            background: transparent;
+            cursor: pointer;
+            padding: 0;
+            flex-shrink: 0;
+        }
+        .gd-slot-btn {
+            width: 28px; height: 28px;
+            border: 1px solid;
+            border-radius: 6px;
+            background: transparent;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.7rem;
+            transition: all 0.15s;
+            flex-shrink: 0;
+        }
+        .gd-slot-btn.add {
+            color: #bd00ff;
+            background: rgba(189,0,255,0.1);
+            border-color: rgba(189,0,255,0.3);
+        }
+        .gd-slot-btn.add:hover { background: rgba(189,0,255,0.2); }
+        .gd-slot-btn.del {
+            color: #ff006e;
+            background: rgba(255,0,110,0.1);
+            border-color: rgba(255,0,110,0.3);
+        }
+        .gd-slot-btn.del:hover { background: rgba(255,0,110,0.2); }
+        .gd-slot-add-all {
+            width: 100%;
+            background: rgba(189,0,255,0.12);
+            border: 1px solid rgba(189,0,255,0.3);
+            color: #bd00ff;
+            border-radius: 8px;
+            padding: 0.5rem;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 0.3rem;
+            transition: background 0.15s;
+        }
+        .gd-slot-add-all:hover { background: rgba(189,0,255,0.2); }
+
+        /* Preview canvas */
+        .gd-preview-wrap {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background:
+                linear-gradient(45deg, #0e0e16 25%, transparent 25%),
+                linear-gradient(-45deg, #0e0e16 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #0e0e16 75%),
+                linear-gradient(-45deg, transparent 75%, #0e0e16 75%);
+            background-size: 16px 16px;
+            background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+            background-color: #060608;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.06);
+            overflow: hidden;
+            position: relative;
+        }
+        .gd-preview {
+            position: absolute; inset: 0;
+            background: transparent;
+        }
+        .gd-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        .gd-card img {
+            object-fit: contain;
+        }
+        .gd-card .gd-card-text {
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            line-height: 1;
+            white-space: nowrap;
+        }
+
+        /* Picker modal grid */
+        .gd-picker-grid {
+            flex: 1;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 0.5rem;
+            padding-right: 0.3rem;
+        }
+        .gd-picker-grid::-webkit-scrollbar { width: 6px; }
+        .gd-picker-grid::-webkit-scrollbar-thumb { background: rgba(189,0,255,0.25); border-radius: 3px; }
+        .gd-picker-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px;
+            padding: 0.55rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .gd-picker-card:hover {
+            border-color: rgba(189,0,255,0.5);
+            background: rgba(189,0,255,0.08);
+            transform: translateY(-2px);
+        }
+        .gd-picker-card img {
+            width: 56px; height: 56px;
+            object-fit: contain;
+            margin: 0 auto;
+            display: block;
+        }
+        .gd-picker-card .name {
+            font-size: 0.7rem; font-weight: 700;
+            color: #fff; margin-top: 0.35rem;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .gd-picker-card .coins {
+            font-size: 0.65rem; color: #ffd700;
+            margin-top: 0.15rem;
+        }
     </style>
 </head>
 
@@ -3039,6 +3295,10 @@
             <div class="nav-item" onclick="navigateTo('gift-sounds')">
                 <i class="fas fa-music"></i>
                 <span>Hediye Sesleri</span>
+            </div>
+            <div class="nav-item" onclick="navigateTo('gift-designer')">
+                <i class="fas fa-palette"></i>
+                <span>Hediye Tasarımı</span>
             </div>
 
             <div class="nav-section-label">Genel</div>
@@ -4389,6 +4649,145 @@
     </div>
     <!-- End Gift Scanner Page -->
 
+    <!-- Hediye Tasarımı (Gift Designer) Page -->
+    <div class="page" id="gift-designer-page">
+        <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap;">
+            <div>
+                <div class="page-title">🎨 Hediye Tasarımı</div>
+                <div class="page-subtitle">Hediyelerini tasarla, transparan PNG olarak indir — yayında izleyicilere "şu hediyeleri at" göstermek için</div>
+            </div>
+            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+                <button class="btn-secondary" onclick="resetGiftDesign()" style="padding:0.5rem 0.85rem;font-size:0.78rem;">
+                    <i class="fas fa-undo"></i> Sıfırla
+                </button>
+                <button class="btn-secondary" onclick="exportGiftDesignPng()" id="gd-export-btn" style="padding:0.5rem 0.85rem;font-size:0.78rem;">
+                    <i class="fas fa-download"></i> PNG İndir
+                </button>
+                <button class="btn-success" onclick="saveGiftDesign()" style="padding:0.5rem 0.85rem;font-size:0.78rem;">
+                    <i class="fas fa-save"></i> Kaydet
+                </button>
+            </div>
+        </div>
+
+        <div class="gd-grid">
+            <!-- Left column: slot panels -->
+            <aside id="gd-slots" class="gd-slots-col">
+                <!-- populated by JS based on layout type -->
+            </aside>
+
+            <!-- Right column: settings + preview -->
+            <section class="gd-right-col">
+                <!-- Temel -->
+                <div class="settings-section gd-settings">
+                    <h3><i class="fas fa-magic" style="color:#bd00ff;"></i> Temel</h3>
+                    <div class="gd-grid-3">
+                        <label>Tasarım Adı <span style="color:#ff006e">*</span>
+                            <input type="text" id="gd-name" placeholder="Örn: Minecraft Hediyeleri" oninput="updateGiftDesign()">
+                        </label>
+                        <label>Tasarım Tipi <span style="color:#ff006e">*</span>
+                            <select id="gd-type" onchange="updateGiftDesign(true)">
+                                <option value="classic">Klasik (Üst+Sol+Sağ)</option>
+                                <option value="top-only">Sadece Üst</option>
+                                <option value="sides-only">Sadece Yan</option>
+                                <option value="two-sides">İki Yan</option>
+                                <option value="double-side-cols">Çift Sütun Yan</option>
+                                <option value="double-top-rows">Çift Satır Üst</option>
+                                <option value="four-corners">Dört Köşe</option>
+                            </select>
+                        </label>
+                        <label>Font <span style="color:#ff006e">*</span>
+                            <select id="gd-font" onchange="updateGiftDesign()">
+                                <option value="Luckiest Guy">Luckiest Guy</option>
+                                <option value="Bangers">Bangers</option>
+                                <option value="Bebas Neue">Bebas Neue</option>
+                                <option value="Anton">Anton</option>
+                                <option value="Russo One">Russo One</option>
+                                <option value="Permanent Marker">Permanent Marker</option>
+                                <option value="Press Start 2P">Press Start 2P</option>
+                                <option value="Pacifico">Pacifico</option>
+                                <option value="Lobster">Lobster</option>
+                                <option value="Inter">Inter</option>
+                            </select>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Boyutlar -->
+                <div class="settings-section gd-settings">
+                    <h3>📏 Boyutlar</h3>
+                    <div class="gd-grid-4">
+                        <label>Hediye Boyutu <span style="color:#ff006e">*</span>
+                            <input type="number" id="gd-giftSize" value="75" min="20" max="300" step="5" oninput="updateGiftDesign()">
+                        </label>
+                        <label>Hediye Mesafesi <span style="color:#ff006e">*</span>
+                            <input type="number" id="gd-giftGap" value="40" min="0" max="200" step="5" oninput="updateGiftDesign()">
+                        </label>
+                        <label>Yazı Mesafesi <span style="color:#ff006e">*</span>
+                            <input type="number" id="gd-textGap" value="-10" min="-50" max="100" step="1" oninput="updateGiftDesign()">
+                        </label>
+                        <label>Satır Arası <span style="color:#ff006e">*</span>
+                            <input type="number" id="gd-lineHeight" value="-5" min="-30" max="100" step="1" oninput="updateGiftDesign()">
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Stil -->
+                <div class="settings-section gd-settings">
+                    <h3><i class="fas fa-palette" style="color:#bd00ff;"></i> Stil</h3>
+                    <div class="gd-grid-6">
+                        <label>Yazı Boyutu <span style="color:#ff006e">*</span>
+                            <input type="number" id="gd-fontSize" value="24" min="8" max="96" step="1" oninput="updateGiftDesign()">
+                        </label>
+                        <label>Yazı Rengi <span style="color:#ff006e">*</span>
+                            <input type="color" id="gd-textColor" value="#FFFFFF" oninput="updateGiftDesign()">
+                        </label>
+                        <label>Border Rengi <span style="color:#ff006e">*</span>
+                            <input type="color" id="gd-borderColor" value="#000000" oninput="updateGiftDesign()">
+                        </label>
+                        <label>Border Kalınlığı <span style="color:#ff006e">*</span>
+                            <input type="number" id="gd-borderWidth" value="5" min="0" max="20" step="1" oninput="updateGiftDesign()">
+                        </label>
+                        <label>Oto Blur
+                            <input type="number" id="gd-autoBlur" value="0" min="0" max="20" step="1" oninput="updateGiftDesign()">
+                        </label>
+                        <label>Gri Hediye
+                            <input type="checkbox" id="gd-grayscale" onchange="updateGiftDesign()">
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Preview -->
+                <div class="settings-section gd-settings">
+                    <h3>👁 Canlı Önizleme</h3>
+                    <div class="gd-preview-wrap">
+                        <div id="gd-preview" class="gd-preview"></div>
+                    </div>
+                    <p style="text-align:center;color:#8b8b9a;font-size:0.7rem;margin-top:0.6rem;">
+                        Yaptığınız değişiklikler otomatik olarak güncellenir
+                    </p>
+                </div>
+            </section>
+        </div>
+
+        <!-- Gift picker modal -->
+        <div id="gd-picker-modal" class="modal" onclick="if(event.target===this)closeGiftPicker()">
+            <div class="modal-content" style="max-width:760px;max-height:85vh;display:flex;flex-direction:column;">
+                <div class="modal-header">
+                    <h2 class="modal-title">🎁 Hediye Seç</h2>
+                    <button class="modal-close" onclick="closeGiftPicker()"><i class="fas fa-times"></i></button>
+                </div>
+                <input type="text" id="gd-picker-search" placeholder="🔍 Hediye ara..."
+                    style="width:100%;padding:0.6rem 0.85rem;background:#0a0a0f;border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#fff;font-size:0.85rem;margin-bottom:0.75rem;"
+                    oninput="renderGiftPickerList()">
+                <div id="gd-picker-list" class="gd-picker-grid">
+                    <div style="grid-column:1/-1;text-align:center;color:#8b8b9a;padding:2rem;">Yükleniyor...</div>
+                </div>
+                <div id="gd-picker-count" style="text-align:center;color:#8b8b9a;font-size:0.7rem;margin-top:0.5rem;"></div>
+            </div>
+        </div>
+    </div>
+    <!-- End Hediye Tasarımı Page -->
+
         </div>
         <!-- End main-content -->
     </div>
@@ -4428,6 +4827,8 @@
         </div>
     </div>
 
+    <!-- html-to-image UMD bundle (used by Hediye Tasarımı sayfası) -->
+    <script src="./node_modules/html-to-image/dist/html-to-image.js"></script>
     <script src="renderer.js"></script>
 </body>
 

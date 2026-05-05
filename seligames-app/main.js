@@ -1096,6 +1096,39 @@ ipcMain.handle('get-installed-mods', async () => {
 
 ipcMain.handle('get-app-config', () => APP_CONFIG);
 
+// Save a data: URL (e.g. exported PNG) to disk via native save dialog
+ipcMain.handle('save-data-url', async (event, { dataUrl, suggestedName }) => {
+    try {
+        if (!dataUrl || typeof dataUrl !== 'string') {
+            return { success: false, error: 'Geçersiz dataUrl' };
+        }
+        const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+        if (!match) return { success: false, error: 'dataUrl formatı tanınmadı' };
+        const mime = match[1];
+        const buf = Buffer.from(match[2], 'base64');
+        const ext = mime.split('/')[1] || 'png';
+        const defaultName = suggestedName || `seligames-export.${ext}`;
+
+        const result = await dialog.showSaveDialog(mainWindow, {
+            title: 'PNG Olarak Kaydet',
+            defaultPath: defaultName,
+            buttonLabel: 'Kaydet',
+            filters: [
+                { name: 'PNG', extensions: ['png'] },
+                { name: 'All Files', extensions: ['*'] }
+            ]
+        });
+        if (result.canceled || !result.filePath) {
+            return { success: false, error: 'İptal edildi' };
+        }
+        fs.writeFileSync(result.filePath, buf);
+        return { success: true, filePath: result.filePath };
+    } catch (error) {
+        console.error('save-data-url error:', error);
+        return { success: false, error: error.message };
+    }
+});
+
 ipcMain.handle('execute-action', async (event, action) => {
     try {
         await executeAction(action);

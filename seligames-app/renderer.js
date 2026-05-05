@@ -98,6 +98,10 @@ function navigateTo(page) {
         document.getElementById('gift-sounds-page')?.classList.add('active');
         renderGiftSoundMap();
     }
+    else if (page === 'gift-designer') {
+        document.getElementById('gift-designer-page')?.classList.add('active');
+        initGiftDesigner();
+    }
 }
 
 // ═══════════════════ DASHBOARD ═══════════════════
@@ -183,6 +187,440 @@ function renderRecentActivity(events) {
                 <span style="color:#8b8b9a;font-size:0.68rem;flex-shrink:0;">${time}</span>
             </div>`;
     }).join('');
+}
+
+// ═══════════════════ GIFT DESIGNER (Hediye Tasarımı) ═══════════════════
+//
+// Streamlabs/TikFinity tarzı bir tool — kullanıcı hediyeleri grid üzerinde
+// konumlandırır, font/renk/border ayarlarını yapar, transparent PNG indirir.
+// PNG'yi yayında "şu hediyeleri at" diye göstermek için kullanır.
+
+const GD_LAYOUTS = {
+    'classic': { slots: ['top', 'left', 'right'], cols: {} },
+    'top-only': { slots: ['top'], cols: {} },
+    'sides-only': { slots: ['left', 'right'], cols: {} },
+    'two-sides': { slots: ['left', 'right'], cols: {} },
+    'double-side-cols': { slots: ['left', 'right'], cols: { left: 2, right: 2 } },
+    'double-top-rows': { slots: ['top'], cols: { top: 2 } },
+    'four-corners': { slots: ['top', 'left', 'right', 'bottom'], cols: {} },
+};
+
+const GD_FONTS_GOOGLE = {
+    'Luckiest Guy': 'Luckiest+Guy',
+    'Bangers': 'Bangers',
+    'Bebas Neue': 'Bebas+Neue',
+    'Anton': 'Anton',
+    'Russo One': 'Russo+One',
+    'Permanent Marker': 'Permanent+Marker',
+    'Press Start 2P': 'Press+Start+2P',
+    'Pacifico': 'Pacifico',
+    'Lobster': 'Lobster',
+};
+
+const GD_DEFAULT = {
+    name: '',
+    type: 'classic',
+    font: 'Luckiest Guy',
+    giftSize: 75,
+    giftGap: 40,
+    textGap: -10,
+    lineHeight: -5,
+    fontSize: 24,
+    textColor: '#FFFFFF',
+    borderColor: '#000000',
+    borderWidth: 5,
+    autoBlur: 0,
+    grayscale: false,
+    slots: { top: [], left: [], right: [], bottom: [] },
+};
+
+let giftDesign = JSON.parse(JSON.stringify(GD_DEFAULT));
+let _gdInitialized = false;
+let _gdPickerCtx = null; // { slot, itemId }
+let _gdLoadedFonts = new Set();
+
+const BACKEND_PROXY_BASE = () => `${BACKEND_URL}/api/proxy/image?url=`;
+const gdProxify = (url) => url ? (BACKEND_PROXY_BASE() + encodeURIComponent(url)) : '';
+const gdId = () => `gd-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+
+async function initGiftDesigner() {
+    if (!_gdInitialized) {
+        // Load saved design from localStorage (if any)
+        try {
+            const saved = localStorage.getItem('giftDesign');
+            if (saved) giftDesign = { ...GD_DEFAULT, ...JSON.parse(saved) };
+        } catch {}
+        // Load gift catalog (cached after first call)
+        if (!giftCatalogCache.length) await loadGiftCatalog();
+        _gdInitialized = true;
+        // Push state to form fields
+        gdSyncFormFromState();
+    }
+    gdLoadFont(giftDesign.font);
+    renderGiftDesignerSlots();
+    renderGiftDesignerPreview();
+}
+
+function gdSyncFormFromState() {
+    const set = (id, prop, val) => { const el = document.getElementById(id); if (el) el[prop] = val; };
+    set('gd-name', 'value', giftDesign.name);
+    set('gd-type', 'value', giftDesign.type);
+    set('gd-font', 'value', giftDesign.font);
+    set('gd-giftSize', 'value', giftDesign.giftSize);
+    set('gd-giftGap', 'value', giftDesign.giftGap);
+    set('gd-textGap', 'value', giftDesign.textGap);
+    set('gd-lineHeight', 'value', giftDesign.lineHeight);
+    set('gd-fontSize', 'value', giftDesign.fontSize);
+    set('gd-textColor', 'value', giftDesign.textColor);
+    set('gd-borderColor', 'value', giftDesign.borderColor);
+    set('gd-borderWidth', 'value', giftDesign.borderWidth);
+    set('gd-autoBlur', 'value', giftDesign.autoBlur);
+    set('gd-grayscale', 'checked', giftDesign.grayscale);
+}
+
+function gdLoadFont(family) {
+    const slug = GD_FONTS_GOOGLE[family];
+    if (!slug || _gdLoadedFonts.has(slug)) return;
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = `https://fonts.googleapis.com/css2?family=${slug}&display=swap`;
+    document.head.appendChild(link);
+    _gdLoadedFonts.add(slug);
+}
+
+function updateGiftDesign(layoutChanged) {
+    const get = (id, prop = 'value') => document.getElementById(id)?.[prop];
+    giftDesign.name = get('gd-name') || '';
+    giftDesign.type = get('gd-type') || 'classic';
+    giftDesign.font = get('gd-font') || 'Luckiest Guy';
+    giftDesign.giftSize = Number(get('gd-giftSize')) || 75;
+    giftDesign.giftGap = Number(get('gd-giftGap')) || 0;
+    giftDesign.textGap = Number(get('gd-textGap')) || 0;
+    giftDesign.lineHeight = Number(get('gd-lineHeight')) || 0;
+    giftDesign.fontSize = Number(get('gd-fontSize')) || 24;
+    giftDesign.textColor = get('gd-textColor') || '#FFFFFF';
+    giftDesign.borderColor = get('gd-borderColor') || '#000000';
+    giftDesign.borderWidth = Number(get('gd-borderWidth')) || 0;
+    giftDesign.autoBlur = Number(get('gd-autoBlur')) || 0;
+    giftDesign.grayscale = !!get('gd-grayscale', 'checked');
+
+    gdLoadFont(giftDesign.font);
+    if (layoutChanged) renderGiftDesignerSlots();
+    renderGiftDesignerPreview();
+    try { localStorage.setItem('giftDesign', JSON.stringify(giftDesign)); } catch {}
+}
+
+function renderGiftDesignerSlots() {
+    const wrap = document.getElementById('gd-slots');
+    if (!wrap) return;
+    const layout = GD_LAYOUTS[giftDesign.type] || GD_LAYOUTS.classic;
+    const meta = {
+        top:    { label: 'Üst Hediyeler',  icon: '↑', color: '#bd00ff' },
+        left:   { label: 'Sol Hediyeler',  icon: '←', color: '#00d9ff' },
+        right:  { label: 'Sağ Hediyeler',  icon: '→', color: '#00ff9d' },
+        bottom: { label: 'Alt Hediyeler',  icon: '↓', color: '#ffd700' },
+    };
+
+    wrap.innerHTML = layout.slots.map((slot) => {
+        const items = giftDesign.slots[slot] || [];
+        const m = meta[slot];
+        return `
+            <div class="gd-slot-card">
+                <div class="gd-slot-header" style="color:${m.color};">
+                    <span style="font-size:0.95rem;">${m.icon}</span> ${m.label}
+                </div>
+                ${items.map((item) => `
+                    <div class="gd-slot-row" data-id="${item.id}">
+                        <div class="gd-handle">⋮⋮</div>
+                        ${item.iconUrl
+                            ? `<img class="gd-icon" src="${gdProxify(item.iconUrl)}" alt="" onclick="openGiftPicker('${slot}','${item.id}')">`
+                            : `<div class="gd-icon-placeholder" onclick="openGiftPicker('${slot}','${item.id}')">🎁</div>`}
+                        <input type="text" value="${escapeHtml(item.text || '')}" placeholder="${escapeHtml(item.giftName || 'metin')}"
+                               oninput="patchGiftItem('${slot}','${item.id}','text',this.value)">
+                        <input type="color" value="${item.color || giftDesign.textColor}"
+                               onchange="patchGiftItem('${slot}','${item.id}','color',this.value)">
+                        <button class="gd-slot-btn add" title="Hediye seç" onclick="openGiftPicker('${slot}','${item.id}')">
+                            <i class="fas fa-plus" style="font-size:0.65rem;"></i>
+                        </button>
+                        <button class="gd-slot-btn del" title="Sil" onclick="removeGiftItem('${slot}','${item.id}')">
+                            <i class="fas fa-trash" style="font-size:0.65rem;"></i>
+                        </button>
+                    </div>
+                `).join('')}
+                <button class="gd-slot-add-all" onclick="addGiftItem('${slot}')">
+                    <i class="fas fa-plus-circle"></i> Yeni Hediye Ekle
+                </button>
+            </div>
+        `;
+    }).join('');
+}
+
+function addGiftItem(slot) {
+    if (!giftDesign.slots[slot]) giftDesign.slots[slot] = [];
+    giftDesign.slots[slot].push({ id: gdId(), giftName: '', iconUrl: '', text: '', color: '' });
+    renderGiftDesignerSlots();
+    renderGiftDesignerPreview();
+    try { localStorage.setItem('giftDesign', JSON.stringify(giftDesign)); } catch {}
+}
+
+function removeGiftItem(slot, id) {
+    if (!giftDesign.slots[slot]) return;
+    giftDesign.slots[slot] = giftDesign.slots[slot].filter((i) => i.id !== id);
+    renderGiftDesignerSlots();
+    renderGiftDesignerPreview();
+    try { localStorage.setItem('giftDesign', JSON.stringify(giftDesign)); } catch {}
+}
+
+function patchGiftItem(slot, id, key, val) {
+    const arr = giftDesign.slots[slot] || [];
+    const item = arr.find((i) => i.id === id);
+    if (!item) return;
+    item[key] = val;
+    renderGiftDesignerPreview();
+    try { localStorage.setItem('giftDesign', JSON.stringify(giftDesign)); } catch {}
+}
+
+// ─── Gift picker modal ────────────────────────────────────────────────
+
+function openGiftPicker(slot, itemId) {
+    _gdPickerCtx = { slot, itemId };
+    document.getElementById('gd-picker-modal').classList.add('active');
+    document.getElementById('gd-picker-search').value = '';
+    renderGiftPickerList();
+    setTimeout(() => document.getElementById('gd-picker-search')?.focus(), 50);
+}
+
+function closeGiftPicker() {
+    _gdPickerCtx = null;
+    document.getElementById('gd-picker-modal').classList.remove('active');
+}
+
+function renderGiftPickerList() {
+    const list = document.getElementById('gd-picker-list');
+    const countEl = document.getElementById('gd-picker-count');
+    if (!list) return;
+    const q = (document.getElementById('gd-picker-search')?.value || '').toLocaleLowerCase('tr-TR').trim();
+
+    let items = [...giftCatalogCache];
+    if (q) items = items.filter((g) => g.name.toLocaleLowerCase('tr-TR').includes(q) || String(g.coins).includes(q));
+    items.sort((a, b) => a.coins - b.coins);
+
+    if (countEl) countEl.textContent = `${items.length} / ${giftCatalogCache.length} hediye`;
+
+    if (!items.length) {
+        list.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#8b8b9a;padding:2rem;">Eşleşen hediye yok</div>';
+        return;
+    }
+
+    list.innerHTML = items.map((g) => `
+        <div class="gd-picker-card" onclick="pickGiftForSlot('${escapeHtml(g.name).replace(/'/g, "\\'")}', '${encodeURIComponent(g.icon)}')">
+            <img src="${gdProxify(g.icon)}" alt="">
+            <div class="name" title="${escapeHtml(g.name)}">${escapeHtml(g.name)}</div>
+            <div class="coins">💎 ${g.coins}</div>
+        </div>
+    `).join('');
+}
+
+function pickGiftForSlot(giftName, iconUrlEncoded) {
+    if (!_gdPickerCtx) return;
+    const { slot, itemId } = _gdPickerCtx;
+    const arr = giftDesign.slots[slot] || [];
+    const item = arr.find((i) => i.id === itemId);
+    if (item) {
+        item.giftName = giftName;
+        item.iconUrl = decodeURIComponent(iconUrlEncoded);
+    }
+    closeGiftPicker();
+    renderGiftDesignerSlots();
+    renderGiftDesignerPreview();
+    try { localStorage.setItem('giftDesign', JSON.stringify(giftDesign)); } catch {}
+}
+
+// ─── Live preview rendering ────────────────────────────────────────────
+
+function renderGiftDesignerPreview() {
+    const preview = document.getElementById('gd-preview');
+    if (!preview) return;
+    const layout = GD_LAYOUTS[giftDesign.type] || GD_LAYOUTS.classic;
+    preview.innerHTML = '';
+    preview.style.fontFamily = `'${giftDesign.font}', sans-serif`;
+    preview.style.color = giftDesign.textColor;
+
+    layout.slots.forEach((slot) => {
+        const items = giftDesign.slots[slot] || [];
+        if (!items.length) return;
+        const cols = layout.cols[slot] || 1;
+        const isHorizontal = slot === 'top' || slot === 'bottom';
+
+        const container = document.createElement('div');
+        container.style.position = 'absolute';
+        const PAD = 24;
+        // All slots are centered along their axis, so cards line up cleanly
+        // regardless of which side they live on.
+        if (slot === 'top') {
+            container.style.top = PAD + 'px';
+            container.style.left = '50%';
+            container.style.transform = 'translateX(-50%)';
+        } else if (slot === 'bottom') {
+            container.style.bottom = PAD + 'px';
+            container.style.left = '50%';
+            container.style.transform = 'translateX(-50%)';
+        } else if (slot === 'left') {
+            container.style.left = PAD + 'px';
+            container.style.top = '50%';
+            container.style.transform = 'translateY(-50%)';
+        } else if (slot === 'right') {
+            container.style.right = PAD + 'px';
+            container.style.top = '50%';
+            container.style.transform = 'translateY(-50%)';
+        }
+
+        // Group items into rows/cols
+        let rows = [items];
+        if (cols > 1) {
+            const per = Math.ceil(items.length / cols);
+            rows = [];
+            for (let i = 0; i < cols; i++) rows.push(items.slice(i * per, (i + 1) * per));
+        }
+
+        container.style.display = 'flex';
+        container.style.flexDirection = isHorizontal ? (cols > 1 ? 'column' : 'row') : (cols > 1 ? 'row' : 'column');
+        container.style.gap = giftDesign.lineHeight + 'px';
+        container.style.alignItems = 'center';
+        container.style.justifyContent = 'center';
+
+        rows.forEach((rowItems) => {
+            const rowEl = document.createElement('div');
+            rowEl.style.display = 'flex';
+            rowEl.style.flexDirection = isHorizontal ? 'row' : 'column';
+            rowEl.style.gap = giftDesign.giftGap + 'px';
+            rowEl.style.alignItems = 'center';
+            rowEl.style.justifyContent = 'center';
+
+            rowItems.forEach((item) => {
+                rowEl.appendChild(renderGiftCardEl(item));
+            });
+            container.appendChild(rowEl);
+        });
+
+        preview.appendChild(container);
+    });
+}
+
+function renderGiftCardEl(item) {
+    const card = document.createElement('div');
+    card.className = 'gd-card';
+    card.style.display = 'flex';
+    card.style.flexDirection = 'column';
+    card.style.alignItems = 'center';
+    card.style.justifyContent = 'flex-start';
+    card.style.textAlign = 'center';
+
+    const img = document.createElement('img');
+    img.src = item.iconUrl ? gdProxify(item.iconUrl) : 'data:image/svg+xml;utf8,' + encodeURIComponent(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="rgba(189,0,255,0.3)"/><text x="50%" y="58%" text-anchor="middle" font-size="44" fill="#bd00ff" font-weight="bold">♪</text></svg>'
+    );
+    img.crossOrigin = 'anonymous';
+    img.style.width = giftDesign.giftSize + 'px';
+    img.style.height = giftDesign.giftSize + 'px';
+    img.style.objectFit = 'contain';
+    const filters = [];
+    if (giftDesign.grayscale) filters.push('grayscale(100%)');
+    if (giftDesign.autoBlur > 0) filters.push(`blur(${giftDesign.autoBlur}px)`);
+    img.style.filter = filters.join(' ') || 'none';
+    card.appendChild(img);
+
+    const text = item.text || item.giftName || '';
+    if (text) {
+        const txtEl = document.createElement('div');
+        txtEl.className = 'gd-card-text';
+        txtEl.textContent = text;
+        txtEl.style.textAlign = 'center';
+        txtEl.style.marginTop = giftDesign.textGap + 'px';
+        txtEl.style.fontSize = giftDesign.fontSize + 'px';
+        txtEl.style.color = item.color || giftDesign.textColor;
+        txtEl.style.fontFamily = `'${giftDesign.font}', sans-serif`;
+        // Multi-shadow stroke
+        if (giftDesign.borderWidth > 0) {
+            const w = giftDesign.borderWidth;
+            const c = giftDesign.borderColor;
+            const shadows = [];
+            for (let a = 0; a < 8; a++) {
+                const x = (Math.cos((a * Math.PI) / 4) * w).toFixed(1);
+                const y = (Math.sin((a * Math.PI) / 4) * w).toFixed(1);
+                shadows.push(`${x}px ${y}px 0 ${c}`);
+            }
+            txtEl.style.textShadow = shadows.join(', ');
+        }
+        card.appendChild(txtEl);
+    }
+
+    return card;
+}
+
+// ─── Actions ──────────────────────────────────────────────────────────
+
+function resetGiftDesign() {
+    if (!confirm('Tüm tasarım sıfırlansın mı?')) return;
+    giftDesign = JSON.parse(JSON.stringify(GD_DEFAULT));
+    try { localStorage.removeItem('giftDesign'); } catch {}
+    gdSyncFormFromState();
+    renderGiftDesignerSlots();
+    renderGiftDesignerPreview();
+    showToast('Tasarım sıfırlandı');
+}
+
+function saveGiftDesign() {
+    try {
+        localStorage.setItem('giftDesign', JSON.stringify(giftDesign));
+        showToast('Tasarım kaydedildi ✓');
+    } catch (e) {
+        showToast('Kaydedilemedi: ' + e.message, true);
+    }
+}
+
+async function exportGiftDesignPng() {
+    const preview = document.getElementById('gd-preview');
+    if (!preview) return;
+    if (typeof window.htmlToImage === 'undefined') {
+        showToast('html-to-image yüklenmedi (script tag eksik)', true);
+        return;
+    }
+
+    const btn = document.getElementById('gd-export-btn');
+    const orig = btn?.innerHTML;
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Oluşturuluyor...'; }
+
+    try {
+        const dataUrl = await window.htmlToImage.toPng(preview, {
+            cacheBust: true,
+            pixelRatio: 2,
+            backgroundColor: undefined, // transparent
+            fetchRequestInit: { mode: 'cors' },
+        });
+        const filename = `${(giftDesign.name || 'hediye-tasarim').replace(/\s+/g, '_')}.png`;
+
+        // Native save dialog via main process
+        if (window.api?.saveDataUrl) {
+            const result = await window.api.saveDataUrl({ dataUrl, suggestedName: filename });
+            if (result.success) {
+                showToast(`PNG kaydedildi → ${result.filePath}`);
+            } else if (result.error !== 'cancelled') {
+                showToast('Kaydedilemedi: ' + result.error, true);
+            }
+        } else {
+            // Fallback: browser download
+            const a = document.createElement('a');
+            a.href = dataUrl;
+            a.download = filename;
+            a.click();
+        }
+    } catch (e) {
+        console.error('PNG export error:', e);
+        showToast('PNG hatası: ' + e.message, true);
+    } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+    }
 }
 
 // ═══════════════════ STATISTICS PAGE ═══════════════════
