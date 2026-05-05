@@ -2459,7 +2459,7 @@ function connectToTikTokLive() {
 
 function forwardToBackend(eventType, eventData) {
     const getUserInfo = (data) => {
-        return data?.user?.nickname || data?.user?.uniqueId || data?.nickname || data?.uniqueId || data?.username || 'Unknown User';
+        return data?.user?.nickname || data?.user?.uniqueId || data?.nickname || data?.uniqueId || data?.username || '';
     };
 
     const payload = { eventType, username: getUserInfo(eventData), nickname: getUserInfo(eventData), profilePicture: eventData?.user?.profilePicture?.url?.[0] || '' };
@@ -2497,7 +2497,7 @@ function handleTikTokEvent(msg) {
             data?.nickname ||
             data?.uniqueId ||
             data?.username ||
-            'Unknown User';
+            '';
     };
 
     // CHAT MESSAGE
@@ -2621,19 +2621,14 @@ function handleTikTokEvent(msg) {
             color: '#00ff9d'
         });
     }
-    // Unknown events - still log them
+    // Unknown / internal protocol messages — log to console only, don't pollute the feed.
+    // (TikTok'un internal protokolünde WebcastCaptionMessage, WebcastLinkMicFanTicketMethod,
+    //  WebcastEnvelopeMessage gibi kullanıcı için anlamsız onlarca mesaj türü var.)
     else {
-        console.warn('⚠️ Unknown event type:', eventType);
-        console.log('📋 Full message:', JSON.stringify(msg, null, 2));
-
-        // Still try to show it in feed for debugging
-        addEventToFeed({
-            type: 'unknown',
-            user: getUserInfo(eventData),
-            message: `${eventType || 'Unknown event'}: ${JSON.stringify(eventData).substring(0, 50)}...`,
-            icon: '❓',
-            color: '#8b8b9a'
-        });
+        if (window.DEBUG_TIKTOK_EVENTS) {
+            console.warn('⚠️ Unknown event type:', eventType, eventData);
+        }
+        // intentionally not added to feed
     }
 
     updateLiveStats();
@@ -2688,6 +2683,18 @@ function addEventToFeed(event) {
     // Filter check
     if (eventFilter !== 'all' && event.type !== eventFilter) {
         return;
+    }
+
+    // Suppress noisy/empty rows (e.g. raw protocol passes that have no user/message)
+    const isSystem = event.type === 'system';
+    if (!isSystem) {
+        const userText = (event.user || '').trim();
+        const msgText = (event.message || '').trim();
+        if (!userText && !msgText) return;
+        // Drop rows that look like a TikTok-internal protobuf method name leaking through
+        if (/^Webcast[A-Z][A-Za-z]+(Message|Method)/.test(msgText)) return;
+        // Hide rows with no identifiable user
+        if (!userText || userText === 'Unknown User') return;
     }
 
     // Remove placeholder if exists
@@ -3054,14 +3061,21 @@ const overlayTypeMap = {
 
 // Navigate to overlay settings page
 async function navigateOverlay(key) {
-    const info = overlayTypeMap[key];
-    if (!info) return;
-
-    // Handle gallery sub-items
+    // Handle gallery sub-items FIRST — they don't live in overlayTypeMap
     if (key === 'gallery-templates' || key === 'gallery-my') {
+        document.querySelectorAll('.nav-sub-item').forEach(i => i.classList.remove('active'));
+        if (typeof event !== 'undefined') {
+            event.target.closest?.('.nav-sub-item')?.classList.add('active');
+        }
         navigateTo('overlay-gallery');
-        if (key === 'gallery-templates') loadGalleryTemplates();
-        else loadMyOverlays();
+        if (key === 'gallery-templates') loadGalleryTemplates?.();
+        else loadMyOverlays?.();
+        return;
+    }
+
+    const info = overlayTypeMap[key];
+    if (!info) {
+        console.warn('navigateOverlay: unknown key', key);
         return;
     }
 

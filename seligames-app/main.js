@@ -601,7 +601,7 @@ ipcMain.handle('get-overlays', async (event, query = {}) => {
     try {
         const token = await getAuthToken();
         const params = new URLSearchParams(query).toString();
-        const response = await axios.get(`http://localhost:3000/api/overlays?${params}`, {
+        const response = await axios.get(`${BACKEND_URL}/api/overlays?${params}`, {
             headers: { Authorization: `Bearer ${token}` }
         });
         return { success: true, data: response.data };
@@ -613,7 +613,7 @@ ipcMain.handle('get-overlays', async (event, query = {}) => {
 ipcMain.handle('get-overlay', async (event, id) => {
     try {
         const token = await getAuthToken();
-        const response = await axios.get(`http://localhost:3000/api/overlays/${id}`, {
+        const response = await axios.get(`${BACKEND_URL}/api/overlays/${id}`, {
             headers: { Authorization: `Bearer ${token}` }
         });
         return { success: true, data: response.data };
@@ -637,7 +637,7 @@ ipcMain.handle('create-overlay', async (event, data) => {
 ipcMain.handle('update-overlay', async (event, id, data) => {
     try {
         const token = await getAuthToken();
-        const response = await axios.put(`http://localhost:3000/api/overlays/${id}`, data, {
+        const response = await axios.put(`${BACKEND_URL}/api/overlays/${id}`, data, {
             headers: { Authorization: `Bearer ${token}` }
         });
         return { success: true, data: response.data };
@@ -649,7 +649,7 @@ ipcMain.handle('update-overlay', async (event, id, data) => {
 ipcMain.handle('delete-overlay', async (event, id) => {
     try {
         const token = await getAuthToken();
-        const response = await axios.delete(`http://localhost:3000/api/overlays/${id}`, {
+        const response = await axios.delete(`${BACKEND_URL}/api/overlays/${id}`, {
             headers: { Authorization: `Bearer ${token}` }
         });
         return { success: true, data: response.data };
@@ -661,7 +661,7 @@ ipcMain.handle('delete-overlay', async (event, id) => {
 ipcMain.handle('reset-overlay', async (event, id) => {
     try {
         const token = await getAuthToken();
-        const response = await axios.post(`http://localhost:3000/api/overlays/${id}/reset`, {}, {
+        const response = await axios.post(`${BACKEND_URL}/api/overlays/${id}/reset`, {}, {
             headers: { Authorization: `Bearer ${token}` }
         });
         return { success: true, data: response.data };
@@ -673,7 +673,7 @@ ipcMain.handle('reset-overlay', async (event, id) => {
 ipcMain.handle('increment-overlay', async (event, id, amount = 1) => {
     try {
         const token = await getAuthToken();
-        const response = await axios.post(`http://localhost:3000/api/overlays/${id}/increment`, { amount }, {
+        const response = await axios.post(`${BACKEND_URL}/api/overlays/${id}/increment`, { amount }, {
             headers: { Authorization: `Bearer ${token}` }
         });
         return { success: true, data: response.data };
@@ -724,7 +724,7 @@ ipcMain.handle('get-events', async (event, query = {}) => {
     try {
         const token = await getAuthToken();
         const params = new URLSearchParams(query).toString();
-        const response = await axios.get(`http://localhost:3000/api/events?${params}`, {
+        const response = await axios.get(`${BACKEND_URL}/api/events?${params}`, {
             headers: { Authorization: `Bearer ${token}` }
         });
         return { success: true, data: response.data };
@@ -737,7 +737,7 @@ ipcMain.handle('get-event-stats', async (event, query = {}) => {
     try {
         const token = await getAuthToken();
         const params = new URLSearchParams(query).toString();
-        const response = await axios.get(`http://localhost:3000/api/events/stats?${params}`, {
+        const response = await axios.get(`${BACKEND_URL}/api/events/stats?${params}`, {
             headers: { Authorization: `Bearer ${token}` }
         });
         return { success: true, data: response.data };
@@ -794,7 +794,7 @@ ipcMain.handle('create-mod', async (event, data) => {
 
 ipcMain.handle('update-mod', async (event, id, data) => {
     try {
-        const response = await axios.put(`http://localhost:3000/api/mods/${id}`, data);
+        const response = await axios.put(`${BACKEND_URL}/api/mods/${id}`, data);
         return { success: true, data: response.data };
     } catch (error) {
         return { success: false, error: error.response?.data?.error || error.message };
@@ -803,7 +803,7 @@ ipcMain.handle('update-mod', async (event, id, data) => {
 
 ipcMain.handle('delete-mod', async (event, id) => {
     try {
-        const response = await axios.delete(`http://localhost:3000/api/mods/${id}`);
+        const response = await axios.delete(`${BACKEND_URL}/api/mods/${id}`);
         return { success: true, data: response.data };
     } catch (error) {
         return { success: false, error: error.response?.data?.error || error.message };
@@ -813,7 +813,7 @@ ipcMain.handle('delete-mod', async (event, id) => {
 ipcMain.handle('get-mod-config', async (event, modId) => {
     try {
         const token = await getAuthToken();
-        const response = await axios.get(`http://localhost:3000/api/mods/${modId}/config`, {
+        const response = await axios.get(`${BACKEND_URL}/api/mods/${modId}/config`, {
             headers: { Authorization: `Bearer ${token}` }
         });
         return { success: true, data: response.data };
@@ -825,7 +825,7 @@ ipcMain.handle('get-mod-config', async (event, modId) => {
 ipcMain.handle('save-mod-config', async (event, modId, data) => {
     try {
         const token = await getAuthToken();
-        const response = await axios.post(`http://localhost:3000/api/mods/${modId}/config`, data, {
+        const response = await axios.post(`${BACKEND_URL}/api/mods/${modId}/config`, data, {
             headers: { Authorization: `Bearer ${token}` }
         });
         return { success: true, data: response.data };
@@ -837,7 +837,7 @@ ipcMain.handle('save-mod-config', async (event, modId, data) => {
 ipcMain.handle('set-mod-gift-action', async (event, modId, giftName, action) => {
     try {
         const token = await getAuthToken();
-        const response = await axios.post(`http://localhost:3000/api/mods/${modId}/config/gift-action`,
+        const response = await axios.post(`${BACKEND_URL}/api/mods/${modId}/config/gift-action`,
             { giftName, action },
             { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -1073,7 +1073,7 @@ ipcMain.handle('delete-mod-file', async (event, modId) => {
 ipcMain.handle('uninstall-mod', async (event, modId) => {
     try {
         const token = await getAuthToken();
-        const response = await axios.post(`http://localhost:3000/api/mods/${modId}/uninstall`, {}, {
+        const response = await axios.post(`${BACKEND_URL}/api/mods/${modId}/uninstall`, {}, {
             headers: { Authorization: `Bearer ${token}` }
         });
         return { success: true, data: response.data };
