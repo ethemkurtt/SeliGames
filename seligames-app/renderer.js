@@ -221,14 +221,14 @@ const GD_DEFAULT = {
     name: '',
     type: 'classic',
     font: 'Luckiest Guy',
-    giftSize: 75,
-    giftGap: 40,
-    textGap: -10,
-    lineHeight: -5,
-    fontSize: 24,
+    giftSize: 50,
+    giftGap: 24,
+    textGap: -6,
+    lineHeight: 0,
+    fontSize: 18,
     textColor: '#FFFFFF',
     borderColor: '#000000',
-    borderWidth: 5,
+    borderWidth: 4,
     autoBlur: 0,
     grayscale: false,
     slots: { top: [], left: [], right: [], bottom: [] },
@@ -446,6 +446,14 @@ function renderGiftDesignerPreview() {
     preview.style.fontFamily = `'${giftDesign.font}', sans-serif`;
     preview.style.color = giftDesign.textColor;
 
+    // Reset wrapper height to its 16:9 baseline before measuring; JS will
+    // expand below if content overflows downward.
+    const wrap = preview.parentElement;
+    if (wrap) {
+        const baseH = Math.round(wrap.clientWidth * 9 / 16);
+        wrap.style.height = baseH + 'px';
+    }
+
     layout.slots.forEach((slot) => {
         const items = giftDesign.slots[slot] || [];
         if (!items.length) return;
@@ -455,24 +463,28 @@ function renderGiftDesignerPreview() {
         const container = document.createElement('div');
         container.style.position = 'absolute';
         const PAD = 24;
-        // All slots are centered along their axis, so cards line up cleanly
-        // regardless of which side they live on.
+        // Height reserved for the top row — used to vertically push left/right
+        // columns so they always start "one below" the top slot, even when top
+        // is empty. Keeps slot positions tertipli + predictable.
+        const TOP_RESERVED = giftDesign.giftSize + giftDesign.textGap + giftDesign.fontSize + PAD;
+
+        // Corner-anchored layout:
+        //   top    → top-left corner, items extend right
+        //   right  → top-right corner, items extend down
+        //   left   → top-left, but pushed down past the top row
+        //   bottom → bottom-left corner, items extend right
         if (slot === 'top') {
             container.style.top = PAD + 'px';
-            container.style.left = '50%';
-            container.style.transform = 'translateX(-50%)';
+            container.style.left = PAD + 'px';
+        } else if (slot === 'right') {
+            container.style.top = PAD + 'px';
+            container.style.right = PAD + 'px';
+        } else if (slot === 'left') {
+            container.style.top = (PAD + TOP_RESERVED) + 'px';
+            container.style.left = PAD + 'px';
         } else if (slot === 'bottom') {
             container.style.bottom = PAD + 'px';
-            container.style.left = '50%';
-            container.style.transform = 'translateX(-50%)';
-        } else if (slot === 'left') {
             container.style.left = PAD + 'px';
-            container.style.top = '50%';
-            container.style.transform = 'translateY(-50%)';
-        } else if (slot === 'right') {
-            container.style.right = PAD + 'px';
-            container.style.top = '50%';
-            container.style.transform = 'translateY(-50%)';
         }
 
         // Group items into rows/cols
@@ -486,16 +498,19 @@ function renderGiftDesignerPreview() {
         container.style.display = 'flex';
         container.style.flexDirection = isHorizontal ? (cols > 1 ? 'column' : 'row') : (cols > 1 ? 'row' : 'column');
         container.style.gap = giftDesign.lineHeight + 'px';
-        container.style.alignItems = 'center';
-        container.style.justifyContent = 'center';
+        // Anchor cards to the start edge of the slot — keeps multi-card rows
+        // flush at the corner instead of drifting toward center.
+        const startAlign = (slot === 'right') ? 'flex-end' : 'flex-start';
+        container.style.alignItems = startAlign;
+        container.style.justifyContent = 'flex-start';
 
         rows.forEach((rowItems) => {
             const rowEl = document.createElement('div');
             rowEl.style.display = 'flex';
             rowEl.style.flexDirection = isHorizontal ? 'row' : 'column';
             rowEl.style.gap = giftDesign.giftGap + 'px';
-            rowEl.style.alignItems = 'center';
-            rowEl.style.justifyContent = 'center';
+            rowEl.style.alignItems = startAlign;
+            rowEl.style.justifyContent = 'flex-start';
 
             rowItems.forEach((item) => {
                 rowEl.appendChild(renderGiftCardEl(item));
@@ -504,6 +519,26 @@ function renderGiftDesignerPreview() {
         });
 
         preview.appendChild(container);
+    });
+
+    // After layout: grow wrap if any top-anchored slot extends past the 16:9
+    // baseline. Measured on next frame so flex/img sizes have settled.
+    requestAnimationFrame(() => {
+        if (!wrap) return;
+        const wrapRect = wrap.getBoundingClientRect();
+        const wrapTop = wrapRect.top;
+        let maxBottom = 0;
+        for (const child of preview.children) {
+            const r = child.getBoundingClientRect();
+            const localBottom = r.bottom - wrapTop;
+            if (localBottom > maxBottom) maxBottom = localBottom;
+        }
+        const baseH = Math.round(wrap.clientWidth * 9 / 16);
+        const PAD_BOTTOM = 24;
+        const needed = Math.max(baseH, Math.ceil(maxBottom + PAD_BOTTOM));
+        if (Math.abs(needed - wrap.clientHeight) > 1) {
+            wrap.style.height = needed + 'px';
+        }
     });
 }
 
@@ -515,6 +550,11 @@ function renderGiftCardEl(item) {
     card.style.alignItems = 'center';
     card.style.justifyContent = 'flex-start';
     card.style.textAlign = 'center';
+    // Card width = icon width. This forces every card to occupy the SAME
+    // horizontal footprint regardless of label length, so icons line up
+    // pixel-perfect across rows. Long labels wrap to multiple lines below.
+    card.style.width = giftDesign.giftSize + 'px';
+    card.style.flex = '0 0 auto';
 
     const img = document.createElement('img');
     img.src = item.iconUrl ? gdProxify(item.iconUrl) : 'data:image/svg+xml;utf8,' + encodeURIComponent(
@@ -524,6 +564,8 @@ function renderGiftCardEl(item) {
     img.style.width = giftDesign.giftSize + 'px';
     img.style.height = giftDesign.giftSize + 'px';
     img.style.objectFit = 'contain';
+    img.style.display = 'block';
+    img.style.flex = '0 0 auto';
     const filters = [];
     if (giftDesign.grayscale) filters.push('grayscale(100%)');
     if (giftDesign.autoBlur > 0) filters.push(`blur(${giftDesign.autoBlur}px)`);
@@ -537,9 +579,25 @@ function renderGiftCardEl(item) {
         txtEl.textContent = text;
         txtEl.style.textAlign = 'center';
         txtEl.style.marginTop = giftDesign.textGap + 'px';
-        txtEl.style.fontSize = giftDesign.fontSize + 'px';
+        // Auto-shrink long labels so single short words like "GÜL" stay big
+        // while longer phrases like "SENİ SEVİYORUM" still fit within the
+        // icon-wide card cleanly. Step-down by character count.
+        const len = text.length;
+        const baseFs = giftDesign.fontSize;
+        let fs = baseFs;
+        if (len > 18) fs = Math.max(10, Math.round(baseFs * 0.65));
+        else if (len > 12) fs = Math.max(11, Math.round(baseFs * 0.78));
+        else if (len > 8) fs = Math.max(12, Math.round(baseFs * 0.9));
+        txtEl.style.fontSize = fs + 'px';
         txtEl.style.color = item.color || giftDesign.textColor;
         txtEl.style.fontFamily = `'${giftDesign.font}', sans-serif`;
+        // Constrain text to icon width — long labels wrap (multi-line) instead
+        // of stretching the card and breaking icon alignment.
+        txtEl.style.width = giftDesign.giftSize + 'px';
+        txtEl.style.maxWidth = giftDesign.giftSize + 'px';
+        txtEl.style.wordBreak = 'break-word';
+        txtEl.style.overflowWrap = 'break-word';
+        txtEl.style.lineHeight = '1.05';
         // Multi-shadow stroke
         if (giftDesign.borderWidth > 0) {
             const w = giftDesign.borderWidth;
@@ -1200,7 +1258,7 @@ function previewGiftSound(giftName) {
     }
     if (entry.mp3) {
         const audio = new Audio(entry.mp3);
-        audio.volume = entry.volume ?? 1;
+        audio.volume = Math.max(0, Math.min(1, (entry.volume ?? 1) * getNotifVolume()));
         audio.play().catch(err => console.warn('mp3 play error', err));
     } else if (entry.preset) {
         playSound(entry.preset);
@@ -2911,10 +2969,40 @@ const soundLibrary = {
 };
 
 // Play sound using Web Audio API
+// Global notification volume — multiplier in [0..1] applied on top of per-sound volume
+function getNotifVolume() {
+    try {
+        const v = parseInt(localStorage.getItem('notifVolume'));
+        if (!isNaN(v)) return Math.max(0, Math.min(1, v / 100));
+    } catch {}
+    return 0.8;
+}
+function setNotificationVolume(val) {
+    const v = Math.max(0, Math.min(100, parseInt(val) || 0));
+    try { localStorage.setItem('notifVolume', String(v)); } catch {}
+    const label = document.getElementById('notif-volume-label');
+    if (label) label.textContent = v + '%';
+}
+function testNotificationVolume() {
+    playSound('coin');
+}
+// Restore saved slider value on page load
+document.addEventListener('DOMContentLoaded', () => {
+    try {
+        const v = localStorage.getItem('notifVolume');
+        if (v !== null) {
+            const slider = document.getElementById('notif-volume');
+            if (slider) { slider.value = v; setNotificationVolume(v); }
+        }
+    } catch {}
+});
+
 function playSound(soundName) {
     // Check if sounds are enabled
     const soundsEnabled = document.getElementById('gift-sounds-toggle')?.checked !== false;
     if (!soundsEnabled) return;
+    const globalVol = getNotifVolume();
+    if (globalVol === 0) return;
     
     const sound = soundLibrary[soundName];
     if (!sound) {
@@ -2940,7 +3028,7 @@ function playSound(soundName) {
                 const startTime = audioContext.currentTime + (index * 0.1);
                 const endTime = startTime + (sound.duration / sound.frequencies.length);
                 
-                gainNode.gain.setValueAtTime(sound.volume, startTime);
+                gainNode.gain.setValueAtTime(sound.volume * globalVol, startTime);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, endTime);
                 
                 oscillator.start(startTime);
@@ -2957,7 +3045,7 @@ function playSound(soundName) {
             oscillator.type = sound.type || 'sine';
             oscillator.frequency.value = sound.frequency;
             
-            gainNode.gain.setValueAtTime(sound.volume, audioContext.currentTime);
+            gainNode.gain.setValueAtTime(sound.volume * globalVol, audioContext.currentTime);
             gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + sound.duration);
             
             oscillator.start();
@@ -2984,7 +3072,7 @@ function playGiftSound(giftName, coins) {
         if (entry.mp3) {
             try {
                 const audio = new Audio(entry.mp3);
-                audio.volume = entry.volume ?? 1;
+                audio.volume = Math.max(0, Math.min(1, (entry.volume ?? 1) * getNotifVolume()));
                 audio.play().catch(() => {});
             } catch {}
             console.log(`🔊 Custom MP3 for "${giftName}"`);
@@ -3057,6 +3145,7 @@ const overlayTypeMap = {
     'chart-viewers':    { overlayType: 'chart', subType: 'viewer_count', title: 'Viewer Grafiği', icon: '📊' },
     'dock-chat':        { overlayType: 'chat', subType: 'chat', title: 'Chat Dock', icon: '💬' },
     'dock-events':      { overlayType: 'event-feed', subType: 'events', title: 'Event Feed Dock', icon: '📋' },
+    'subathon-timer':   { overlayType: 'subathon', subType: 'timer', title: 'Subathon Timer', icon: '⏱️' },
 };
 
 // Navigate to overlay settings page
@@ -3098,6 +3187,7 @@ async function navigateOverlay(key) {
     const isLastX = info.overlayType === 'last-x';
     const isLb = info.overlayType === 'leaderboard' || info.overlayType === 'chart';
     const isDock = info.overlayType === 'chat' || info.overlayType === 'event-feed';
+    const isSubathon = info.overlayType === 'subathon';
 
     document.getElementById('ov-target-group').style.display = isGoal ? '' : 'none';
     document.getElementById('ov-current-group').style.display = isGoal ? '' : 'none';
@@ -3106,6 +3196,8 @@ async function navigateOverlay(key) {
     document.getElementById('ov-animation-group').style.display = (isGoal || isGift) ? '' : 'none';
     document.getElementById('ov-showPct-group').style.display = isGoal ? '' : 'none';
     document.getElementById('ov-showNums-group').style.display = isGoal ? '' : 'none';
+    const subGroup = document.getElementById('ov-subathon-group');
+    if (subGroup) subGroup.style.display = isSubathon ? '' : 'none';
 
     currentOverlayContext = { key, ...info, overlayDbId: null, overlayId: null };
 
@@ -3349,6 +3441,8 @@ function setColorInput(id, value) {
 
 function getOverlayFormData() {
     var customCSSEl = document.getElementById('ov-custom-css');
+    const isSubathon = currentOverlayContext.overlayType === 'subathon';
+    const subConf = isSubathon ? readSubathonConfig() : {};
     return {
         title: document.getElementById('ov-title').value || currentOverlayContext.title,
         overlayType: currentOverlayContext.overlayType,
@@ -3357,7 +3451,8 @@ function getOverlayFormData() {
         currentValue: parseInt(document.getElementById('ov-current').value) || 0,
         config: {
             maxItems: parseInt(document.getElementById('ov-maxitems').value) || 5,
-            duration: parseInt(document.getElementById('ov-duration').value) || 5
+            duration: parseInt(document.getElementById('ov-duration').value) || 5,
+            ...subConf,
         },
         style: {
             barColor: document.getElementById('ov-barColor').value,
@@ -3908,3 +4003,136 @@ handleTikTokEvent = function(msg) {
 };
 
 // ==================== END OVERLAY SYSTEM ====================
+
+// ==================== SUBATHON TIMER ====================
+// Settings UI helpers — reads/writes the per-gift seconds list and the
+// start/pause/reset controls hit the backend endpoints we exposed.
+
+const SUBATHON_PRESETS = {
+    basic: { 'Gül': 5, 'Kalp': 15, 'Aslan': 60, 'Roket': 300 },
+    full: {
+        'Gül': 5, 'Kalp': 15, 'Parmak Kalp': 15, 'Dondurma': 30,
+        'Gökkuşağı': 60, 'Kuğu': 75, 'Aslan': 60, 'Spor Araba': 150,
+        'Havai Fişek': 300, 'Yat': 600, 'Roket': 900, 'Kale': 1800,
+        'Gezegen': 3600, 'Evren': 7200,
+    },
+};
+
+function renderSubathonGiftRows(map) {
+    const wrap = document.getElementById('ov-sub-gift-rows');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+    const entries = Object.entries(map || {});
+    if (entries.length === 0) {
+        wrap.innerHTML = '<div style="color:#8b8b9a;font-size:0.75rem;font-style:italic;padding:0.5rem 0;">Henüz hediye eklenmedi. Yukarıdaki + ile ekle ya da preset seç.</div>';
+        return;
+    }
+    entries.forEach(([gift, sec], i) => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;gap:0.4rem;align-items:center;';
+        row.innerHTML = `
+            <input type="text" class="ov-input" placeholder="Hediye adı" value="${escapeHtml(gift)}" style="flex:1;" data-sub-key="${i}">
+            <input type="number" class="ov-input" placeholder="sn" value="${sec}" min="0" step="1" style="width:90px;" data-sub-val="${i}">
+            <button class="btn-icon" onclick="removeSubathonGiftRow(${i})" style="background:rgba(255,0,110,0.08);color:#ff006e;" title="Sil"><i class="fas fa-times"></i></button>
+        `;
+        wrap.appendChild(row);
+    });
+}
+
+function readSubathonGiftMap() {
+    const wrap = document.getElementById('ov-sub-gift-rows');
+    if (!wrap) return {};
+    const keys = wrap.querySelectorAll('[data-sub-key]');
+    const vals = wrap.querySelectorAll('[data-sub-val]');
+    const map = {};
+    for (let i = 0; i < keys.length; i++) {
+        const k = keys[i].value.trim();
+        const v = parseFloat(vals[i].value);
+        if (k && v > 0) map[k] = v;
+    }
+    return map;
+}
+
+function readSubathonConfig() {
+    const hh = parseInt(document.getElementById('ov-sub-hh')?.value) || 0;
+    const mm = parseInt(document.getElementById('ov-sub-mm')?.value) || 0;
+    const ss = parseInt(document.getElementById('ov-sub-ss')?.value) || 0;
+    const perCoin = parseFloat(document.getElementById('ov-sub-perCoin')?.value) || 0;
+    return {
+        startSeconds: hh * 3600 + mm * 60 + ss,
+        perCoin,
+        perGift: readSubathonGiftMap(),
+    };
+}
+
+function writeSubathonConfig(config) {
+    const total = Number(config?.startSeconds || 3600);
+    const hh = Math.floor(total / 3600);
+    const mm = Math.floor((total % 3600) / 60);
+    const ss = total % 60;
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+    set('ov-sub-hh', hh);
+    set('ov-sub-mm', mm);
+    set('ov-sub-ss', ss);
+    set('ov-sub-perCoin', config?.perCoin || 0);
+    renderSubathonGiftRows(config?.perGift || {});
+}
+
+function addSubathonGiftRow() {
+    const map = readSubathonGiftMap();
+    map[''] = 0;
+    renderSubathonGiftRows(map);
+}
+
+function removeSubathonGiftRow(idx) {
+    const map = readSubathonGiftMap();
+    const entries = Object.entries(map);
+    entries.splice(idx, 1);
+    renderSubathonGiftRows(Object.fromEntries(entries));
+}
+
+function loadSubathonPreset(name) {
+    const preset = SUBATHON_PRESETS[name];
+    if (!preset) return;
+    const merged = { ...readSubathonGiftMap(), ...preset };
+    renderSubathonGiftRows(merged);
+    showToast?.(`${name === 'basic' ? 'Temel' : 'Detaylı'} preset yüklendi`);
+}
+
+function clearSubathonGifts() {
+    renderSubathonGiftRows({});
+}
+
+async function subathonControl(action) {
+    if (!currentOverlayContext?.overlayDbId) {
+        showToast?.('Önce kaydet, sonra kontrol et', true);
+        return;
+    }
+    try {
+        const res = await window.api.subathonControl?.(currentOverlayContext.overlayDbId, action);
+        if (res?.success) {
+            const labels = { start: 'başlatıldı', pause: 'durduruldu', reset: 'sıfırlandı' };
+            showToast?.(`Zamanlayıcı ${labels[action] || action}`);
+            currentOverlayData = res.data;
+        } else {
+            showToast?.(res?.error || 'Hata', true);
+        }
+    } catch (e) {
+        showToast?.(e.message, true);
+    }
+}
+
+// Patch populateOverlayForm to also fill subathon fields when loading a draft
+const _origPopulate = populateOverlayForm;
+populateOverlayForm = function (ov) {
+    _origPopulate(ov);
+    if (ov.overlayType === 'subathon') writeSubathonConfig(ov.config || {});
+};
+const _origReset = resetOverlayForm;
+resetOverlayForm = function (info) {
+    _origReset(info);
+    if (info.overlayType === 'subathon') {
+        writeSubathonConfig({ startSeconds: 3600, perCoin: 0, perGift: {} });
+    }
+};
+// ==================== END SUBATHON TIMER ====================

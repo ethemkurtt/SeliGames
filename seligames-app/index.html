@@ -3080,10 +3080,11 @@
         }
         .gd-slot-add-all:hover { background: rgba(189,0,255,0.2); }
 
-        /* Preview canvas */
+        /* Preview canvas — starts at 16:9, grows vertically when content overflows */
         .gd-preview-wrap {
             width: 100%;
-            aspect-ratio: 16 / 9;
+            /* JS sets height each render; this is the floor (16:9 of width). */
+            min-height: 0;
             background:
                 linear-gradient(45deg, #0e0e16 25%, transparent 25%),
                 linear-gradient(-45deg, #0e0e16 25%, transparent 25%),
@@ -3253,6 +3254,15 @@
             <div class="nav-accordion-body">
                 <div class="nav-sub-item" onclick="navigateOverlay('gift-alert')">🎁 Hediye Alert</div>
                 <div class="nav-sub-item" onclick="navigateOverlay('gift-ticker')">📜 Hediye Ticker</div>
+            </div>
+
+            <div class="nav-accordion-header" onclick="toggleAccordion(this)">
+                <i class="fas fa-stopwatch nav-acc-icon"></i>
+                <span>Etkileşimli Katmanlar</span>
+                <i class="fas fa-chevron-right acc-arrow"></i>
+            </div>
+            <div class="nav-accordion-body">
+                <div class="nav-sub-item" onclick="navigateOverlay('subathon-timer')">⏱️ Subathon Timer</div>
             </div>
 
             <div class="nav-accordion-header" onclick="toggleAccordion(this)">
@@ -3929,60 +3939,213 @@
     <!-- Guide Page -->
     <div class="page" id="guide-page">
         <div class="page-header">
-            <div class="page-title">Kullanım Kılavuzu</div>
-            <div class="page-subtitle">SeliGames'i nasıl kullanacağınızı öğrenin</div>
+            <div class="page-title">📖 Kullanım Kılavuzu</div>
+            <div class="page-subtitle">Tüm sayfalar ve özelliklerin kısa açıklamaları</div>
         </div>
 
-        <div style="background: #13131a; border: 1px solid rgba(255,255,255,0.04); border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
-            <h3 style="color: #00ff9d; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem;">
-                <i class="fas fa-download"></i> Mod Kurulumu
-            </h3>
-            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                <div style="display: flex; align-items: start; gap: 0.6rem;">
-                    <div style="background: #00ff9d; color: #0a0a0f; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; font-size: 0.7rem;">1</div>
-                    <div style="font-size: 0.78rem;"><b>Modlar</b> bölümünde mevcut modlara göz atın</div>
-                </div>
-                <div style="display: flex; align-items: start; gap: 0.6rem;">
-                    <div style="background: #00ff9d; color: #0a0a0f; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; font-size: 0.7rem;">2</div>
-                    <div style="font-size: 0.78rem;">İstediğiniz modun üzerine tıklayın</div>
-                </div>
-                <div style="display: flex; align-items: start; gap: 0.6rem;">
-                    <div style="background: #00ff9d; color: #0a0a0f; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; font-size: 0.7rem;">3</div>
-                    <div style="font-size: 0.78rem;"><b>Ayarlar</b> butonuna tıklayarak TikTok hediye eşleştirmelerini yapın</div>
-                </div>
-                <div style="display: flex; align-items: start; gap: 0.6rem;">
-                    <div style="background: #00ff9d; color: #0a0a0f; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; font-size: 0.7rem;">4</div>
-                    <div style="font-size: 0.78rem;"><b>Modu Yükle</b> butonuna tıklayın</div>
-                </div>
-                <div style="display: flex; align-items: start; gap: 0.6rem;">
-                    <div style="background: #00ff9d; color: #0a0a0f; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; font-size: 0.7rem;">5</div>
-                    <div style="font-size: 0.78rem;">Mod otomatik olarak oyun dizininize kurulacaktır</div>
-                </div>
-            </div>
-        </div>
+        <style>
+            .guide-doc { display: flex; flex-direction: column; gap: 1.25rem; max-width: 1100px; }
+            .guide-section { background: #13131a; border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 1.25rem 1.5rem; }
+            .guide-section h2 { color: #bd00ff; font-size: 1rem; margin: 0 0 0.25rem; display: flex; align-items: center; gap: 0.5rem; letter-spacing: 0.5px; text-transform: uppercase; }
+            .guide-section .guide-section-sub { color: #8b8b9a; font-size: 0.78rem; margin-bottom: 1rem; }
+            .guide-row { display: grid; grid-template-columns: 220px 1fr; gap: 1rem; padding: 0.85rem 0; border-top: 1px solid rgba(255,255,255,0.05); }
+            .guide-row:first-of-type { border-top: 0; padding-top: 0.5rem; }
+            .guide-row .gr-name { display: flex; align-items: center; gap: 0.55rem; font-weight: 700; color: #fff; font-size: 0.92rem; }
+            .guide-row .gr-name .gr-ic { width: 28px; height: 28px; border-radius: 7px; background: rgba(189,0,255,0.12); color: #bd00ff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+            .guide-row .gr-desc { color: #c8c8d4; font-size: 0.85rem; line-height: 1.55; }
+            .guide-row .gr-desc b { color: #00ff9d; font-weight: 600; }
+            .guide-quick { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem; }
+            .guide-quick .gq-card { background: rgba(189,0,255,0.05); border: 1px solid rgba(189,0,255,0.15); border-radius: 8px; padding: 0.85rem 1rem; }
+            .guide-quick .gq-card .gq-num { color: #bd00ff; font-weight: 800; font-size: 0.7rem; letter-spacing: 1px; }
+            .guide-quick .gq-card .gq-title { color: #fff; font-weight: 700; margin: 0.2rem 0 0.35rem; font-size: 0.92rem; }
+            .guide-quick .gq-card .gq-text { color: #b9b9c5; font-size: 0.78rem; line-height: 1.45; }
+            .guide-pill { display: inline-block; background: rgba(0,255,157,0.1); color: #00ff9d; padding: 2px 8px; border-radius: 999px; font-size: 0.68rem; font-weight: 700; margin-left: 0.4rem; vertical-align: middle; }
+            @media (max-width: 760px) { .guide-row { grid-template-columns: 1fr; } }
+        </style>
 
-        <div style="background: #13131a; border: 1px solid rgba(255,255,255,0.04); border-radius: 8px; padding: 1rem;">
-            <h3 style="color: #00ff9d; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem;">
-                <i class="fab fa-tiktok"></i> TikTok Bağlantısı
-            </h3>
-            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                <div style="display: flex; align-items: start; gap: 0.6rem;">
-                    <div style="background: #00ff9d; color: #0a0a0f; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; font-size: 0.7rem;">1</div>
-                    <div style="font-size: 0.78rem;"><b>TikTok Canlı</b> bölümüne gidin</div>
-                </div>
-                <div style="display: flex; align-items: start; gap: 0.6rem;">
-                    <div style="background: #00ff9d; color: #0a0a0f; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; font-size: 0.7rem;">2</div>
-                    <div style="font-size: 0.78rem;"><b>TikToku Bağla</b> butonuna tıklayın</div>
-                </div>
-                <div style="display: flex; align-items: start; gap: 0.6rem;">
-                    <div style="background: #00ff9d; color: #0a0a0f; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; font-size: 0.7rem;">3</div>
-                    <div style="font-size: 0.78rem;">SeliGames'in TikTok hesabınıza erişmesine izin verin</div>
-                </div>
-                <div style="display: flex; align-items: start; gap: 0.6rem;">
-                    <div style="background: #00ff9d; color: #0a0a0f; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; font-size: 0.7rem;">4</div>
-                    <div style="font-size: 0.78rem;">Hangi olayların hangi oyun aksiyonlarını tetikleyeceğini yapılandırın</div>
+        <div class="guide-doc">
+
+            <!-- HIZLI BAŞLANGIÇ -->
+            <div class="guide-section">
+                <h2><i class="fas fa-rocket"></i> Hızlı Başlangıç</h2>
+                <div class="guide-section-sub">Yayına 5 dakikada başlamak için sıralı adımlar.</div>
+                <div class="guide-quick">
+                    <div class="gq-card">
+                        <div class="gq-num">ADIM 1</div>
+                        <div class="gq-title">Profilini doldur</div>
+                        <div class="gq-text">Profil sayfasından TikTok kullanıcı adını ekle. Bu olmadan hiçbir şey çalışmaz.</div>
+                    </div>
+                    <div class="gq-card">
+                        <div class="gq-num">ADIM 2</div>
+                        <div class="gq-title">TikTok'a bağlan</div>
+                        <div class="gq-text">TikTok Canlı sayfasına git, "Bağlan" tuşuna bas. Yayında olduğun anda eventler akacak.</div>
+                    </div>
+                    <div class="gq-card">
+                        <div class="gq-num">ADIM 3</div>
+                        <div class="gq-title">Mod kur</div>
+                        <div class="gq-text">Modlar sayfasından bir mod seç → oyun klasörünü göster → otomatik kurulur.</div>
+                    </div>
+                    <div class="gq-card">
+                        <div class="gq-num">ADIM 4</div>
+                        <div class="gq-title">Hediye→Aksiyon eşle</div>
+                        <div class="gq-text">Modun ayarlarında hangi hediye geldiğinde oyunda hangi tuşun basılacağını ata.</div>
+                    </div>
+                    <div class="gq-card">
+                        <div class="gq-num">ADIM 5</div>
+                        <div class="gq-title">Overlay'i OBS'ye ekle</div>
+                        <div class="gq-text">Kaplamalarımdan link kopyala → OBS'de Browser Source olarak ekle.</div>
+                    </div>
+                    <div class="gq-card">
+                        <div class="gq-num">ADIM 6</div>
+                        <div class="gq-title">Oyunu odakta tut</div>
+                        <div class="gq-text">Yayın açıkken oyun penceresi öndeyken kısayollar oyuna basılır. Kapatma!</div>
+                    </div>
                 </div>
             </div>
+
+            <!-- ANA SAYFALAR -->
+            <div class="guide-section">
+                <h2><i class="fas fa-th-large"></i> Ana Sayfalar</h2>
+                <div class="guide-section-sub">Yan menüdeki her sekme ne işe yarar?</div>
+
+                <div class="guide-row">
+                    <div class="gr-name"><span class="gr-ic"><i class="fas fa-home"></i></span> Ana Sayfa</div>
+                    <div class="gr-desc">Genel özet — son aktiviteler, mod sayısı, hızlı erişim kartları. Her şeyin başlangıç noktası.</div>
+                </div>
+
+                <div class="guide-row">
+                    <div class="gr-name"><span class="gr-ic"><i class="fas fa-cube"></i></span> Modlar</div>
+                    <div class="gr-desc">Yayında oyununa eklenecek modların listesi. Her mod için: <b>"Ayarlar"</b> ile hediye eşlemesi yap, <b>"Modu Yükle"</b> ile oyun klasörüne otomatik açılır. Mod ZIP'i SeliGames sunucusundan imzalı bağlantıyla iner — kopyalamaya karşı korumalı.</div>
+                </div>
+
+                <div class="guide-row">
+                    <div class="gr-name"><span class="gr-ic"><i class="fab fa-tiktok"></i></span> TikTok Canlı</div>
+                    <div class="gr-desc">Asıl yayın merkezi. <b>Bağlan</b> tuşuna basınca canlı yayınına bağlanır, akan eventleri (chat, hediye, beğeni, takip) gerçek zamanlı gösterir. Soldaki Event Feed'de tüm akış görünür, sağda istatistik panelleri vardır.</div>
+                </div>
+            </div>
+
+            <!-- OBS KATMANLARI -->
+            <div class="guide-section">
+                <h2><i class="fas fa-layer-group"></i> OBS Katmanları (Overlay'ler)</h2>
+                <div class="guide-section-sub">OBS Browser Source ya da TikTok LIVE Studio'ya yapıştırılan görsel katmanlar. Her birini düzenle, "Kaydet" → link kopyala → OBS'ye ekle.</div>
+
+                <div class="guide-row">
+                    <div class="gr-name"><span class="gr-ic"><i class="fas fa-images"></i></span> Kaplama Galerisi</div>
+                    <div class="gr-desc">Hazır şablonlar + kendi kaydettiğin overlay'ler. <b>Hazır Şablonlar</b>: tek tıkla kopyala, üzerine kendi adını ver. <b>Kaplamalarım</b>: kayıtlı tüm overlay'lerini topluca yönet — link kopyala, sıfırla, aktif/pasif yap.</div>
+                </div>
+
+                <div class="guide-row">
+                    <div class="gr-name"><span class="gr-ic"><i class="fas fa-bullseye"></i></span> Hedef Katmanları</div>
+                    <div class="gr-desc">İlerleyen bir hedef çubuğu — Likes/Shares/Follows/Viewer/Coins/Subscribers ya da 3 özel hedef. <b>Hedef sayısı</b> belirle, gelen eventler otomatik artırır. Bar dolduğunda animasyon oynar.</div>
+                </div>
+
+                <div class="guide-row">
+                    <div class="gr-name"><span class="gr-ic"><i class="fas fa-gift"></i></span> Hediye Katmanları</div>
+                    <div class="gr-desc"><b>Hediye Alert</b>: gelen hediye için ekrana büyük animasyonlu kart. <b>Hediye Ticker</b>: alt-yazı bandı gibi sürekli akan hediye listesi.</div>
+                </div>
+
+                <div class="guide-row">
+                    <div class="gr-name"><span class="gr-ic"><i class="fas fa-clock"></i></span> Son X Katman</div>
+                    <div class="gr-desc">"Son takipçi", "Son hediye gönderen", "Son beğenen", "Son paylaşan" gibi son N kişiyi yan yana gösteren kart serisi. Genelde köşede hareketli vitrin gibi durur.</div>
+                </div>
+
+                <div class="guide-row">
+                    <div class="gr-name"><span class="gr-ic"><i class="fas fa-chart-bar"></i></span> Grafik Bindirmeleri</div>
+                    <div class="gr-desc"><b>Top Gifters</b>: en çok hediye gönderen kullanıcı tablosu. <b>Top Likers</b>: en çok beğeni gönderen. <b>Viewer Grafiği</b>: izleyici sayısı zaman çizgisi. Liderlik tablosu/leaderboard mantığı.</div>
+                </div>
+
+                <div class="guide-row">
+                    <div class="gr-name"><span class="gr-ic"><i class="fas fa-tv"></i></span> OBS Dock'ları</div>
+                    <div class="gr-desc"><b>Chat Dock</b>: TikTok yorumlarını OBS'nin yan panelinde gerçek zamanlı gösterir. <b>Event Feed Dock</b>: tüm aktiviteleri (hediye/takip/paylaşım) tek dock'ta toplar. OBS → Docks → Custom Browser Docks ile eklenir.</div>
+                </div>
+            </div>
+
+            <!-- HEDIYE & SES SISTEMI -->
+            <div class="guide-section">
+                <h2><i class="fas fa-music"></i> Hediye & Ses & Tasarım</h2>
+                <div class="guide-section-sub">TikTok hediyeleriyle yapabileceğin her şey.</div>
+
+                <div class="guide-row">
+                    <div class="gr-name"><span class="gr-ic"><i class="fas fa-search"></i></span> Hediye Tarayıcı</div>
+                    <div class="gr-desc">TikTok'un 123 hediyesini kategorize edilmiş şekilde tarar — emoji, ad, coin değeri ve ikon ile. Hediye ararken referans olarak kullan.</div>
+                </div>
+
+                <div class="guide-row">
+                    <div class="gr-name"><span class="gr-ic"><i class="fas fa-volume-up"></i></span> Hediye Sesleri</div>
+                    <div class="gr-desc">Her hediyeye özel ses ata — gül geldiğinde "ding", roket geldiğinde "fanfare" gibi. Yayın sırasında otomatik çalar. Ses dosyası yüklenebilir veya hazır kütüphaneden seçilir.</div>
+                </div>
+
+                <div class="guide-row">
+                    <div class="gr-name"><span class="gr-ic"><i class="fas fa-palette"></i></span> Hediye Tasarımı</div>
+                    <div class="gr-desc">TikFinity'nin hediye PNG kompozitörü. Ekranın 4 köşesine (üst/sağ/sol/alt) hediye ikonları yerleştir, font/renk/kontur ayarla, transparan PNG olarak indir. OBS'de görsel kaplama olarak kullan.</div>
+                </div>
+            </div>
+
+            <!-- HESAP -->
+            <div class="guide-section">
+                <h2><i class="fas fa-user-cog"></i> Hesap & Sistem</h2>
+                <div class="guide-section-sub">Genel ayarlar ve destek.</div>
+
+                <div class="guide-row">
+                    <div class="gr-name"><span class="gr-ic"><i class="fas fa-user"></i></span> Profil</div>
+                    <div class="gr-desc">Kullanıcı adı, e-posta, şifre, TikTok kullanıcı adı, telefon. <b>TikTok kullanıcı adı zorunlu</b> — onsuz canlı yayına bağlanamazsın.</div>
+                </div>
+
+                <div class="guide-row">
+                    <div class="gr-name"><span class="gr-ic"><i class="fas fa-chart-line"></i></span> İstatistikler</div>
+                    <div class="gr-desc">Geçmiş yayınlardaki toplam hediye, gelen coin, izleyici peak'i, en çok hediye gönderenler. Aylık/haftalık görünüm.</div>
+                </div>
+
+                <div class="guide-row">
+                    <div class="gr-name"><span class="gr-ic"><i class="fas fa-cog"></i></span> Ayarlar</div>
+                    <div class="gr-desc">Bildirim, dil, tema tercihleri, event-feed filtreleri, otomatik bağlanma davranışı.</div>
+                </div>
+
+                <div class="guide-row">
+                    <div class="gr-name"><span class="gr-ic"><i class="fas fa-book"></i></span> Kullanım Kılavuzu</div>
+                    <div class="gr-desc">Şu an okuduğun sayfa. Tüm özelliklerin tek sayfada özeti.</div>
+                </div>
+
+                <div class="guide-row">
+                    <div class="gr-name"><span class="gr-ic"><i class="fas fa-envelope"></i></span> İletişim</div>
+                    <div class="gr-desc">E-posta, Discord, destek talebi. Bug raporu/öneri için.</div>
+                </div>
+            </div>
+
+            <!-- ÖNEMLI NOTLAR -->
+            <div class="guide-section" style="border-color: rgba(255,200,0,0.2); background: rgba(255,200,0,0.04);">
+                <h2 style="color: #ffd000;"><i class="fas fa-exclamation-triangle"></i> Mutlaka Bilmen Gerekenler</h2>
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <div style="font-size: 0.85rem; color: #d8d8e4; line-height: 1.55;">
+                        <b style="color:#ffd000;">1. Oyun penceresi önde olmalı.</b> Hediye geldiğinde basılan kısayol o anda <b>odakta olan pencereye</b> gönderilir. Bu yüzden yayın boyunca oyunu önde tut, SeliGames arkada çalışsın.
+                    </div>
+                    <div style="font-size: 0.85rem; color: #d8d8e4; line-height: 1.55;">
+                        <b style="color:#ffd000;">2. macOS izinleri.</b> İlk başlatmada <b>Sistem Ayarları → Gizlilik → Erişilebilirlik</b>'ten Electron/Terminal'e izin ver. Yoksa kısayollar oyuna basılmaz.
+                    </div>
+                    <div style="font-size: 0.85rem; color: #d8d8e4; line-height: 1.55;">
+                        <b style="color:#ffd000;">3. OBS Browser Source ayarı.</b> Genişlik/yükseklik 1920×1080, "Custom CSS" boş, "Refresh browser when scene becomes active" işaretli olsun.
+                    </div>
+                    <div style="font-size: 0.85rem; color: #d8d8e4; line-height: 1.55;">
+                        <b style="color:#ffd000;">4. Bağlantı kopunca otomatik yeniden bağlanır</b> — yine de TikTok Canlı sayfasında "Bağlı ✓" yazısını arada kontrol et.
+                    </div>
+                    <div style="font-size: 0.85rem; color: #d8d8e4; line-height: 1.55;">
+                        <b style="color:#ffd000;">5. Hediye Tasarımı PNG'leri</b> şeffaf arkaplanlıdır — OBS'de doğrudan üzerine bindirebilirsin, "Color Key" filtresi gerekmez.
+                    </div>
+                </div>
+            </div>
+
+            <!-- SORUN GIDERME -->
+            <div class="guide-section">
+                <h2><i class="fas fa-tools"></i> Hızlı Sorun Giderme</h2>
+                <div style="display: flex; flex-direction: column; gap: 0.65rem;">
+                    <div style="font-size: 0.85rem; color: #c8c8d4;"><b style="color:#ff006e;">Eventler gelmiyor:</b> Profilde TikTok kullanıcı adı doğru mu? Yayın gerçekten başladı mı? "Bağlan" tuşunu tekrar dene.</div>
+                    <div style="font-size: 0.85rem; color: #c8c8d4;"><b style="color:#ff006e;">Kısayol oyuna gitmiyor:</b> Oyun penceresi önde mi? macOS'te Erişilebilirlik izni verildi mi? Modun "Ayarlar"da hediye-aksiyon eşlemesi kaydedildi mi?</div>
+                    <div style="font-size: 0.85rem; color: #c8c8d4;"><b style="color:#ff006e;">Overlay OBS'de boş görünüyor:</b> URL'yi yeni tarayıcıya yapıştırıp test et. Görünüyorsa OBS'de "Refresh" tuşuna bas.</div>
+                    <div style="font-size: 0.85rem; color: #c8c8d4;"><b style="color:#ff006e;">Top Likers / Top Gifters dolmuyor:</b> Aktif yayında olmalısın + leaderboard "Aktif" durumda olmalı (Kaplamalarım sayfası).</div>
+                    <div style="font-size: 0.85rem; color: #c8c8d4;"><b style="color:#ff006e;">Mod kurulamıyor:</b> Doğru oyun klasörünü mü gösterdin? Disk dolu mu? Bağlantı kararlı mı?</div>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -4261,6 +4424,20 @@
             </button>
         </div>
 
+        <!-- Global notification volume -->
+        <div style="background:#13131a;border:1px solid rgba(189,0,255,0.15);border-radius:10px;padding:0.85rem 1rem;margin-bottom:0.75rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:0.5rem;color:#bd00ff;font-weight:700;font-size:0.85rem;min-width:170px;">
+                <i class="fas fa-volume-up"></i> Genel Bildirim Sesi
+            </div>
+            <input type="range" id="notif-volume" min="0" max="100" value="80" step="1"
+                oninput="setNotificationVolume(this.value)"
+                style="flex:1;min-width:200px;accent-color:#bd00ff;">
+            <span id="notif-volume-label" style="color:#fff;font-weight:700;min-width:48px;text-align:right;">80%</span>
+            <button onclick="testNotificationVolume()" class="btn-icon" style="background:rgba(189,0,255,0.12);color:#bd00ff;border:1px solid rgba(189,0,255,0.3);font-size:0.78rem;padding:0.4rem 0.85rem;">
+                <i class="fas fa-play"></i> Test
+            </button>
+        </div>
+
         <!-- Quick tier defaults reminder -->
         <div style="background:#13131a;border:1px solid rgba(255,255,255,0.04);border-radius:10px;padding:0.75rem 1rem;margin-bottom:1rem;">
             <div style="color:#00ff9d;font-size:0.78rem;font-weight:700;margin-bottom:0.35rem;">
@@ -4452,6 +4629,44 @@
                 <div class="setting-group" id="ov-duration-group" style="display:none;">
                     <label>Gösterim Süresi (sn)</label>
                     <input type="number" class="ov-input" id="ov-duration" value="5" min="1" max="30" oninput="updateOverlayPreview()">
+                </div>
+
+                <!-- Subathon-only settings -->
+                <div class="setting-group" id="ov-subathon-group" style="display:none;">
+                    <label style="display:flex;align-items:center;gap:0.5rem;">⏱️ Başlangıç Süresi (HH:MM:SS)</label>
+                    <div style="display:flex;gap:0.4rem;align-items:center;margin-top:0.4rem;">
+                        <input type="number" class="ov-input" id="ov-sub-hh" value="1" min="0" max="48" style="width:80px;" oninput="updateOverlayPreview()">
+                        <span style="color:#8b8b9a;">:</span>
+                        <input type="number" class="ov-input" id="ov-sub-mm" value="0" min="0" max="59" style="width:80px;" oninput="updateOverlayPreview()">
+                        <span style="color:#8b8b9a;">:</span>
+                        <input type="number" class="ov-input" id="ov-sub-ss" value="0" min="0" max="59" style="width:80px;" oninput="updateOverlayPreview()">
+                    </div>
+                    <div style="margin-top:0.85rem;">
+                        <label style="display:flex;align-items:center;gap:0.5rem;">💎 Saniye / Coin (yedek kural)</label>
+                        <input type="number" class="ov-input" id="ov-sub-perCoin" value="0" min="0" max="60" step="0.1" placeholder="örn. 1 = her coin için 1 saniye" oninput="updateOverlayPreview()">
+                        <div style="font-size:0.7rem;color:#8b8b9a;margin-top:0.3rem;">Aşağıdaki listede eşleşmeyen hediyeler için kullanılır. 0 ise yok sayılır.</div>
+                    </div>
+                    <div style="margin-top:1rem;">
+                        <label style="display:flex;align-items:center;justify-content:space-between;">
+                            <span>🎁 Hediye → Saniye Eşlemesi</span>
+                            <button class="btn-icon" onclick="addSubathonGiftRow()" title="Hediye ekle" style="background:rgba(0,255,157,0.1);color:#00ff9d;border:1px solid rgba(0,255,157,0.2);"><i class="fas fa-plus"></i></button>
+                        </label>
+                        <div id="ov-sub-gift-rows" style="display:flex;flex-direction:column;gap:0.4rem;margin-top:0.5rem;"></div>
+                        <div style="display:flex;gap:0.4rem;margin-top:0.6rem;flex-wrap:wrap;">
+                            <button class="btn-icon" onclick="loadSubathonPreset('basic')" style="font-size:0.72rem;padding:0.35rem 0.7rem;background:rgba(255,255,255,0.04);">⚡ Temel preset</button>
+                            <button class="btn-icon" onclick="loadSubathonPreset('full')" style="font-size:0.72rem;padding:0.35rem 0.7rem;background:rgba(255,255,255,0.04);">🎯 Detaylı preset</button>
+                            <button class="btn-icon" onclick="clearSubathonGifts()" style="font-size:0.72rem;padding:0.35rem 0.7rem;background:rgba(255,0,110,0.08);color:#ff006e;">🗑️ Hepsini sil</button>
+                        </div>
+                    </div>
+                    <div style="margin-top:1rem;padding:0.75rem;background:rgba(0,255,157,0.04);border:1px solid rgba(0,255,157,0.15);border-radius:8px;">
+                        <div style="font-size:0.78rem;color:#00ff9d;font-weight:700;margin-bottom:0.4rem;">▶️ Zamanlayıcı Kontrolü</div>
+                        <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+                            <button class="btn-icon" onclick="subathonControl('start')" style="background:rgba(0,255,157,0.15);color:#00ff9d;border:1px solid rgba(0,255,157,0.3);font-weight:700;"><i class="fas fa-play"></i> Başlat</button>
+                            <button class="btn-icon" onclick="subathonControl('pause')" style="background:rgba(255,200,0,0.1);color:#ffd000;border:1px solid rgba(255,200,0,0.2);"><i class="fas fa-pause"></i> Duraklat</button>
+                            <button class="btn-icon" onclick="subathonControl('reset')" style="background:rgba(255,0,110,0.08);color:#ff006e;border:1px solid rgba(255,0,110,0.2);"><i class="fas fa-redo"></i> Sıfırla</button>
+                        </div>
+                        <div style="font-size:0.7rem;color:#8b8b9a;margin-top:0.5rem;">Önce kaydet, sonra başlat. Yayında durdurmadan canlı geri sayım akışına devam eder.</div>
+                    </div>
                 </div>
 
                 <h4 style="color:#fff;margin:0.75rem 0 0.5rem;font-size:0.82rem;">Görünüm</h4>

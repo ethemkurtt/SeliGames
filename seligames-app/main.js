@@ -670,6 +670,20 @@ ipcMain.handle('reset-overlay', async (event, id) => {
     }
 });
 
+ipcMain.handle('subathon-control', async (event, id, action) => {
+    try {
+        const token = await getAuthToken();
+        const valid = ['start', 'pause', 'reset'];
+        if (!valid.includes(action)) return { success: false, error: 'invalid action' };
+        const response = await axios.post(`${BACKEND_URL}/api/overlays/${id}/subathon/${action}`, {}, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        return { success: true, data: response.data };
+    } catch (error) {
+        return { success: false, error: error.response?.data?.error || error.message };
+    }
+});
+
 ipcMain.handle('increment-overlay', async (event, id, amount = 1) => {
     try {
         const token = await getAuthToken();

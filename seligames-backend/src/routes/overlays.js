@@ -115,6 +115,74 @@ router.post('/:id/increment', auth, async (req, res) => {
     }
 });
 
+// ─── Subathon Timer controls ────────────────────────────────────────────
+// All three endpoints write to overlay.data and emit overlay-update so any
+// connected OBS browser source picks up the change in real time.
+
+// Start (or restart): set endsAt = now + (startSeconds | remaining), isRunning=true
+router.post('/:id/subathon/start', auth, async (req, res) => {
+    try {
+        const overlay = await Overlay.findOne({ _id: req.params.id, userId: req.userId });
+        if (!overlay) return res.status(404).json({ error: 'Bulunamadı' });
+        if (overlay.overlayType !== 'subathon') return res.status(400).json({ error: 'Subathon değil' });
+
+        const startSec = Number(overlay.config?.startSeconds || 0);
+        const pausedRem = Number(overlay.data?.pausedRemaining || 0);
+        const seedSec = pausedRem > 0 ? pausedRem : startSec;
+        if (seedSec <= 0) return res.status(400).json({ error: 'startSeconds 0' });
+
+        const endsAt = new Date(Date.now() + seedSec * 1000).toISOString();
+        overlay.data = {
+            ...(overlay.data || {}),
+            isRunning: true,
+            endsAt,
+            pausedRemaining: null,
+            startedAt: new Date().toISOString(),
+            addedTotal: overlay.data?.addedTotal || 0,
+        };
+        overlay.markModified('data');
+        await overlay.save();
+
+        const io = req.app.get('io');
+        if (io) io.to(`overlay:${overlay.overlayId}`).emit('overlay-update', { overlayId: overlay.overlayId, data: overlay.data });
+        res.json(overlay);
+    } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+// Pause: freeze the remaining time
+router.post('/:id/subathon/pause', auth, async (req, res) => {
+    try {
+        const overlay = await Overlay.findOne({ _id: req.params.id, userId: req.userId });
+        if (!overlay) return res.status(404).json({ error: 'Bulunamadı' });
+        if (overlay.overlayType !== 'subathon') return res.status(400).json({ error: 'Subathon değil' });
+
+        const endsAtMs = overlay.data?.endsAt ? new Date(overlay.data.endsAt).getTime() : 0;
+        const remaining = Math.max(0, Math.floor((endsAtMs - Date.now()) / 1000));
+        overlay.data = { ...(overlay.data || {}), isRunning: false, pausedRemaining: remaining, endsAt: null };
+        overlay.markModified('data');
+        await overlay.save();
+
+        const io = req.app.get('io');
+        if (io) io.to(`overlay:${overlay.overlayId}`).emit('overlay-update', { overlayId: overlay.overlayId, data: overlay.data });
+        res.json(overlay);
+    } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+// Reset: clear all timer state
+router.post('/:id/subathon/reset', auth, async (req, res) => {
+    try {
+        const overlay = await Overlay.findOneAndUpdate(
+            { _id: req.params.id, userId: req.userId, overlayType: 'subathon' },
+            { data: { isRunning: false, endsAt: null, pausedRemaining: null, addedTotal: 0 } },
+            { new: true }
+        );
+        if (!overlay) return res.status(404).json({ error: 'Bulunamadı' });
+        const io = req.app.get('io');
+        if (io) io.to(`overlay:${overlay.overlayId}`).emit('overlay-update', { overlayId: overlay.overlayId, data: overlay.data });
+        res.json(overlay);
+    } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
 router.post('/:id/reset', auth, async (req, res) => {
     try {
         const overlay = await Overlay.findOneAndUpdate(

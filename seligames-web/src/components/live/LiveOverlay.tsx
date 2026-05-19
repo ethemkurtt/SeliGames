@@ -30,7 +30,7 @@ export interface GiftAlertData { user: string; name: string; count: number; icon
 export interface OverlayData {
     _id: string
     overlayId: string
-    overlayType: 'goal' | 'gift-alert' | 'last-x' | 'leaderboard' | 'chart' | 'chat' | 'event-feed'
+    overlayType: 'goal' | 'gift-alert' | 'last-x' | 'leaderboard' | 'chart' | 'chat' | 'event-feed' | 'subathon'
     subType: string
     title: string
     currentValue: number
@@ -156,6 +156,7 @@ function renderByType(ov: OverlayData, liveEvents: TikTokLiveEvent[], valueDelta
         case 'chart': return <ChartView ov={ov} />
         case 'chat': return <ChatView ov={ov} liveEvents={liveEvents} />
         case 'event-feed': return <EventFeedView ov={ov} liveEvents={liveEvents} />
+        case 'subathon': return <SubathonView ov={ov} />
         default: return <StatusScreen title={`Desteklenmeyen tip: ${ov.overlayType}`} color="#ffa500" />
     }
 }
@@ -693,6 +694,78 @@ function EventFeedView({ ov, liveEvents }: { ov: OverlayData; liveEvents: TikTok
                         </div>
                     )
                 })}
+            </div>
+        </div>
+    )
+}
+
+// ============================================================================
+// View: Subathon Timer — countdown that grows with gifts
+// ============================================================================
+
+function SubathonView({ ov }: { ov: OverlayData }) {
+    const s = ov.style || {}
+    const barColor = s.barColor || '#00ff9d'
+    const textColor = s.textColor || '#ffffff'
+    const bgColor = s.backgroundColor || 'rgba(0,0,0,0.6)'
+    const borderRadius = s.borderRadius ?? 16
+    const theme = s.theme || 'gradient'
+    const fontSize = s.fontSize || 64
+
+    const data: any = ov.data || {}
+    const isRunning = !!data.isRunning
+    const endsAt = data.endsAt ? new Date(data.endsAt).getTime() : null
+    const pausedRem = Number(data.pausedRemaining || 0)
+    const addedTotal = Number(data.addedTotal || 0)
+
+    const [now, setNow] = useState(Date.now())
+    useEffect(() => {
+        if (!isRunning) return
+        const t = window.setInterval(() => setNow(Date.now()), 250)
+        return () => window.clearInterval(t)
+    }, [isRunning])
+
+    let remaining = 0
+    if (isRunning && endsAt) remaining = Math.max(0, Math.floor((endsAt - now) / 1000))
+    else if (!isRunning && pausedRem > 0) remaining = pausedRem
+
+    const hh = Math.floor(remaining / 3600)
+    const mm = Math.floor((remaining % 3600) / 60)
+    const ss = remaining % 60
+    const pad = (n: number) => String(n).padStart(2, '0')
+    const display = `${pad(hh)}:${pad(mm)}:${pad(ss)}`
+
+    const expired = isRunning && remaining === 0
+    return (
+        <div style={{
+            ...themeContainer(theme, barColor, bgColor, borderRadius),
+            padding: '20px 32px',
+            minWidth: 320,
+            textAlign: 'center',
+        }}>
+            <div style={{
+                color: barColor, fontSize: 14, textTransform: 'uppercase',
+                letterSpacing: 3, fontWeight: 800, marginBottom: 8,
+                textShadow: theme === 'neon' ? `0 0 8px ${barColor}aa` : 'none',
+            }}>
+                ⏱️ {ov.title || 'Subathon'}
+            </div>
+            <div style={{
+                color: expired ? '#ff006e' : textColor,
+                fontSize,
+                fontWeight: 900,
+                fontVariantNumeric: 'tabular-nums',
+                lineHeight: 1,
+                letterSpacing: 2,
+                textShadow: theme === 'neon' ? `0 0 14px ${barColor}cc, 0 0 32px ${barColor}55` : '0 2px 8px rgba(0,0,0,0.5)',
+            }}>{display}</div>
+            <div style={{
+                marginTop: 10, fontSize: 12, color: textColor, opacity: 0.7,
+                display: 'flex', justifyContent: 'center', gap: 16,
+            }}>
+                {!isRunning && pausedRem > 0 && <span>⏸ Duraklatıldı</span>}
+                {!isRunning && pausedRem === 0 && !endsAt && <span style={{ opacity: 0.5 }}>Beklemede</span>}
+                {addedTotal > 0 && <span>+{Math.floor(addedTotal / 60)} dk eklendi</span>}
             </div>
         </div>
     )

@@ -35,6 +35,7 @@ contextBridge.exposeInMainWorld('api', {
     deleteOverlay: (id) => ipcRenderer.invoke('delete-overlay', id),
     resetOverlay: (id) => ipcRenderer.invoke('reset-overlay', id),
     incrementOverlay: (id, amount) => ipcRenderer.invoke('increment-overlay', id, amount),
+    subathonControl: (id, action) => ipcRenderer.invoke('subathon-control', id, action),
 
     // Backend Socket Bridge
     connectBackendSocket: () => ipcRenderer.invoke('connect-backend-socket'),

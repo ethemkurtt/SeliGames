@@ -14,7 +14,7 @@ const overlaySchema = new mongoose.Schema({
     },
     overlayType: {
         type: String,
-        enum: ['goal', 'gift-alert', 'last-x', 'leaderboard', 'chart', 'chat', 'event-feed'],
+        enum: ['goal', 'gift-alert', 'last-x', 'leaderboard', 'chart', 'chat', 'event-feed', 'subathon'],
         required: true
     },
     subType: {

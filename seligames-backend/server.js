@@ -199,6 +199,41 @@ io.on('connection', (socket) => {
                     }
                 }
 
+                // ─── Subathon Timer — gift adds seconds to the countdown ───
+                if (ot === 'subathon' && eventType === 'gift' && overlay.data?.isRunning) {
+                    const perGift = overlay.config?.perGift || {};
+                    const perCoin = Number(overlay.config?.perCoin || 0);
+                    // Match by gift name first; fall back to coin-based rate.
+                    const secondsPerUnit = perGift[giftName] ?? 0;
+                    let addSeconds = 0;
+                    if (secondsPerUnit > 0) {
+                        addSeconds = secondsPerUnit * count;
+                    } else if (perCoin > 0) {
+                        addSeconds = perCoin * diamondCount;
+                    }
+                    if (addSeconds > 0) {
+                        // endsAt stored as ISO string — push it forward atomically by
+                        // converting to ms, adding, and writing back. Single document
+                        // so the race is small but use $set after read for clarity.
+                        const cur = overlay.data?.endsAt ? new Date(overlay.data.endsAt).getTime() : Date.now();
+                        const newEnds = new Date(cur + addSeconds * 1000).toISOString();
+                        const updated = await Overlay.findOneAndUpdate(
+                            { _id: overlay._id },
+                            {
+                                $set: { 'data.endsAt': newEnds },
+                                $inc: { 'data.addedTotal': addSeconds }
+                            },
+                            { new: true }
+                        );
+                        if (updated) {
+                            console.log(`   ⏱️ subathon ${overlay.overlayId} +${addSeconds}s (${giftName} x${count})`);
+                            io.to(`overlay:${overlay.overlayId}`).emit('overlay-update', {
+                                overlayId: overlay.overlayId, data: updated.data
+                            });
+                        }
+                    }
+                }
+
                 if (ot === 'gift-alert' && eventType === 'gift') {
                     if (!overlay.data) overlay.data = {};
                     overlay.data.lastGift = {
