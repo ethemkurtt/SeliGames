@@ -3263,6 +3263,7 @@
             </div>
             <div class="nav-accordion-body">
                 <div class="nav-sub-item" onclick="navigateOverlay('subathon-timer')">⏱️ Subathon Timer</div>
+                <div class="nav-sub-item" onclick="navigateOverlay('wheel-actions')">🎡 Şans Çarkı</div>
             </div>
 
             <div class="nav-accordion-header" onclick="toggleAccordion(this)">
@@ -4629,6 +4630,32 @@
                 <div class="setting-group" id="ov-duration-group" style="display:none;">
                     <label>Gösterim Süresi (sn)</label>
                     <input type="number" class="ov-input" id="ov-duration" value="5" min="1" max="30" oninput="updateOverlayPreview()">
+                </div>
+
+                <!-- Wheel-only settings -->
+                <div class="setting-group" id="ov-wheel-group" style="display:none;">
+                    <label style="display:flex;align-items:center;gap:0.5rem;">🎡 Tetikleyici Hediye</label>
+                    <input type="text" class="ov-input" id="ov-wheel-trigger" value="Roket" placeholder="Hediye adı (örn. Roket) ya da * = her hediye" oninput="updateOverlayPreview()">
+                    <div style="font-size:0.7rem;color:#8b8b9a;margin-top:0.3rem;">Bu hediye geldiğinde çark döner. <b>*</b> yazarsan her hediyede döner.</div>
+
+                    <div style="margin-top:1rem;">
+                        <label style="display:flex;align-items:center;justify-content:space-between;">
+                            <span>🍰 Dilimler</span>
+                            <button class="btn-icon" onclick="addWheelSlice()" title="Dilim ekle" style="background:rgba(0,255,157,0.1);color:#00ff9d;border:1px solid rgba(0,255,157,0.2);"><i class="fas fa-plus"></i></button>
+                        </label>
+                        <div id="ov-wheel-slices" style="display:flex;flex-direction:column;gap:0.4rem;margin-top:0.5rem;"></div>
+                        <div style="display:flex;gap:0.4rem;margin-top:0.6rem;flex-wrap:wrap;">
+                            <button class="btn-icon" onclick="loadWheelPreset('classic')" style="font-size:0.72rem;padding:0.35rem 0.7rem;background:rgba(255,255,255,0.04);">⚡ Klasik (6 dilim)</button>
+                            <button class="btn-icon" onclick="loadWheelPreset('rewards')" style="font-size:0.72rem;padding:0.35rem 0.7rem;background:rgba(255,255,255,0.04);">🎁 Ödüller (8 dilim)</button>
+                            <button class="btn-icon" onclick="clearWheelSlices()" style="font-size:0.72rem;padding:0.35rem 0.7rem;background:rgba(255,0,110,0.08);color:#ff006e;">🗑️ Sil</button>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:1rem;padding:0.75rem;background:rgba(189,0,255,0.04);border:1px solid rgba(189,0,255,0.15);border-radius:8px;">
+                        <div style="font-size:0.78rem;color:#bd00ff;font-weight:700;margin-bottom:0.4rem;">▶️ Manuel Test</div>
+                        <button class="btn-icon" onclick="wheelTestSpin()" style="background:rgba(189,0,255,0.15);color:#bd00ff;border:1px solid rgba(189,0,255,0.3);font-weight:700;"><i class="fas fa-redo"></i> Çevir</button>
+                        <div style="font-size:0.7rem;color:#8b8b9a;margin-top:0.5rem;">Önce kaydet, sonra test et. Sunucu rastgele dilim seçer ve canlı overlay döner.</div>
+                    </div>
                 </div>
 
                 <!-- Subathon-only settings -->

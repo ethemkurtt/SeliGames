@@ -670,6 +670,18 @@ ipcMain.handle('reset-overlay', async (event, id) => {
     }
 });
 
+ipcMain.handle('wheel-spin', async (event, id) => {
+    try {
+        const token = await getAuthToken();
+        const response = await axios.post(`${BACKEND_URL}/api/overlays/${id}/wheel/spin`, {}, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        return { success: true, data: response.data };
+    } catch (error) {
+        return { success: false, error: error.response?.data?.error || error.message };
+    }
+});
+
 ipcMain.handle('subathon-control', async (event, id, action) => {
     try {
         const token = await getAuthToken();

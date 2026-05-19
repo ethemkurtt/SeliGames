@@ -30,7 +30,7 @@ export interface GiftAlertData { user: string; name: string; count: number; icon
 export interface OverlayData {
     _id: string
     overlayId: string
-    overlayType: 'goal' | 'gift-alert' | 'last-x' | 'leaderboard' | 'chart' | 'chat' | 'event-feed' | 'subathon'
+    overlayType: 'goal' | 'gift-alert' | 'last-x' | 'leaderboard' | 'chart' | 'chat' | 'event-feed' | 'subathon' | 'wheel'
     subType: string
     title: string
     currentValue: number
@@ -157,6 +157,7 @@ function renderByType(ov: OverlayData, liveEvents: TikTokLiveEvent[], valueDelta
         case 'chat': return <ChatView ov={ov} liveEvents={liveEvents} />
         case 'event-feed': return <EventFeedView ov={ov} liveEvents={liveEvents} />
         case 'subathon': return <SubathonView ov={ov} />
+        case 'wheel': return <WheelView ov={ov} />
         default: return <StatusScreen title={`Desteklenmeyen tip: ${ov.overlayType}`} color="#ffa500" />
     }
 }
@@ -695,6 +696,134 @@ function EventFeedView({ ov, liveEvents }: { ov: OverlayData; liveEvents: TikTok
                     )
                 })}
             </div>
+        </div>
+    )
+}
+
+// ============================================================================
+// View: Wheel of Actions — gift triggers a weighted random spin
+// ============================================================================
+
+type WheelSlice = { label: string; weight?: number; color?: string }
+
+function WheelView({ ov }: { ov: OverlayData }) {
+    const s = ov.style || {}
+    const c = ov.config || {}
+    const textColor = s.textColor || '#ffffff'
+    const slices: WheelSlice[] = Array.isArray(c.slices) ? c.slices : []
+    const data: any = ov.data || {}
+    const lastSpin = data.lastSpin
+    const size = 360
+
+    // Animate to lastSpin.winnerIdx whenever spinId changes. Random extra
+    // turns keep each spin visually distinct even when landing on same slice.
+    const [rotation, setRotation] = useState(0)
+    const [winner, setWinner] = useState<string | null>(null)
+    const [showResult, setShowResult] = useState(false)
+    const lastSpinIdRef = useRef<string | null>(null)
+    const resultTimerRef = useRef<number | null>(null)
+
+    useEffect(() => {
+        if (!lastSpin?.spinId || lastSpin.spinId === lastSpinIdRef.current) return
+        lastSpinIdRef.current = lastSpin.spinId
+
+        const n = slices.length
+        if (n === 0) return
+        const sliceAngle = 360 / n
+        // We want the winner slice's center to land at the top (pointer).
+        const targetCenter = lastSpin.winnerIdx * sliceAngle + sliceAngle / 2
+        const extraTurns = 5 + Math.floor(Math.random() * 3)
+        // current rotation modulo 360 → add turns → land so that
+        // (rotation + delta + targetCenter) % 360 === 0
+        const current = rotation % 360
+        const delta = (360 - current - targetCenter + 360) % 360 + extraTurns * 360
+        setRotation(rotation + delta)
+        setWinner(lastSpin.winnerLabel || `#${lastSpin.winnerIdx + 1}`)
+        setShowResult(false)
+
+        if (resultTimerRef.current) window.clearTimeout(resultTimerRef.current)
+        resultTimerRef.current = window.setTimeout(() => setShowResult(true), 4200)
+        return () => { if (resultTimerRef.current) window.clearTimeout(resultTimerRef.current) }
+    }, [lastSpin?.spinId])
+
+    if (slices.length === 0) {
+        return <StatusScreen title="Çark için dilim ekle" color="#bd00ff" />
+    }
+
+    // Build SVG conic slices
+    const sliceAngle = 360 / slices.length
+    const polarToCartesian = (cx: number, cy: number, r: number, deg: number) => {
+        const rad = (deg - 90) * Math.PI / 180
+        return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) }
+    }
+    const arcPath = (i: number) => {
+        const cx = size / 2, cy = size / 2, r = size / 2 - 4
+        const start = polarToCartesian(cx, cy, r, i * sliceAngle)
+        const end = polarToCartesian(cx, cy, r, (i + 1) * sliceAngle)
+        const large = sliceAngle > 180 ? 1 : 0
+        return `M ${cx} ${cy} L ${start.x} ${start.y} A ${r} ${r} 0 ${large} 1 ${end.x} ${end.y} Z`
+    }
+
+    return (
+        <div style={{ position: 'relative', width: size, height: size + 80 }}>
+            {/* Pointer */}
+            <div style={{
+                position: 'absolute', top: -2, left: '50%', transform: 'translateX(-50%)',
+                width: 0, height: 0,
+                borderLeft: '14px solid transparent',
+                borderRight: '14px solid transparent',
+                borderTop: '24px solid #ffd000',
+                filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.6))',
+                zIndex: 10,
+            }} />
+            {/* Wheel */}
+            <svg
+                width={size}
+                height={size}
+                viewBox={`0 0 ${size} ${size}`}
+                style={{
+                    transform: `rotate(${rotation}deg)`,
+                    transition: 'transform 4s cubic-bezier(0.17, 0.67, 0.21, 0.99)',
+                    filter: 'drop-shadow(0 6px 20px rgba(0,0,0,0.6))',
+                }}
+            >
+                {slices.map((sl, i) => {
+                    const labelAngle = i * sliceAngle + sliceAngle / 2
+                    const labelPos = polarToCartesian(size / 2, size / 2, size / 2 - 50, labelAngle)
+                    const color = sl.color || '#bd00ff'
+                    return (
+                        <g key={i}>
+                            <path d={arcPath(i)} fill={color} stroke="#0a0a0f" strokeWidth={2} />
+                            <text
+                                x={labelPos.x}
+                                y={labelPos.y}
+                                fill="#fff"
+                                fontSize={size / 22}
+                                fontWeight={800}
+                                textAnchor="middle"
+                                dominantBaseline="middle"
+                                transform={`rotate(${labelAngle} ${labelPos.x} ${labelPos.y})`}
+                                style={{ textShadow: '0 1px 3px rgba(0,0,0,0.8)', pointerEvents: 'none' }}
+                            >{sl.label}</text>
+                        </g>
+                    )
+                })}
+                <circle cx={size / 2} cy={size / 2} r={18} fill="#0a0a0f" stroke="#ffd000" strokeWidth={3} />
+            </svg>
+            {/* Winner announcement */}
+            {showResult && winner && (
+                <div style={{
+                    position: 'absolute', bottom: 0, left: 0, right: 0,
+                    textAlign: 'center',
+                    color: textColor,
+                    fontSize: 26, fontWeight: 900,
+                    textShadow: '0 0 10px rgba(255,208,0,0.8), 0 2px 6px rgba(0,0,0,0.7)',
+                    animation: 'ov-giftpop-kf 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                }}>
+                    🎉 {winner}
+                    {lastSpin?.user ? <div style={{ fontSize: 13, opacity: 0.7, marginTop: 4, fontWeight: 600 }}>{lastSpin.user}</div> : null}
+                </div>
+            )}
         </div>
     )
 }

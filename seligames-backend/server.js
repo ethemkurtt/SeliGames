@@ -199,6 +199,44 @@ io.on('connection', (socket) => {
                     }
                 }
 
+                // ─── Wheel of Actions — gift triggers a weighted random spin ───
+                if (ot === 'wheel' && eventType === 'gift') {
+                    const triggerGift = (overlay.config?.triggerGift || '').trim();
+                    const triggers = !triggerGift || triggerGift === '*' || triggerGift === giftName;
+                    const slices = Array.isArray(overlay.config?.slices) ? overlay.config.slices : [];
+                    if (triggers && slices.length > 0) {
+                        const total = slices.reduce((s, sl) => s + Math.max(1, Number(sl.weight || 1)), 0);
+                        let pick = Math.random() * total;
+                        let winnerIdx = 0;
+                        for (let i = 0; i < slices.length; i++) {
+                            pick -= Math.max(1, Number(slices[i].weight || 1));
+                            if (pick <= 0) { winnerIdx = i; break; }
+                        }
+                        const winner = slices[winnerIdx];
+                        // Update lastSpin atomically so connected overlays animate
+                        // to the same slice. spinId makes each animation unique.
+                        const lastSpin = {
+                            spinId: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                            winnerIdx,
+                            winnerLabel: winner?.label || `#${winnerIdx + 1}`,
+                            user: username || nickname,
+                            giftName,
+                            spinAt: Date.now(),
+                        };
+                        const updated = await Overlay.findOneAndUpdate(
+                            { _id: overlay._id },
+                            { $set: { 'data.lastSpin': lastSpin } },
+                            { new: true }
+                        );
+                        if (updated) {
+                            console.log(`   🎡 wheel ${overlay.overlayId} → "${winner?.label}" (by ${lastSpin.user})`);
+                            io.to(`overlay:${overlay.overlayId}`).emit('overlay-update', {
+                                overlayId: overlay.overlayId, data: updated.data
+                            });
+                        }
+                    }
+                }
+
                 // ─── Subathon Timer — gift adds seconds to the countdown ───
                 if (ot === 'subathon' && eventType === 'gift' && overlay.data?.isRunning) {
                     const perGift = overlay.config?.perGift || {};

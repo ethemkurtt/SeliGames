@@ -183,6 +183,42 @@ router.post('/:id/subathon/reset', auth, async (req, res) => {
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
+// Wheel of Actions: manual / test spin — picks weighted random slice and
+// broadcasts so connected overlays animate.
+router.post('/:id/wheel/spin', auth, async (req, res) => {
+    try {
+        const overlay = await Overlay.findOne({ _id: req.params.id, userId: req.userId });
+        if (!overlay) return res.status(404).json({ error: 'Bulunamadı' });
+        if (overlay.overlayType !== 'wheel') return res.status(400).json({ error: 'Wheel değil' });
+        const slices = Array.isArray(overlay.config?.slices) ? overlay.config.slices : [];
+        if (slices.length === 0) return res.status(400).json({ error: 'Dilim yok' });
+
+        const total = slices.reduce((s, sl) => s + Math.max(1, Number(sl.weight || 1)), 0);
+        let pick = Math.random() * total;
+        let winnerIdx = 0;
+        for (let i = 0; i < slices.length; i++) {
+            pick -= Math.max(1, Number(slices[i].weight || 1));
+            if (pick <= 0) { winnerIdx = i; break; }
+        }
+        const winner = slices[winnerIdx];
+        const lastSpin = {
+            spinId: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            winnerIdx,
+            winnerLabel: winner?.label || `#${winnerIdx + 1}`,
+            user: 'Test',
+            giftName: 'manual',
+            spinAt: Date.now(),
+        };
+        overlay.data = { ...(overlay.data || {}), lastSpin };
+        overlay.markModified('data');
+        await overlay.save();
+
+        const io = req.app.get('io');
+        if (io) io.to(`overlay:${overlay.overlayId}`).emit('overlay-update', { overlayId: overlay.overlayId, data: overlay.data });
+        res.json(overlay);
+    } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
 router.post('/:id/reset', auth, async (req, res) => {
     try {
         const overlay = await Overlay.findOneAndUpdate(

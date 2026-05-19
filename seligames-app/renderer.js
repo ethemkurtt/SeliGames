@@ -3146,6 +3146,7 @@ const overlayTypeMap = {
     'dock-chat':        { overlayType: 'chat', subType: 'chat', title: 'Chat Dock', icon: '💬' },
     'dock-events':      { overlayType: 'event-feed', subType: 'events', title: 'Event Feed Dock', icon: '📋' },
     'subathon-timer':   { overlayType: 'subathon', subType: 'timer', title: 'Subathon Timer', icon: '⏱️' },
+    'wheel-actions':    { overlayType: 'wheel', subType: 'actions', title: 'Şans Çarkı', icon: '🎡' },
 };
 
 // Navigate to overlay settings page
@@ -3188,6 +3189,7 @@ async function navigateOverlay(key) {
     const isLb = info.overlayType === 'leaderboard' || info.overlayType === 'chart';
     const isDock = info.overlayType === 'chat' || info.overlayType === 'event-feed';
     const isSubathon = info.overlayType === 'subathon';
+    const isWheel = info.overlayType === 'wheel';
 
     document.getElementById('ov-target-group').style.display = isGoal ? '' : 'none';
     document.getElementById('ov-current-group').style.display = isGoal ? '' : 'none';
@@ -3198,6 +3200,8 @@ async function navigateOverlay(key) {
     document.getElementById('ov-showNums-group').style.display = isGoal ? '' : 'none';
     const subGroup = document.getElementById('ov-subathon-group');
     if (subGroup) subGroup.style.display = isSubathon ? '' : 'none';
+    const wheelGroup = document.getElementById('ov-wheel-group');
+    if (wheelGroup) wheelGroup.style.display = isWheel ? '' : 'none';
 
     currentOverlayContext = { key, ...info, overlayDbId: null, overlayId: null };
 
@@ -3442,7 +3446,9 @@ function setColorInput(id, value) {
 function getOverlayFormData() {
     var customCSSEl = document.getElementById('ov-custom-css');
     const isSubathon = currentOverlayContext.overlayType === 'subathon';
+    const isWheel = currentOverlayContext.overlayType === 'wheel';
     const subConf = isSubathon ? readSubathonConfig() : {};
+    const wheelConf = isWheel ? readWheelConfig() : {};
     return {
         title: document.getElementById('ov-title').value || currentOverlayContext.title,
         overlayType: currentOverlayContext.overlayType,
@@ -3453,6 +3459,7 @@ function getOverlayFormData() {
             maxItems: parseInt(document.getElementById('ov-maxitems').value) || 5,
             duration: parseInt(document.getElementById('ov-duration').value) || 5,
             ...subConf,
+            ...wheelConf,
         },
         style: {
             barColor: document.getElementById('ov-barColor').value,
@@ -4136,3 +4143,133 @@ resetOverlayForm = function (info) {
     }
 };
 // ==================== END SUBATHON TIMER ====================
+
+// ==================== WHEEL OF ACTIONS ====================
+const WHEEL_COLORS = ['#ff006e', '#bd00ff', '#00d9ff', '#00ff9d', '#ffd000', '#ff7800', '#7c3aed', '#10b981'];
+const WHEEL_PRESETS = {
+    classic: [
+        { label: 'Şarkı söyle', weight: 1 },
+        { label: '10 şınav', weight: 1 },
+        { label: 'Tezahürat', weight: 1 },
+        { label: 'Dans et', weight: 1 },
+        { label: 'Komik surat', weight: 1 },
+        { label: 'Hikaye anlat', weight: 1 },
+    ],
+    rewards: [
+        { label: 'Takip', weight: 2 },
+        { label: 'Like spam', weight: 2 },
+        { label: 'Selam ver', weight: 3 },
+        { label: 'Mesaj oku', weight: 2 },
+        { label: 'Şaka yap', weight: 1 },
+        { label: 'Bonus puan', weight: 1 },
+        { label: 'Soru sor', weight: 1 },
+        { label: 'JACKPOT', weight: 0.3 },
+    ],
+};
+
+function renderWheelSliceRows(slices) {
+    const wrap = document.getElementById('ov-wheel-slices');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+    if (!slices || slices.length === 0) {
+        wrap.innerHTML = '<div style="color:#8b8b9a;font-size:0.75rem;font-style:italic;padding:0.5rem 0;">Henüz dilim yok. + ile ekle ya da preset seç.</div>';
+        return;
+    }
+    slices.forEach((sl, i) => {
+        const color = sl.color || WHEEL_COLORS[i % WHEEL_COLORS.length];
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;gap:0.4rem;align-items:center;';
+        row.innerHTML = `
+            <input type="color" value="${color}" style="width:38px;height:34px;background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:6px;cursor:pointer;" data-w-color="${i}">
+            <input type="text" class="ov-input" placeholder="Dilim etiketi" value="${escapeHtml(sl.label || '')}" style="flex:1;" data-w-label="${i}">
+            <input type="number" class="ov-input" placeholder="ağırlık" value="${sl.weight ?? 1}" min="0" step="0.1" style="width:80px;" data-w-weight="${i}" title="Ağırlık (yüksek = daha sık çıkar)">
+            <button class="btn-icon" onclick="removeWheelSlice(${i})" style="background:rgba(255,0,110,0.08);color:#ff006e;" title="Sil"><i class="fas fa-times"></i></button>
+        `;
+        wrap.appendChild(row);
+    });
+}
+
+function readWheelSlices() {
+    const wrap = document.getElementById('ov-wheel-slices');
+    if (!wrap) return [];
+    const labels = wrap.querySelectorAll('[data-w-label]');
+    const weights = wrap.querySelectorAll('[data-w-weight]');
+    const colors = wrap.querySelectorAll('[data-w-color]');
+    const out = [];
+    for (let i = 0; i < labels.length; i++) {
+        const label = labels[i].value.trim();
+        const weight = parseFloat(weights[i].value);
+        const color = colors[i].value;
+        if (label) out.push({ label, weight: isNaN(weight) ? 1 : weight, color });
+    }
+    return out;
+}
+
+function readWheelConfig() {
+    return {
+        triggerGift: (document.getElementById('ov-wheel-trigger')?.value || '*').trim(),
+        slices: readWheelSlices(),
+    };
+}
+
+function writeWheelConfig(config) {
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+    set('ov-wheel-trigger', config?.triggerGift || 'Roket');
+    renderWheelSliceRows(config?.slices || []);
+}
+
+function addWheelSlice() {
+    const slices = readWheelSlices();
+    slices.push({ label: '', weight: 1, color: WHEEL_COLORS[slices.length % WHEEL_COLORS.length] });
+    renderWheelSliceRows(slices);
+}
+
+function removeWheelSlice(idx) {
+    const slices = readWheelSlices();
+    slices.splice(idx, 1);
+    renderWheelSliceRows(slices);
+}
+
+function loadWheelPreset(name) {
+    const preset = WHEEL_PRESETS[name];
+    if (!preset) return;
+    const colored = preset.map((sl, i) => ({ ...sl, color: WHEEL_COLORS[i % WHEEL_COLORS.length] }));
+    renderWheelSliceRows(colored);
+    showToast?.(`${name === 'classic' ? 'Klasik' : 'Ödüller'} preset yüklendi`);
+}
+
+function clearWheelSlices() {
+    renderWheelSliceRows([]);
+}
+
+async function wheelTestSpin() {
+    if (!currentOverlayContext?.overlayDbId) {
+        showToast?.('Önce kaydet, sonra test et', true);
+        return;
+    }
+    try {
+        const res = await window.api.wheelSpin?.(currentOverlayContext.overlayDbId);
+        if (res?.success) {
+            showToast?.(`🎡 Kazanan: ${res.data?.data?.lastSpin?.winnerLabel || '?'}`);
+        } else {
+            showToast?.(res?.error || 'Hata', true);
+        }
+    } catch (e) {
+        showToast?.(e.message, true);
+    }
+}
+
+// Round-trip wheel form alongside subathon
+const _origPopulateW = populateOverlayForm;
+populateOverlayForm = function (ov) {
+    _origPopulateW(ov);
+    if (ov.overlayType === 'wheel') writeWheelConfig(ov.config || {});
+};
+const _origResetW = resetOverlayForm;
+resetOverlayForm = function (info) {
+    _origResetW(info);
+    if (info.overlayType === 'wheel') {
+        writeWheelConfig({ triggerGift: 'Roket', slices: [] });
+    }
+};
+// ==================== END WHEEL OF ACTIONS ====================
