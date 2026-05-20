@@ -42,11 +42,23 @@ function ModsAdmin() {
 
     async function save() {
         if (!editing) return
+        // Required-field guard — backend wants downloadUrl; supply a sentinel
+        // for in-house uploads so the new-mod POST doesn't 400 on the user.
+        const payload = { ...editing }
+        if (!payload.downloadUrl) payload.downloadUrl = 'internal'
         setSaving(true)
         try {
-            if (editing._id) await api.put(`/mods/${editing._id}`, editing)
-            else await api.post('/mods', editing)
-            setEditing(null); await load()
+            let res
+            if (editing._id) res = await api.put(`/mods/${editing._id}`, payload)
+            else res = await api.post('/mods', payload)
+            // Keep the modal open so the user can immediately upload the cover
+            // image and the ZIP — both need a real _id, which the response
+            // gives us for brand-new mods. Refresh the grid in the background.
+            const saved = res?.data
+            if (saved && saved._id) setEditing(saved)
+            await load()
+        } catch (e: any) {
+            alert(e.response?.data?.error || e.message || 'Kayıt başarısız')
         } finally { setSaving(false) }
     }
 
@@ -130,8 +142,13 @@ function ModsAdmin() {
                                 </label>
                             </Row>
                         </div>
+                        {!editing._id && (
+                            <div className="mt-4 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs">
+                                ⓘ Önce <b>Kaydet</b> — sonra görsel ve ZIP yükleyebilirsin.
+                            </div>
+                        )}
                         <div className="flex gap-2 mt-6">
-                            <button onClick={() => setEditing(null)} className="flex-1 py-2 rounded-lg bg-white/5 border border-white/10 text-sm font-semibold hover:bg-white/10">İptal</button>
+                            <button onClick={() => setEditing(null)} className="flex-1 py-2 rounded-lg bg-white/5 border border-white/10 text-sm font-semibold hover:bg-white/10">Kapat</button>
                             <button onClick={save} disabled={saving} className="inline-flex items-center justify-center gap-1.5 py-2 px-7 rounded-lg bg-gaming-gradient text-black text-sm font-bold disabled:opacity-50">
                                 {saving ? <Loader2 className="animate-spin" size={14} /> : <Save size={14} />} Kaydet
                             </button>
