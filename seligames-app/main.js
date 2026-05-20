@@ -44,8 +44,19 @@ function macKeyCode(key) {
 function execSim(bin, args) {
     return new Promise((resolve, reject) => {
         execFile(bin, args, { timeout: 3000 }, (err, stdout, stderr) => {
-            if (err) reject(new Error(stderr || err.message));
-            else resolve(stdout);
+            // macOS Accessibility denied: osascript still exits 0 with empty
+            // output. Inspect stderr for the well-known refusal strings and
+            // surface a real error so the renderer can warn the user.
+            const errText = (stderr || '').toString();
+            const denied = /not authorized|not allowed to send keystrokes|errAEEventNotPermitted|-1719|-25211|assistive access/i.test(errText);
+            if (err || denied) {
+                const msg = denied
+                    ? 'macOS Erişilebilirlik izni reddedildi — Sistem Ayarları → Gizlilik → Erişilebilirlik'
+                    : (errText || err?.message || 'execSim hata');
+                reject(new Error(msg));
+            } else {
+                resolve(stdout);
+            }
         });
     });
 }

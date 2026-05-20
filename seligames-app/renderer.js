@@ -1451,16 +1451,26 @@ async function toggleModActions() {
 }
 
 // Called from handleTikTokEvent on every event — fires any matching mod actions.
-async function dispatchModActions(giftName) {
+//   - repeatCount honored: 10 gül birden = 10 keystroke (capped to 20 to
+//     protect against rapid-fire spam locking up the OS).
+//   - per-key cooldown 40ms between consecutive presses → most games still
+//     register each as a discrete tap.
+async function dispatchModActions(giftName, repeatCount = 1) {
     if (!modActionsArmed || !giftName) return;
     const entries = armedGiftIndex.get(giftName.toLocaleLowerCase('tr-TR'));
     if (!entries || !entries.length) return;
+    const fires = Math.max(1, Math.min(20, Number(repeatCount) || 1));
     for (const { modTitle, action } of entries) {
-        try {
-            const res = await window.api.executeAction(action);
-            logActionFired({ giftName, modTitle, action, ok: res.success, error: res.error });
-        } catch (err) {
-            logActionFired({ giftName, modTitle, action, ok: false, error: err.message });
+        for (let i = 0; i < fires; i++) {
+            try {
+                const res = await window.api.executeAction(action);
+                logActionFired({ giftName, modTitle, action, ok: res.success, error: res.error, n: `${i+1}/${fires}` });
+                if (!res.success) break; // bail the loop on first failure (e.g. AX denied)
+            } catch (err) {
+                logActionFired({ giftName, modTitle, action, ok: false, error: err.message });
+                break;
+            }
+            if (i < fires - 1) await new Promise(r => setTimeout(r, 40));
         }
     }
 }
@@ -2614,8 +2624,8 @@ function handleTikTokEvent(msg) {
 
         forwardToBackend('gift', eventData);
 
-        // Fire mapped game shortcut once per gift arrival (ignores repeatCount for now)
-        dispatchModActions(giftName);
+        // Fire mapped game shortcut — repeatCount honored (10 gül → 10 keystroke)
+        dispatchModActions(giftName, giftCount);
     }
     // LIKE
     else if (eventType === 'WebcastLikeMessage') {
