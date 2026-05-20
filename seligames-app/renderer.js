@@ -1385,6 +1385,85 @@ let installedModIdSet = new Set();
 // any installed mod fires the mapped action (keyboard shortcut / text / mouse)
 // at the OS level via main.js.
 
+// ─── Known TikTok gift IDs (TR market) ───────────────────────────────────
+// Eulerstream sometimes sends only `giftId` without a name field. This
+// table maps the most-used gift IDs to their canonical Turkish name so we
+// can resolve mappings even when the payload is stripped. IDs sourced from
+// the public tiktok-live-connector dataset.
+const TIKTOK_GIFT_ID_TO_NAME = {
+    5655:  'Gül',
+    5827:  'Kalp',
+    5269:  'Finger Heart',
+    5980:  'Beni sev',
+    6890:  'Evren',
+    7044:  'Roket',
+    7280:  'Elmas',
+    7307:  'Aslan',
+    7274:  'Spor Araba',
+    7878:  'Yat',
+    8913:  'TikTok Universe',
+    9947:  'Dragon Flame',
+    7906:  'Phoenix',
+    5879:  'Galaxy',
+    6022:  'Donut',
+    6168:  'Cap',
+    6248:  'Football',
+    5586:  'GG',
+    5586:  'GG',
+    5587:  'Ice Cream Cone',
+    5817:  'Pop',
+    5973:  'Rainbow',
+    6184:  'Sun Cream',
+    6203:  'Birthday Cake',
+    6204:  'Cake Slice',
+    6207:  'Hand Hearts',
+    6210:  'Boba Tea',
+    6258:  'Tiny Diny',
+    6321:  'Bear Love',
+    6332:  'Magic Stage',
+    6433:  'Train',
+    6478:  'Friendship Necklace',
+    6677:  'Magic Mango',
+    6824:  'Music Play',
+    6841:  'Hearts',
+    6892:  'Money Gun',
+    7065:  'Cooper Flies Home',
+    7128:  'Crown',
+    7136:  'Castle',
+    7180:  'Lion',
+    7195:  'Sports Car',
+    7202:  'Rocket',
+    7237:  'Yacht',
+    7270:  'Whale Diving',
+    7359:  'Star Throne',
+    7460:  'Treasure Box',
+    7558:  'Wedding Bells',
+    7702:  'Glowing Jellyfish',
+    7826:  'Diamond Throne',
+    7959:  'Make Up Box',
+    8054:  'Big Heart',
+    8092:  'I Love You',
+    8129:  'Perfume',
+    8204:  'Honey Drink',
+    8230:  'Champagne',
+    8331:  'Italian Hand',
+    8438:  'Wishing Bottle',
+    8473:  'Magic Lamp',
+    8542:  'Lollipop',
+    8732:  'Treasure Boat',
+    8919:  'Black Pearl',
+    9015:  'Heart Me',
+    9143:  'Crystal Heart',
+    9255:  'Silly Goose',
+    9395:  'Pure Crystal',
+    9438:  'Cap with Heart',
+    9494:  'Rainbow Puke',
+};
+function resolveGiftNameFromId(id) {
+    if (id == null) return '';
+    return TIKTOK_GIFT_ID_TO_NAME[Number(id)] || '';
+}
+
 // ─── Per-mod arm/disarm ──────────────────────────────────────────────────
 // Each mod can be independently armed. Gift events fire only the actions
 // from armed mods. Persisted in localStorage so toggle survives reloads.
@@ -1415,20 +1494,35 @@ async function rebuildArmedIndex() {
         if (!result.success) throw new Error(result.error || 'load failed');
         const mods = result.data || [];
         armedGiftIndex.clear();
+        // Reverse map: canonical Turkish name → giftId so we can index a
+        // saved "Gül" mapping under both "gül" AND "id:5655".
+        const NAME_TO_ID = {};
+        for (const [id, n] of Object.entries(TIKTOK_GIFT_ID_TO_NAME)) {
+            NAME_TO_ID[n.toLocaleLowerCase('tr-TR')] = id;
+        }
         let total = 0;
         for (const m of mods) {
             if (!isModArmed(m._id)) continue;
             const actions = m.config?.giftActions || {};
             for (const [giftName, action] of Object.entries(actions)) {
                 if (!action || !action.value) continue;
-                const key = giftName.trim().toLocaleLowerCase('tr-TR');
-                if (!key) continue;
-                if (!armedGiftIndex.has(key)) armedGiftIndex.set(key, []);
-                armedGiftIndex.get(key).push({ modTitle: m.title, modId: m._id, giftName, action });
+                const nameKey = giftName.trim().toLocaleLowerCase('tr-TR');
+                if (!nameKey) continue;
+                const entry = { modTitle: m.title, modId: m._id, giftName, action };
+                if (!armedGiftIndex.has(nameKey)) armedGiftIndex.set(nameKey, []);
+                armedGiftIndex.get(nameKey).push(entry);
+                // Also index by ID if we know one for this canonical name
+                const id = NAME_TO_ID[nameKey];
+                if (id) {
+                    const idKey = `id:${id}`;
+                    if (!armedGiftIndex.has(idKey)) armedGiftIndex.set(idKey, []);
+                    armedGiftIndex.get(idKey).push(entry);
+                }
                 total++;
             }
         }
         updateArmBadge();
+        console.log(`[ARM] rebuilt index — ${armedModIds.size} armed mod(s), ${total} action(s), ${armedGiftIndex.size} matchable keys`);
         return { armedMods: armedModIds.size, totalMods: mods.length, actions: total };
     } catch (err) {
         showToast?.('Mod indeksi yüklenemedi: ' + err.message, true);
@@ -1593,12 +1687,27 @@ document.addEventListener('DOMContentLoaded', () => {
 //     protect against rapid-fire spam locking up the OS).
 //   - per-key cooldown 40ms between consecutive presses → most games still
 //     register each as a discrete tap.
-async function dispatchModActions(giftName, repeatCount = 1) {
-    if (!modActionsArmed || !giftName) return;
-    // Match normalization mirrors armModActions().
-    const key = String(giftName).trim().toLocaleLowerCase('tr-TR');
-    const entries = armedGiftIndex.get(key);
-    if (!entries || !entries.length) return;
+async function dispatchModActions(giftName, repeatCount = 1, giftId = null) {
+    if (!modActionsArmed) return;
+    // Build candidate keys: resolved name, raw ID, and any alias names we
+    // can derive from the ID table. dispatch fires the first hit.
+    const keys = new Set();
+    if (giftName) keys.add(String(giftName).trim().toLocaleLowerCase('tr-TR'));
+    if (giftId != null) {
+        keys.add(`id:${giftId}`);
+        const aliasName = resolveGiftNameFromId(giftId);
+        if (aliasName) keys.add(aliasName.trim().toLocaleLowerCase('tr-TR'));
+    }
+    let entries = null;
+    let matchedKey = '';
+    for (const k of keys) {
+        if (armedGiftIndex.has(k)) { entries = armedGiftIndex.get(k); matchedKey = k; break; }
+    }
+    if (!entries || !entries.length) {
+        console.log(`[DISPATCH MISS] gift="${giftName}" id=${giftId} tried=${[...keys].join('|')} indexedKeys=${[...armedGiftIndex.keys()].slice(0, 20).join(',')}`);
+        return;
+    }
+    console.log(`[DISPATCH HIT] matched "${matchedKey}" → ${entries.length} action(s) × ${repeatCount}`);
     const fires = Math.max(1, Math.min(20, Number(repeatCount) || 1));
     for (const { modTitle, action } of entries) {
         for (let i = 0; i < fires; i++) {
@@ -1838,9 +1947,9 @@ function renderModDetailHero() {
     }
     if (uninstallBtn) uninstallBtn.style.display = isInstalled ? 'inline-flex' : 'none';
 
-    // Per-mod arm/disarm button — only meaningful once the mod is installed
-    const armBtn = document.getElementById('md-arm-btn');
-    if (armBtn) armBtn.style.display = isInstalled ? 'inline-flex' : 'none';
+    // Per-mod arm/disarm card — only meaningful once the mod is installed
+    const armCard = document.getElementById('md-arm-card');
+    if (armCard) armCard.style.display = isInstalled ? '' : 'none';
     updateModArmButton(mod._id);
 
     // Restore per-mod launch command + auto-launch toggle from localStorage
@@ -2874,6 +2983,14 @@ function handleTikTokEvent(msg) {
         let giftName = scanned.name;
         let giftIcon = scanned.icon;
 
+        // Hardcoded ID → canonical Turkish name table (highest priority for
+        // stripped payloads that have only giftId). User maps their action
+        // against this name, so resolution MUST land on it.
+        if ((!giftName || /^Hediye/i.test(giftName)) && giftId != null) {
+            const known = resolveGiftNameFromId(giftId);
+            if (known) giftName = known;
+        }
+
         // Catalog fallback. Match by ID first, then by name (in case
         // payload has the name as-is but we want the canonical icon).
         if (Array.isArray(giftCatalogCache) && giftCatalogCache.length) {
@@ -2923,7 +3040,7 @@ function handleTikTokEvent(msg) {
         forwardToBackend('gift', enrichedPayload);
 
         // Fire mapped game shortcut — repeatCount honored (10 gül → 10 keystroke)
-        dispatchModActions(giftName, giftCount);
+        dispatchModActions(giftName, giftCount, giftId);
     }
     // LIKE
     else if (eventType === 'WebcastLikeMessage') {
@@ -4603,15 +4720,19 @@ resetOverlayForm = function (info) {
 // ==================== PER-MOD ARM/DISARM UI ====================
 function updateModArmButton(modId) {
     const btn = document.getElementById('md-arm-btn');
-    const lbl = document.getElementById('md-arm-btn-label');
+    const status = document.getElementById('md-arm-status');
     if (!btn || !modId) return;
     const armed = isModArmed(modId);
     if (armed) {
         btn.style.background = 'linear-gradient(135deg,#ff006e,#ff5722)';
+        btn.style.boxShadow = '0 4px 12px rgba(255,0,110,0.3)';
         btn.innerHTML = '<i class="fas fa-stop-circle"></i> <span id="md-arm-btn-label">Bu Modu Durdur</span>';
+        if (status) { status.textContent = '● AKTİF'; status.style.color = '#00ff9d'; }
     } else {
-        btn.style.background = 'linear-gradient(135deg,#00ff9d,#00f0ff)';
+        btn.style.background = 'linear-gradient(135deg,#00ff9d,#00d9ff)';
+        btn.style.boxShadow = '0 4px 12px rgba(0,255,157,0.25)';
         btn.innerHTML = '<i class="fas fa-play-circle"></i> <span id="md-arm-btn-label">Bu Modu Başlat</span>';
+        if (status) { status.textContent = '● Pasif'; status.style.color = '#8b8b9a'; }
     }
 }
 

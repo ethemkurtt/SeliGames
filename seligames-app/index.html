@@ -4540,9 +4540,6 @@
                     <button id="md-install-btn" class="btn-success" onclick="installModAction()" style="min-width:180px;">
                         <i class="fas fa-download"></i> Kur
                     </button>
-                    <button id="md-arm-btn" onclick="toggleCurrentModArm()" style="display:none;min-width:200px;padding:0.65rem 1.1rem;border:none;border-radius:8px;color:#0a0a0f;font-weight:800;font-size:0.85rem;cursor:pointer;background:linear-gradient(135deg,#00ff9d,#00f0ff);align-items:center;justify-content:center;gap:0.4rem;">
-                        <i class="fas fa-play-circle"></i> <span id="md-arm-btn-label">Bu Modu Başlat</span>
-                    </button>
                     <button id="md-uninstall-btn" class="btn-secondary" onclick="uninstallModAction()" style="display:none;min-width:160px;">
                         <i class="fas fa-trash"></i> Kaldır
                     </button>
@@ -4552,6 +4549,24 @@
                     <button class="btn-secondary" onclick="exportModActions()" style="padding:0.55rem 0.85rem;">
                         <i class="fas fa-file-export"></i> Config Export
                     </button>
+                </div>
+
+                <!-- ─── Per-mod arm/disarm (prominent, right under Kur) ─── -->
+                <div id="md-arm-card" style="display:none;margin-top:1rem;padding:1rem 1.15rem;background:linear-gradient(135deg,rgba(0,255,157,0.08),rgba(0,217,255,0.04));border:1px solid rgba(0,255,157,0.25);border-radius:12px;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+                        <div>
+                            <div style="color:#00ff9d;font-weight:800;font-size:0.95rem;display:flex;align-items:center;gap:0.5rem;">
+                                <i class="fas fa-gamepad"></i> Mod Aksiyonları
+                                <span id="md-arm-status" style="font-size:0.72rem;font-weight:700;margin-left:0.35rem;color:#8b8b9a;">● Pasif</span>
+                            </div>
+                            <div style="color:#c8c8d4;font-size:0.78rem;margin-top:0.35rem;line-height:1.5;">
+                                Başlattığında <b>bu modun</b> hediye-tuş eşleştirmeleri gelen TikTok hediyelerine göre oyuna tuş basar. Diğer modları etkilemez.
+                            </div>
+                        </div>
+                        <button id="md-arm-btn" onclick="toggleCurrentModArm()" style="min-width:200px;padding:0.7rem 1.2rem;border:none;border-radius:10px;color:#0a0a0f;font-weight:900;font-size:0.9rem;cursor:pointer;background:linear-gradient(135deg,#00ff9d,#00d9ff);display:inline-flex;align-items:center;justify-content:center;gap:0.5rem;box-shadow:0 4px 12px rgba(0,255,157,0.25);transition:transform 0.15s;">
+                            <i class="fas fa-play-circle"></i> <span id="md-arm-btn-label">Bu Modu Başlat</span>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- ─── Game Launcher ─── -->
