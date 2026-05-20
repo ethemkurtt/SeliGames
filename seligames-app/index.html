@@ -3639,16 +3639,16 @@
                     <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;">
                         <div>
                             <h3 style="color:#00ff9d;margin:0 0 0.2rem 0;font-size:0.9rem;font-weight:700;display:flex;align-items:center;gap:0.4rem;">
-                                <i class="fas fa-gamepad"></i> Mod Aksiyonları
-                                <span id="mod-armed-status" style="font-size:0.72rem;font-weight:700;margin-left:0.35rem;"><span style="color:#8b8b9a;">● Pasif</span></span>
+                                <i class="fas fa-gamepad"></i> Aktif Mod Aksiyonları
+                                <span id="mod-armed-status" style="font-size:0.72rem;font-weight:700;margin-left:0.35rem;"><span style="color:#8b8b9a;">● Hiçbiri</span></span>
                             </h3>
                             <div style="color:#8b8b9a;font-size:0.72rem;">
-                                Başlattığında gelen hediyelere göre oyuna otomatik tuş basılır.
+                                Modları tek tek <b>Modlar → mod detay → "Bu Modu Başlat"</b> ile aç. Aşağıdaki tuş, kestirme yol — <b>tüm yüklü modları</b> aynı anda açıp kapatır.
                                 <span id="mod-armed-count" style="color:#00ff9d;font-weight:700;margin-left:0.35rem;"></span>
                             </div>
                         </div>
                         <button id="mod-armed-toggle" onclick="toggleModActions()" style="padding:0.65rem 1.1rem;border:none;border-radius:8px;color:#0a0a0f;font-weight:800;font-size:0.82rem;cursor:pointer;background:linear-gradient(135deg,#00ff9d,#00f0ff);display:inline-flex;align-items:center;gap:0.4rem;">
-                            <i class="fas fa-play-circle"></i> Mod Aksiyonlarını Başlat
+                            <i class="fas fa-play-circle"></i> Tümünü Başlat
                         </button>
                     </div>
                     <!-- Global hotkey row -->
@@ -4539,6 +4539,9 @@
                 <div class="mod-hero-actions">
                     <button id="md-install-btn" class="btn-success" onclick="installModAction()" style="min-width:180px;">
                         <i class="fas fa-download"></i> Kur
+                    </button>
+                    <button id="md-arm-btn" onclick="toggleCurrentModArm()" style="display:none;min-width:200px;padding:0.65rem 1.1rem;border:none;border-radius:8px;color:#0a0a0f;font-weight:800;font-size:0.85rem;cursor:pointer;background:linear-gradient(135deg,#00ff9d,#00f0ff);align-items:center;justify-content:center;gap:0.4rem;">
+                        <i class="fas fa-play-circle"></i> <span id="md-arm-btn-label">Bu Modu Başlat</span>
                     </button>
                     <button id="md-uninstall-btn" class="btn-secondary" onclick="uninstallModAction()" style="display:none;min-width:160px;">
                         <i class="fas fa-trash"></i> Kaldır

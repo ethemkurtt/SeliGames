@@ -1385,11 +1385,31 @@ let installedModIdSet = new Set();
 // any installed mod fires the mapped action (keyboard shortcut / text / mouse)
 // at the OS level via main.js.
 
-let modActionsArmed = false;
-let armedGiftIndex = new Map(); // giftName (lower) → [{ modTitle, action }]
+// ─── Per-mod arm/disarm ──────────────────────────────────────────────────
+// Each mod can be independently armed. Gift events fire only the actions
+// from armed mods. Persisted in localStorage so toggle survives reloads.
+const ARMED_MODS_KEY = 'armedModIds';
+let armedModIds = new Set();  // Set<modId>
+let armedGiftIndex = new Map(); // giftName (lower) → [{ modTitle, modId, action }]
 let lastActionLog = [];
+// Backwards-compat flag — other parts of the file gate dispatch on it.
+let modActionsArmed = false;
+function _syncArmedFlag() { modActionsArmed = armedModIds.size > 0; }
 
-async function armModActions() {
+function loadArmedFromStorage() {
+    try {
+        const raw = localStorage.getItem(ARMED_MODS_KEY);
+        if (raw) armedModIds = new Set(JSON.parse(raw));
+    } catch {}
+}
+function saveArmedToStorage() {
+    try { localStorage.setItem(ARMED_MODS_KEY, JSON.stringify([...armedModIds])); } catch {}
+}
+function isModArmed(modId) { return armedModIds.has(String(modId)); }
+
+// Rebuild armedGiftIndex from the installed mods, including only the ones
+// in armedModIds. Called after every arm/disarm toggle.
+async function rebuildArmedIndex() {
     try {
         const result = await window.api.getInstalledMods();
         if (!result.success) throw new Error(result.error || 'load failed');
@@ -1397,11 +1417,10 @@ async function armModActions() {
         armedGiftIndex.clear();
         let total = 0;
         for (const m of mods) {
+            if (!isModArmed(m._id)) continue;
             const actions = m.config?.giftActions || {};
             for (const [giftName, action] of Object.entries(actions)) {
                 if (!action || !action.value) continue;
-                // Normalize gift name: trim + Turkish lowercase. Without trim,
-                // ' Gül ' from TikTok payload would never match a saved 'Gül' key.
                 const key = giftName.trim().toLocaleLowerCase('tr-TR');
                 if (!key) continue;
                 if (!armedGiftIndex.has(key)) armedGiftIndex.set(key, []);
@@ -1409,24 +1428,64 @@ async function armModActions() {
                 total++;
             }
         }
-        modActionsArmed = true;
         updateArmBadge();
-        showToast(`🎮 ${mods.length} modda ${total} aksiyon silahlandı — oyunu ön plana getir`);
+        return { armedMods: armedModIds.size, totalMods: mods.length, actions: total };
+    } catch (err) {
+        showToast?.('Mod indeksi yüklenemedi: ' + err.message, true);
+        return null;
+    }
+}
 
-        // Auto-launch any installed mod whose per-mod auto-launch is enabled.
-        // Lazy — fire and forget; user's saved launch cmd from mod detail.
+// Arm a single mod (mod detail button).
+async function armSingleMod(modId) {
+    if (!modId) return;
+    armedModIds.add(String(modId));
+    saveArmedToStorage();
+    _syncArmedFlag();
+    const stats = await rebuildArmedIndex();
+    updateModArmButton(modId);
+    // Auto-launch this mod's saved command if enabled.
+    if (getModLaunchAuto(modId)) {
+        const cmd = getModLaunchCmd(modId);
+        if (cmd) {
+            window.api.launchGame?.({ command: cmd }).then((r) => {
+                if (r?.success) showToast?.(`🚀 Oyun başlatıldı (pid ${r.pid})`);
+            });
+        }
+    }
+    showToast?.(`🎮 Mod silahlandı (${stats?.actions || 0} aksiyon)`);
+}
+async function disarmSingleMod(modId) {
+    if (!modId) return;
+    armedModIds.delete(String(modId));
+    saveArmedToStorage();
+    await rebuildArmedIndex();
+    updateModArmButton(modId);
+    showToast?.('🔒 Mod durduruldu');
+}
+async function toggleSingleMod(modId) {
+    if (isModArmed(modId)) await disarmSingleMod(modId);
+    else await armSingleMod(modId);
+}
+
+// Compatibility shim — kept so old "Mod Aksiyonlarını Başlat" button on
+// TikTok Canlı page still works, but it now means "arm every installed mod".
+async function armModActions() {
+    try {
+        const result = await window.api.getInstalledMods();
+        if (!result.success) throw new Error(result.error || 'load failed');
+        const mods = result.data || [];
+        for (const m of mods) armedModIds.add(String(m._id));
+        saveArmedToStorage();
+        const stats = await rebuildArmedIndex();
+        showToast(`🎮 ${mods.length} modda ${stats?.actions || 0} aksiyon silahlandı`);
         for (const m of mods) {
             if (getModLaunchAuto(m._id)) {
                 const cmd = getModLaunchCmd(m._id);
-                if (cmd) {
-                    window.api.launchGame?.({ command: cmd }).then((r) => {
-                        if (r?.success) console.log(`🚀 Auto-launched mod ${m.title} (pid ${r.pid})`);
-                        else console.warn(`Auto-launch failed for ${m.title}:`, r?.error);
-                    });
-                }
+                if (cmd) window.api.launchGame?.({ command: cmd });
             }
         }
-        return { mods: mods.length, actions: total };
+        return { mods: mods.length, actions: stats?.actions || 0 };
     } catch (err) {
         showToast('Silahlanamadı: ' + err.message, true);
         return null;
@@ -1434,29 +1493,37 @@ async function armModActions() {
 }
 
 function disarmModActions() {
-    modActionsArmed = false;
+    armedModIds.clear();
+    saveArmedToStorage();
+    _syncArmedFlag();
     armedGiftIndex.clear();
     updateArmBadge();
-    showToast('🔒 Mod aksiyonları durduruldu');
+    // Refresh the per-mod button if user is on a mod detail page.
+    if (currentModDetail?._id) updateModArmButton(currentModDetail._id);
+    showToast('🔒 Tüm mod aksiyonları durduruldu');
 }
+
+// Restore armed set on load
+loadArmedFromStorage();
+_syncArmedFlag();
 
 function updateArmBadge() {
     const totalActions = [...armedGiftIndex.values()].reduce((n, arr) => n + arr.length, 0);
-    // TikTok Canlı page badge
+    const armedCount = armedModIds.size;
     const armedEl = document.getElementById('mod-armed-status');
     const armedBtnEl = document.getElementById('mod-armed-toggle');
     const armedCountEl = document.getElementById('mod-armed-count');
     if (armedEl) {
-        armedEl.innerHTML = modActionsArmed
-            ? `<span style="color:#00ff9d;font-weight:700;">● AKTİF</span>`
-            : `<span style="color:#8b8b9a;">● Pasif</span>`;
+        armedEl.innerHTML = armedCount > 0
+            ? `<span style="color:#00ff9d;font-weight:700;">● ${armedCount} MOD AKTİF</span>`
+            : `<span style="color:#8b8b9a;">● Hiçbiri</span>`;
     }
-    if (armedCountEl) armedCountEl.textContent = modActionsArmed ? `${totalActions} aksiyon hazır` : '';
+    if (armedCountEl) armedCountEl.textContent = armedCount > 0 ? `${totalActions} aksiyon hazır` : '';
     if (armedBtnEl) {
-        armedBtnEl.innerHTML = modActionsArmed
-            ? '<i class="fas fa-stop-circle"></i> Mod Aksiyonlarını Durdur'
-            : '<i class="fas fa-play-circle"></i> Mod Aksiyonlarını Başlat';
-        armedBtnEl.style.background = modActionsArmed
+        armedBtnEl.innerHTML = armedCount > 0
+            ? '<i class="fas fa-stop-circle"></i> Tümünü Durdur'
+            : '<i class="fas fa-play-circle"></i> Tümünü Başlat';
+        armedBtnEl.style.background = armedCount > 0
             ? 'linear-gradient(135deg,#ff006e,#ff5722)'
             : 'linear-gradient(135deg,#00ff9d,#00f0ff)';
     }
@@ -1770,6 +1837,11 @@ function renderModDetailHero() {
         installBtn.style.cursor = isInstalled ? 'default' : 'pointer';
     }
     if (uninstallBtn) uninstallBtn.style.display = isInstalled ? 'inline-flex' : 'none';
+
+    // Per-mod arm/disarm button — only meaningful once the mod is installed
+    const armBtn = document.getElementById('md-arm-btn');
+    if (armBtn) armBtn.style.display = isInstalled ? 'inline-flex' : 'none';
+    updateModArmButton(mod._id);
 
     // Restore per-mod launch command + auto-launch toggle from localStorage
     const cmdInput = document.getElementById('md-launch-cmd');
@@ -2746,9 +2818,44 @@ function handleTikTokEvent(msg) {
         liveStats.gifts++;
         liveStats.actions++;
 
-        const giftName = eventData?.gift?.name || 'Hediye';
-        const giftCount = eventData?.repeatCount || 1;
-        const diamonds = (eventData?.gift?.diamond_count || 0) * giftCount;
+        // Eulerstream's WebcastGiftMessage payload shape changes between
+        // protocol versions — gift identity can land on any of these fields.
+        // Resolve aggressively, then fall back to the catalog by giftId so
+        // we never end up dispatching the literal string "Hediye" to the
+        // mod-action index (which would silently miss every mapping).
+        const giftId = eventData?.giftId
+            ?? eventData?.gift?.id
+            ?? eventData?.gift?.gift_id
+            ?? eventData?.gift_details?.gift_id
+            ?? null;
+        let giftName = eventData?.giftName
+            || eventData?.gift?.name
+            || eventData?.giftDetails?.name
+            || eventData?.gift_details?.name
+            || eventData?.gift?.gift_name
+            || '';
+        let giftIcon = eventData?.gift?.image?.url_list?.[0]
+            || eventData?.gift?.icon
+            || eventData?.giftDetails?.icon
+            || eventData?.gift_details?.icon_url
+            || '';
+        // Catalog fallback by ID (gift names sometimes ship missing from
+        // older WS frames; the public gift catalog has the canonical name).
+        if ((!giftName || giftName === 'Hediye') && giftId != null && Array.isArray(giftCatalogCache)) {
+            const hit = giftCatalogCache.find((g) => String(g.id) === String(giftId) || String(g.giftId) === String(giftId));
+            if (hit) {
+                giftName = hit.name || giftName;
+                giftIcon = giftIcon || hit.icon || hit.iconUrl || '';
+            }
+        }
+        // Last-ditch fallback so the UI shows something readable.
+        if (!giftName) giftName = giftId ? `Hediye #${giftId}` : 'Hediye';
+
+        const giftCount = eventData?.repeatCount || eventData?.count || 1;
+        const diamonds = (eventData?.gift?.diamond_count
+            || eventData?.gift?.diamondCount
+            || eventData?.gift_details?.diamond_count
+            || 0) * giftCount;
         const profilePhoto = eventData?.user?.profilePicture?.url?.[0] || '';
 
         playGiftSound(giftName, diamonds);
@@ -2756,13 +2863,20 @@ function handleTikTokEvent(msg) {
         addEventToFeed({
             type: 'gift',
             user: getUserInfo(eventData),
-            message: `${giftName} x${giftCount} ${diamonds > 0 ? '(💎 ' + diamonds + ')' : ''}`,
-            icon: '🎁',
+            message: `${giftName} x${giftCount}${diamonds > 0 ? ' (💎 ' + diamonds + ')' : ''}`,
+            icon: giftIcon ? '🎁' : '🎁',  // keep the emoji fallback for the badge
+            iconUrl: giftIcon,                // event-feed reads this when present
             color: '#ff006e',
             profilePhoto: profilePhoto
         });
 
-        forwardToBackend('gift', eventData);
+        // Enrich the payload before forwarding so backend overlays + ticker
+        // resolve the same name we resolved here.
+        const enrichedPayload = { ...eventData, giftName, giftId };
+        if (!enrichedPayload.gift) enrichedPayload.gift = {};
+        if (!enrichedPayload.gift.name) enrichedPayload.gift.name = giftName;
+        if (!enrichedPayload.gift.id && giftId != null) enrichedPayload.gift.id = giftId;
+        forwardToBackend('gift', enrichedPayload);
 
         // Fire mapped game shortcut — repeatCount honored (10 gül → 10 keystroke)
         dispatchModActions(giftName, giftCount);
@@ -2948,7 +3062,9 @@ function addEventToFeed(event) {
                 <div style="color: #d0d0d0; font-size: 0.85rem; margin-top: 0.2rem;">${event.message}</div>
             </div>
             <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.2rem;">
-                <span style="font-size: 1.2rem;">${event.icon}</span>
+                ${event.iconUrl
+                    ? `<img src="${event.iconUrl}" style="width:28px;height:28px;object-fit:contain;" onerror="this.outerHTML='<span style=\\'font-size:1.2rem\\'>${event.icon}</span>'">`
+                    : `<span style="font-size: 1.2rem;">${event.icon}</span>`}
                 <span style="font-size: 0.7rem; color: #8b8b9a;">${new Date().toLocaleTimeString('tr-TR')}</span>
             </div>
         </div>
@@ -4439,3 +4555,24 @@ resetOverlayForm = function (info) {
     }
 };
 // ==================== END WHEEL OF ACTIONS ====================
+
+// ==================== PER-MOD ARM/DISARM UI ====================
+function updateModArmButton(modId) {
+    const btn = document.getElementById('md-arm-btn');
+    const lbl = document.getElementById('md-arm-btn-label');
+    if (!btn || !modId) return;
+    const armed = isModArmed(modId);
+    if (armed) {
+        btn.style.background = 'linear-gradient(135deg,#ff006e,#ff5722)';
+        btn.innerHTML = '<i class="fas fa-stop-circle"></i> <span id="md-arm-btn-label">Bu Modu Durdur</span>';
+    } else {
+        btn.style.background = 'linear-gradient(135deg,#00ff9d,#00f0ff)';
+        btn.innerHTML = '<i class="fas fa-play-circle"></i> <span id="md-arm-btn-label">Bu Modu Başlat</span>';
+    }
+}
+
+async function toggleCurrentModArm() {
+    if (!currentModDetail?._id) return;
+    await toggleSingleMod(currentModDetail._id);
+}
+// ==================== END PER-MOD ARM/DISARM UI ====================
