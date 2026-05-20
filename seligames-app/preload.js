@@ -49,6 +49,8 @@ contextBridge.exposeInMainWorld('api', {
     onHotkeyToggleMods: (callback) => ipcRenderer.on('hotkey-toggle-mods', () => callback()),
     setModHotkey: (acc) => ipcRenderer.invoke('set-mod-hotkey', acc),
     getModHotkey: () => ipcRenderer.invoke('get-mod-hotkey'),
+    launchGame: (opts) => ipcRenderer.invoke('launch-game', opts),
+    pickLaunchFile: () => ipcRenderer.invoke('pick-launch-file'),
     onEventProcessed: (callback) => ipcRenderer.on('event-processed', (event, data) => callback(data)),
 
     // Event API

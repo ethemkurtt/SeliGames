@@ -1409,6 +1409,20 @@ async function armModActions() {
         modActionsArmed = true;
         updateArmBadge();
         showToast(`🎮 ${mods.length} modda ${total} aksiyon silahlandı — oyunu ön plana getir`);
+
+        // Auto-launch any installed mod whose per-mod auto-launch is enabled.
+        // Lazy — fire and forget; user's saved launch cmd from mod detail.
+        for (const m of mods) {
+            if (getModLaunchAuto(m._id)) {
+                const cmd = getModLaunchCmd(m._id);
+                if (cmd) {
+                    window.api.launchGame?.({ command: cmd }).then((r) => {
+                        if (r?.success) console.log(`🚀 Auto-launched mod ${m.title} (pid ${r.pid})`);
+                        else console.warn(`Auto-launch failed for ${m.title}:`, r?.error);
+                    });
+                }
+            }
+        }
         return { mods: mods.length, actions: total };
     } catch (err) {
         showToast('Silahlanamadı: ' + err.message, true);
@@ -1751,6 +1765,55 @@ function renderModDetailHero() {
         installBtn.style.cursor = isInstalled ? 'default' : 'pointer';
     }
     if (uninstallBtn) uninstallBtn.style.display = isInstalled ? 'inline-flex' : 'none';
+
+    // Restore per-mod launch command + auto-launch toggle from localStorage
+    const cmdInput = document.getElementById('md-launch-cmd');
+    const autoInput = document.getElementById('md-launch-on-arm');
+    if (cmdInput) cmdInput.value = getModLaunchCmd(mod._id) || '';
+    if (autoInput) autoInput.checked = getModLaunchAuto(mod._id);
+}
+
+// ─── Game launcher (per-mod, localStorage-backed) ────────────────────────
+function _modLaunchKey(modId, suffix = 'cmd') { return `modLaunch:${modId}:${suffix}`; }
+function getModLaunchCmd(modId) {
+    try { return localStorage.getItem(_modLaunchKey(modId, 'cmd')) || ''; } catch { return ''; }
+}
+function getModLaunchAuto(modId) {
+    try { return localStorage.getItem(_modLaunchKey(modId, 'auto')) === '1'; } catch { return false; }
+}
+function saveLaunchCmd() {
+    if (!currentModDetail) return;
+    const cmd = document.getElementById('md-launch-cmd')?.value || '';
+    const auto = document.getElementById('md-launch-on-arm')?.checked ? '1' : '0';
+    try {
+        localStorage.setItem(_modLaunchKey(currentModDetail._id, 'cmd'), cmd);
+        localStorage.setItem(_modLaunchKey(currentModDetail._id, 'auto'), auto);
+    } catch {}
+}
+async function pickLaunchFile() {
+    if (!window.api?.pickLaunchFile) return;
+    const res = await window.api.pickLaunchFile();
+    if (res?.success && res.path) {
+        const input = document.getElementById('md-launch-cmd');
+        if (input) {
+            // Wrap in quotes if the path contains spaces
+            input.value = /\s/.test(res.path) ? `"${res.path}"` : res.path;
+            saveLaunchCmd();
+            showToast?.('Yol kaydedildi');
+        }
+    }
+}
+async function launchGame() {
+    const cmd = (document.getElementById('md-launch-cmd')?.value || '').trim();
+    if (!cmd) { showToast?.('Önce bir komut/yol gir', true); return; }
+    saveLaunchCmd();
+    try {
+        const res = await window.api.launchGame({ command: cmd });
+        if (res?.success) showToast?.(`🚀 Oyun başlatıldı (pid ${res.pid})`);
+        else showToast?.('Başlatılamadı: ' + (res?.error || 'bilinmeyen hata'), true);
+    } catch (e) {
+        showToast?.('Hata: ' + e.message, true);
+    }
 }
 
 function renderModGiftActions() {

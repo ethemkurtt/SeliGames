@@ -4548,6 +4548,32 @@
                         <i class="fas fa-file-export"></i> Config Export
                     </button>
                 </div>
+
+                <!-- ─── Game Launcher ─── -->
+                <div style="margin-top:1rem;padding:0.85rem 1rem;background:rgba(0,0,0,0.4);border:1px solid rgba(0,255,157,0.18);border-radius:10px;backdrop-filter:blur(8px);">
+                    <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.55rem;">
+                        <i class="fas fa-rocket" style="color:#00ff9d;"></i>
+                        <span style="color:#00ff9d;font-weight:700;font-size:0.85rem;">Oyun Başlatıcı</span>
+                        <span style="color:#8b8b9a;font-size:0.7rem;margin-left:0.4rem;">cmd / exe yolu / steam URI</span>
+                    </div>
+                    <div style="display:flex;gap:0.45rem;align-items:center;flex-wrap:wrap;">
+                        <input type="text" id="md-launch-cmd" placeholder='Örn: C:\Games\GTA5\GTA5.exe  •  steam://run/271590  •  /Applications/Game.app  •  python /path/server.py'
+                            style="flex:1;min-width:280px;background:#0a0a0f;border:1px solid rgba(255,255,255,0.1);color:#fff;padding:0.55rem 0.85rem;border-radius:8px;font-size:0.82rem;font-family:'SF Mono','Consolas',monospace;"
+                            onchange="saveLaunchCmd()">
+                        <button class="btn-icon" onclick="pickLaunchFile()" title="Dosya seç" style="background:rgba(255,255,255,0.06);color:#fff;border:1px solid rgba(255,255,255,0.1);padding:0.55rem 0.8rem;font-size:0.78rem;">
+                            <i class="fas fa-folder-open"></i> Gözat
+                        </button>
+                        <button onclick="launchGame()" style="background:linear-gradient(135deg,#00ff9d,#00d9ff);color:#0a0a0f;border:none;padding:0.6rem 1.2rem;border-radius:8px;font-weight:800;font-size:0.85rem;cursor:pointer;display:inline-flex;align-items:center;gap:0.4rem;">
+                            <i class="fas fa-play"></i> Oyunu Başlat
+                        </button>
+                    </div>
+                    <div style="margin-top:0.5rem;display:flex;align-items:center;gap:0.5rem;color:#8b8b9a;font-size:0.7rem;">
+                        <label style="display:flex;align-items:center;gap:0.35rem;cursor:pointer;">
+                            <input type="checkbox" id="md-launch-on-arm" style="cursor:pointer;">
+                            Mod aksiyonlarını başlattığımda oyunu da otomatik aç
+                        </label>
+                    </div>
+                </div>
             </div>
         </div>
 

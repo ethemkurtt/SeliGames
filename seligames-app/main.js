@@ -292,6 +292,77 @@ ipcMain.handle('set-mod-hotkey', async (event, accelerator) => {
 
 ipcMain.handle('get-mod-hotkey', async () => ({ accelerator: _registeredHotkey || 'F8' }));
 
+// ─── Launch a local game / arbitrary command ─────────────────────────────
+// Accepts: full shell command, a single .exe / .app path, or a steam:// URI.
+// Detached + stdio:ignore so the child outlives Electron and we don't leak
+// pipes. Returns {success, pid} so the renderer can confirm visibly.
+const { spawn } = require('child_process');
+function _parseLaunch(input) {
+    const cmd = (input || '').trim();
+    if (!cmd) return null;
+    // 1) steam:// or other URI — open via OS handler
+    if (/^[a-z][a-z0-9+.-]*:\/\//i.test(cmd)) {
+        if (process.platform === 'darwin') return { bin: 'open', args: [cmd] };
+        if (process.platform === 'win32') return { bin: 'cmd', args: ['/c', 'start', '', cmd] };
+        return { bin: 'xdg-open', args: [cmd] };
+    }
+    // 2) macOS .app bundle — must go through `open -a`
+    if (process.platform === 'darwin' && /\.app(\/?)$/.test(cmd)) {
+        return { bin: 'open', args: ['-a', cmd] };
+    }
+    // 3) Windows: a single .exe path (possibly quoted with spaces) — start it
+    if (process.platform === 'win32' && /\.exe"?$/i.test(cmd)) {
+        const clean = cmd.replace(/^"|"$/g, '');
+        return { bin: 'cmd', args: ['/c', 'start', '', clean] };
+    }
+    // 4) Otherwise: treat the whole thing as a shell command. Use the
+    //    platform shell so quotes / args / pipes work as the user typed.
+    if (process.platform === 'win32') return { bin: 'cmd', args: ['/c', cmd], shell: false };
+    return { bin: '/bin/sh', args: ['-c', cmd] };
+}
+
+ipcMain.handle('launch-game', async (event, { command, cwd } = {}) => {
+    try {
+        const parsed = _parseLaunch(command);
+        if (!parsed) return { success: false, error: 'Komut boş' };
+        const opts = {
+            detached: true,
+            stdio: 'ignore',
+            cwd: cwd || undefined,
+            windowsHide: false,
+        };
+        const child = spawn(parsed.bin, parsed.args, opts);
+        if (!child.pid) return { success: false, error: 'spawn pid yok' };
+        child.unref();
+        console.log(`🚀 Launched: ${command} (pid ${child.pid})`);
+        return { success: true, pid: child.pid };
+    } catch (error) {
+        console.error('launch-game failed:', error);
+        return { success: false, error: error.message };
+    }
+});
+
+// Native picker for the launch path — narrower than the generic dialog,
+// shows .exe/.app/.command/.sh and lets user pick a file (not a dir).
+ipcMain.handle('pick-launch-file', async () => {
+    try {
+        const result = await dialog.showOpenDialog(mainWindow, {
+            title: 'Oyun çalıştırılabiliri seç',
+            buttonLabel: 'Seç',
+            properties: ['openFile'],
+            filters: process.platform === 'win32'
+                ? [{ name: 'Çalıştırılabilir', extensions: ['exe', 'bat', 'cmd', 'lnk'] }, { name: 'Tümü', extensions: ['*'] }]
+                : process.platform === 'darwin'
+                    ? [{ name: 'macOS Uygulaması', extensions: ['app', 'command', 'sh'] }, { name: 'Tümü', extensions: ['*'] }]
+                    : [{ name: 'Tümü', extensions: ['*'] }],
+        });
+        if (result.canceled || !result.filePaths?.length) return { success: false };
+        return { success: true, path: result.filePaths[0] };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
 // IPC Handlers
 ipcMain.handle('login', async (event, { email, password }) => {
     try {
