@@ -40,22 +40,23 @@ function LandingPage() {
                         animate={{ opacity: 1, y: 0 }}
                         className="max-w-4xl mx-auto text-center"
                     >
+                        <img src="/app-logo.png" alt="SeliGames" className="mx-auto h-24 sm:h-32 mb-6 drop-shadow-[0_0_24px_rgba(0,255,157,0.45)]" />
                         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-neon-green/10 border border-neon-green/30 text-neon-green text-xs font-bold tracking-wide mb-6">
-                            <Sparkles size={14} /> CANLI YAYIN ETKİLEŞİM PLATFORMU
+                            <Sparkles size={14} /> %100 ÜCRETSİZ • CANLI YAYIN ETKİLEŞİM PLATFORMU
                         </div>
                         <h1 className="font-heading text-5xl sm:text-7xl md:text-8xl font-black leading-[1.05] tracking-tight mb-6">
                             <span className="block">TikTok Live ile</span>
-                            <span className="block text-gaming-gradient">{tagline.split(' ').slice(-3).join(' ')}</span>
+                            <span className="block text-gaming-gradient">Oyunlarını Kontrol Et</span>
                         </h1>
                         <p className="text-lg sm:text-xl text-white/70 max-w-2xl mx-auto mb-8 leading-relaxed">
-                            {heroSubtitle}. Hediye geldiğinde tuşa bas, overlay'i tetikle, oyunu kontrol et — hepsi otomatik.
+                            İzleyicilerinin hediyeleri oyununda gerçek aksiyona dönüşsün. Hediye geldiğinde tuşa bas, overlay'i tetikle, modu çalıştır — hepsi otomatik. Subathon timer, çark, leaderboard, gift designer ve fazlası tek uygulamada.
                         </p>
                         <div className="flex flex-wrap items-center justify-center gap-4">
                             <Link
-                                to="/register"
+                                to="/download"
                                 className="group inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-gaming-gradient text-black font-bold text-base shadow-2xl shadow-neon-green/30 hover:shadow-neon-green/50 hover:scale-105 transition-all"
                             >
-                                Ücretsiz Başla <ArrowRight className="group-hover:translate-x-1 transition-transform" size={18} />
+                                <DownloadIcon size={18} /> Ücretsiz İndir
                             </Link>
                             <Link
                                 to="/features"
@@ -65,12 +66,19 @@ function LandingPage() {
                             </Link>
                         </div>
 
+                        {/* Platform pills */}
+                        <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-xs text-white/50">
+                            <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10">🪟 Windows</span>
+                            <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10">🍎 macOS (Apple Silicon)</span>
+                            <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10">🍎 macOS (Intel)</span>
+                        </div>
+
                         {/* Stats strip */}
                         <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
-                            <Stat label="Aktif Yayıncı" value="2.5K+" />
-                            <Stat label="Desteklenen Oyun" value="10+" />
                             <Stat label="TikTok Hediyesi" value="123" />
-                            <Stat label="Overlay Tipi" value="7" />
+                            <Stat label="Overlay Tipi" value="9" />
+                            <Stat label="Desteklenen OS" value="2" />
+                            <Stat label="Fiyat" value="₺0" />
                         </div>
                     </motion.div>
                 </div>

@@ -9,7 +9,6 @@ const navItems = [
     { to: '/', label: 'Ana Sayfa' },
     { to: '/features', label: 'Özellikler' },
     { to: '/mods', label: 'Modlar' },
-    { to: '/pricing', label: 'Fiyatlandırma' },
     { to: '/download', label: 'İndir' },
 ]
 
@@ -39,11 +38,9 @@ export function Navbar() {
         )}>
             <div className="container mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
                 {/* Brand */}
-                <Link to="/" className="flex items-center gap-2 group">
-                    <div className="w-9 h-9 rounded-lg bg-gaming-gradient flex items-center justify-center font-black text-black text-lg shadow-lg shadow-neon-green/30 group-hover:scale-110 transition-transform">
-                        S
-                    </div>
-                    <span className="font-heading text-xl font-black tracking-widest text-gaming-gradient">SELIGAMES</span>
+                <Link to="/" className="flex items-center gap-2.5 group">
+                    <img src="/web-logo.png" alt="SeliGames" className="h-10 w-auto group-hover:scale-110 transition-transform drop-shadow-[0_0_12px_rgba(0,255,157,0.35)]" />
+                    <span className="font-heading text-xl font-black tracking-widest text-gaming-gradient hidden sm:inline">SELIGAMES</span>
                 </Link>
 
                 {/* Desktop nav */}
@@ -91,7 +88,6 @@ export function Navbar() {
                                     >
                                         <DropItem to="/dashboard" icon={<UserIcon size={16} />}>Dashboard</DropItem>
                                         <DropItem to="/profile" icon={<UserIcon size={16} />}>Profil</DropItem>
-                                        <DropItem to="/subscription" icon={<Shield size={16} />}>Abonelik</DropItem>
                                         <DropItem to="/download" icon={<Download size={16} />}>İndirme</DropItem>
                                         {isAdmin && (
                                             <>
@@ -162,7 +158,6 @@ export function Navbar() {
                                 <>
                                     <Link to="/dashboard" className="px-4 py-3 rounded-lg text-base font-semibold hover:bg-white/5">Dashboard</Link>
                                     <Link to="/profile" className="px-4 py-3 rounded-lg text-base font-semibold hover:bg-white/5">Profil</Link>
-                                    <Link to="/subscription" className="px-4 py-3 rounded-lg text-base font-semibold hover:bg-white/5">Abonelik</Link>
                                     {isAdmin && <Link to="/admin" className="px-4 py-3 rounded-lg text-base font-semibold text-neon-purple hover:bg-neon-purple/10">Admin Paneli</Link>}
                                     <button
                                         onClick={() => { logout(); navigate({ to: '/' }) }}
