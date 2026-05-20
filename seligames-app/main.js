@@ -1205,42 +1205,12 @@ ipcMain.handle('install-mod', async (event, modId, installPath) => {
             }
         }
 
-        // 4. Write seligames-config.json — mod info + user gift-action map +
-        //    forensic watermark so leaked configs trace back to source.
-        sendProgress({ phase: 'config', percentage: 96 });
-        if (installPath) {
-            try {
-                if (!fs.existsSync(installPath)) fs.mkdirSync(installPath, { recursive: true });
-                const configFile = path.join(installPath, 'seligames-config.json');
-                const content = {
-                    mod: {
-                        id: mod._id,
-                        title: mod.title,
-                        gameTitle: mod.gameTitle,
-                        version: mod.version,
-                        category: mod.category
-                    },
-                    giftActions: userConfig.giftActions || {},
-                    installedAt: new Date().toISOString(),
-                    archiveDownloaded,
-                    archiveError,
-                    archiveBytes,
-                    extracted,
-                    extractedFiles,
-                    extractError,
-                    _watermark: {
-                        backend: BACKEND_URL,
-                        machineHostname: require('os').hostname(),
-                    }
-                };
-                fs.writeFileSync(configFile, JSON.stringify(content, null, 2), 'utf-8');
-                console.log(`✓ Config written: ${configFile}`);
-            } catch (fsErr) {
-                console.warn(`⚠️ Config write failed: ${fsErr.message}`);
-            }
-        }
+        // (Removed: seligames-config.json side-car write. Gift-action mappings
+        //  already live in the backend per-user config; nothing on this client
+        //  reads the file at runtime. Keystroke dispatch fires straight from
+        //  the in-memory armedGiftIndex built by armModActions().)
 
-        // 5. Mark installed in backend
+        // Mark installed in backend
         sendProgress({ phase: 'finalize', percentage: 99 });
         const response = await axios.post(`${BACKEND_URL}/api/mods/${modId}/install`,
             { installPath },
