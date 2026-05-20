@@ -23,11 +23,17 @@ const categories = [
 // Resolve a possibly-relative imageUrl ("/uploads/mod-images/...") against
 // the backend so img tags actually load. External https:// URLs unchanged.
 const API_BASE = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000'
-function resolveImg(url?: string) {
+function resolveImg(url?: string, bust?: string | number) {
     if (!url) return ''
-    if (/^https?:\/\//i.test(url)) return url
-    if (url.startsWith('/')) return `${API_BASE}${url}`
-    return ''
+    let full = url
+    if (!/^https?:\/\//i.test(url)) {
+        full = url.startsWith('/') ? `${API_BASE}${url}` : ''
+    }
+    if (full && bust) {
+        const b = typeof bust === 'string' ? new Date(bust).getTime() : bust
+        if (b) full += (full.includes('?') ? '&' : '?') + 't=' + b
+    }
+    return full
 }
 
 function ModsPage() {
@@ -120,7 +126,7 @@ function ModsPage() {
                 ) : (
                     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
                         {filtered.map((m, i) => {
-                            const img = resolveImg(m.imageUrl)
+                            const img = resolveImg(m.imageUrl, m.updatedAt)
                             const giftCount = m.config?.giftActions ? Object.keys(m.config.giftActions).length : 0
                             return (
                                 <motion.div

@@ -13,11 +13,19 @@ const empty = { title: '', gameTitle: '', description: '', category: 'open-world
 // against the backend so img tags actually render. External https:// URLs
 // pass through unchanged.
 const API_BASE = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000'
-function resolveImg(url?: string) {
+// Optional `bust` (e.g. mod.updatedAt or Date.now()) tacks a ?t= query so
+// the browser refetches when backend overwrites the same path.
+function resolveImg(url?: string, bust?: string | number) {
     if (!url) return ''
-    if (/^https?:\/\//i.test(url)) return url
-    if (url.startsWith('/')) return `${API_BASE}${url}`
-    return url
+    let full = url
+    if (!/^https?:\/\//i.test(url)) {
+        full = url.startsWith('/') ? `${API_BASE}${url}` : url
+    }
+    if (bust) {
+        const b = typeof bust === 'string' ? new Date(bust).getTime() : bust
+        if (b) full += (full.includes('?') ? '&' : '?') + 't=' + b
+    }
+    return full
 }
 
 function humanBytes(b: number) {
@@ -85,7 +93,7 @@ function ModsAdmin() {
                         <div key={m._id} className="rounded-xl bg-card border border-white/10 overflow-hidden hover:border-neon-purple/40 transition-all">
                             <div className="aspect-video bg-gradient-to-br from-white/5 to-black/30 relative overflow-hidden">
                                 {m.imageUrl
-                                    ? <img src={resolveImg(m.imageUrl)} className="w-full h-full object-cover" />
+                                    ? <img src={resolveImg(m.imageUrl, m.updatedAt)} className="w-full h-full object-cover" />
                                     : <div className="w-full h-full flex items-center justify-center text-white/20"><ImageIcon size={32} /></div>}
                                 {!m.isActive && <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-xs font-black tracking-widest text-red-400">PASİF</div>}
                             </div>
@@ -173,8 +181,14 @@ function ImageWidget({ mod, onUploaded, onUrlChange }: { mod: any; onUploaded: (
     const inputRef = useRef<HTMLInputElement>(null)
     const [busy, setBusy] = useState(false)
     const [err, setErr] = useState('')
+    // Cache-busting tick. Backend overwrites the same path on every upload,
+    // so the browser would happily serve the stale image otherwise.
+    const [bust, setBust] = useState(0)
     const hasId = !!mod._id
-    const preview = mod.imageUrl ? resolveImg(mod.imageUrl) : ''
+    const previewBase = mod.imageUrl ? resolveImg(mod.imageUrl) : ''
+    const preview = previewBase
+        ? previewBase + (bust ? (previewBase.includes('?') ? '&' : '?') + 't=' + bust : '')
+        : ''
 
     async function pick(e: React.ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0]
@@ -199,7 +213,10 @@ function ImageWidget({ mod, onUploaded, onUrlChange }: { mod: any; onUploaded: (
                 timeout: 5 * 60 * 1000,
             })
             const url = res.data?.mod?.imageUrl
-            if (url) onUploaded(url)
+            if (url) {
+                onUploaded(url)
+                setBust(Date.now())  // force the <img> to refetch
+            }
         } catch (e: any) {
             setErr(e.response?.data?.error || e.message)
             setTimeout(() => setErr(''), 4000)
