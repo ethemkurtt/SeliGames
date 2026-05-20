@@ -359,8 +359,11 @@ function _parseLaunch(input) {
     if (process.platform === 'darwin' && /\.app(\/?)$/.test(cmd)) {
         return { bin: 'open', args: ['-a', cmd] };
     }
-    // 3) Windows: a single .exe path (possibly quoted with spaces) — start it
-    if (process.platform === 'win32' && /\.exe"?$/i.test(cmd)) {
+    // 3) Windows: a single .exe / .bat / .cmd / .lnk path (possibly quoted with
+    //    spaces) — wrap in `cmd /c start "" "<path>"`. This opens the target
+    //    in its own console session, so a long-running server-style .bat
+    //    (Beyblade, Harita 2.1) keeps running after SeliGames quits.
+    if (process.platform === 'win32' && /\.(exe|bat|cmd|lnk)"?$/i.test(cmd)) {
         const clean = cmd.replace(/^"|"$/g, '');
         return { bin: 'cmd', args: ['/c', 'start', '', clean] };
     }
