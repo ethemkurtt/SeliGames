@@ -1400,7 +1400,10 @@ async function armModActions() {
             const actions = m.config?.giftActions || {};
             for (const [giftName, action] of Object.entries(actions)) {
                 if (!action || !action.value) continue;
-                const key = giftName.toLocaleLowerCase('tr-TR');
+                // Normalize gift name: trim + Turkish lowercase. Without trim,
+                // ' Gül ' from TikTok payload would never match a saved 'Gül' key.
+                const key = giftName.trim().toLocaleLowerCase('tr-TR');
+                if (!key) continue;
                 if (!armedGiftIndex.has(key)) armedGiftIndex.set(key, []);
                 armedGiftIndex.get(key).push({ modTitle: m.title, modId: m._id, giftName, action });
                 total++;
@@ -1525,7 +1528,9 @@ document.addEventListener('DOMContentLoaded', () => {
 //     register each as a discrete tap.
 async function dispatchModActions(giftName, repeatCount = 1) {
     if (!modActionsArmed || !giftName) return;
-    const entries = armedGiftIndex.get(giftName.toLocaleLowerCase('tr-TR'));
+    // Match normalization mirrors armModActions().
+    const key = String(giftName).trim().toLocaleLowerCase('tr-TR');
+    const entries = armedGiftIndex.get(key);
     if (!entries || !entries.length) return;
     const fires = Math.max(1, Math.min(20, Number(repeatCount) || 1));
     for (const { modTitle, action } of entries) {
@@ -1872,12 +1877,30 @@ function renderModGiftActions() {
                         data-name="${escapeHtml(g.name)}"
                         onclick="startShortcutCapture(this, '${escapeHtml(g.name).replace(/'/g, "\\'")}')"
                     >
+                    <button class="md-gift-btn ${hasAction ? 'md-gift-btn-test' : ''}" onclick="testGiftAction('${escapeHtml(g.name).replace(/'/g, "\\'")}')" title="Bu aksiyonu hemen test et" ${hasAction ? '' : 'disabled style="opacity:0.3;cursor:not-allowed;"'}>
+                        <i class="fas fa-bolt"></i>
+                    </button>
                     <button class="md-gift-btn" onclick="clearGiftAction('${escapeHtml(g.name).replace(/'/g, "\\'")}')" title="Temizle">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
             </div>`;
     }).join('');
+}
+
+// Test a single gift's mapped action without needing a live TikTok event.
+// Useful to verify a key actually reaches the foreground app (e.g. open
+// Notepad, set the gift to "h", click test → see "h" appear).
+async function testGiftAction(giftName) {
+    const action = currentModConfig?.giftActions?.[giftName];
+    if (!action || !action.value) { showToast?.('Bu hediyeye atanmış aksiyon yok', true); return; }
+    try {
+        const res = await window.api.executeAction(action);
+        if (res?.success) showToast?.(`🎮 Test: "${giftName}" → ${action.type}:${action.value}`);
+        else showToast?.(`❌ Test başarısız: ${res?.error || 'bilinmeyen'}`, true);
+    } catch (e) {
+        showToast?.('Test hatası: ' + e.message, true);
+    }
 }
 
 function startShortcutCapture(input, giftName) {

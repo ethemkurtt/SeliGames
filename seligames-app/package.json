@@ -1,22 +1,27 @@
 {
-  "name": "tiktok-websocket-monitor",
+  "name": "seligames",
   "version": "1.0.0",
-  "description": "TikTok Live WebSocket frame monitoring with Electron CDP",
+  "description": "SeliGames — TikTok Live overlay & game-mod platform",
   "main": "main.js",
+  "author": "Ethem Kurt",
+  "license": "MIT",
   "scripts": {
     "start": "electron .",
-    "dev": "electron . --dev"
+    "dev": "electron . --dev",
+    "dist": "electron-builder",
+    "dist:mac": "electron-builder --mac",
+    "dist:win": "electron-builder --win",
+    "dist:linux": "electron-builder --linux"
   },
   "keywords": [
     "electron",
     "tiktok",
-    "websocket",
-    "cdp"
+    "seligames",
+    "overlay"
   ],
-  "author": "",
-  "license": "MIT",
   "devDependencies": {
-    "electron": "^28.0.0"
+    "electron": "^28.0.0",
+    "electron-builder": "^25.1.8"
   },
   "dependencies": {
     "axios": "^1.13.2",
@@ -25,6 +30,79 @@
     "pako": "^2.1.0",
     "protobufjs": "^8.0.0",
     "socket.io-client": "^4.8.3",
-    "tiktok-live-connector": "^2.1.1-beta1"
+    "tiktok-live-connector": "^2.1.1-beta1",
+    "yauzl": "^3.3.0"
+  },
+  "build": {
+    "appId": "com.seligames.app",
+    "productName": "SeliGames",
+    "copyright": "© 2026 SeliGames",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer.js",
+      "index.html",
+      "config.default.json",
+      "node_modules/**/*",
+      "!**/*.{md,log,markdown}",
+      "!**/.DS_Store",
+      "!**/test/**",
+      "!**/tests/**",
+      "!**/.git/**",
+      "!**/*.map"
+    ],
+    "extraResources": [
+      {
+        "from": "config.default.json",
+        "to": "config.default.json"
+      }
+    ],
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "category": "public.app-category.games",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "identity": null
+    },
+    "dmg": {
+      "title": "SeliGames ${version}",
+      "writeUpdateInfo": false
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "publisherName": "SeliGames"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "SeliGames"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Game"
+    }
   }
 }

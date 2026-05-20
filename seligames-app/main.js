@@ -19,15 +19,53 @@ const { io: ioClient } = require('socket.io-client');
 //   Windows → PowerShell SendKeys, no extra setup
 // ────────────────────────────────────────────────────────────────────────
 
+// Parse a shortcut spec into modifiers + key.
+//   "F2"          → { mods: [],          key: "F2"  }
+//   "Shift+F2"    → { mods: ["shift"],   key: "F2"  }
+//   "Ctrl+Shift+A"→ { mods: ["ctrl","shift"], key: "A" }
+//   "+ö"          → { mods: ["shift"],   key: "ö"   }  (Tikfinity-style notation)
+//   "++"          → { mods: ["shift"],   key: "+"   }
 function parseShortcut(value) {
-    const parts = String(value).split('+').map((p) => p.trim()).filter(Boolean);
+    let raw = String(value || '').trim();
+    if (!raw) return { modifiers: [], key: '' };
+
+    // Tikfinity-style leading "+" means Shift modifier. Strip it and prepend
+    // an explicit Shift token so the regular split-by-+ logic still works.
+    if (raw.startsWith('+') && raw.length > 1) {
+        raw = 'shift+' + raw.slice(1);
+    }
+
+    // Split, but preserve a trailing "+" key (special case: shortcut for the
+    // literal + key). "Shift++" → modifiers=[shift], key=+
+    if (/\+$/.test(raw)) {
+        const head = raw.slice(0, -1);
+        const headParts = head.split('+').map((p) => p.trim()).filter(Boolean);
+        return {
+            modifiers: headParts.map((m) => m.toLowerCase()),
+            key: '+',
+        };
+    }
+
+    const parts = raw.split('+').map((p) => p.trim()).filter(Boolean);
     if (!parts.length) return { modifiers: [], key: '' };
     const key = parts[parts.length - 1];
     const modifiers = parts.slice(0, -1).map((m) => m.toLowerCase());
     return { modifiers, key };
 }
 
-function escShell(s) { return String(s).replace(/"/g, '\\"'); }
+// Escape for AppleScript double-quoted strings.
+//   "    → \"
+//   \    → \\   (without this, a single \ kills the script)
+function escShell(s) { return String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"'); }
+
+// SendKeys special chars must be wrapped in {} when used as a literal key.
+// Otherwise + is interpreted as Shift, % as Alt, etc.
+const SENDKEYS_SPECIAL = new Set(['+', '^', '%', '~', '(', ')', '{', '}', '[', ']']);
+function sendKeysEscapeKey(k) {
+    if (k.length === 1 && SENDKEYS_SPECIAL.has(k)) return `{${k}}`;
+    if (k.length === 1) return k;
+    return `{${k.toUpperCase()}}`;
+}
 
 function macKeyCode(key) {
     // Map common names to AppleScript key codes or the char itself
@@ -78,7 +116,7 @@ async function executeKeyboard(value) {
     if (process.platform === 'win32') {
         const mm = { ctrl: '^', alt: '%', shift: '+' };
         const prefix = modifiers.map((m) => mm[m] || '').join('');
-        const k = key.length === 1 ? key : `{${key.toUpperCase()}}`;
+        const k = sendKeysEscapeKey(key);
         const sendKeys = prefix + k;
         const script = `Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait('${sendKeys.replace(/'/g, "''")}')`;
         return execSim('powershell.exe', ['-NoProfile', '-Command', script]);
@@ -133,22 +171,33 @@ let currentSessionId = null;
 // over config.default.json (committed). Renderer reads the same config via
 // `window.api.getAppConfig()` so all URLs match.
 function loadAppConfig() {
-    const tryPaths = [
+    // Look in both the dev/asar location (__dirname) AND the packaged
+    // extraResources directory (process.resourcesPath). Without the latter,
+    // packaged builds silently fell back to the hardcoded URLs below and
+    // pointed at localhost — symptom was ECONNREFUSED ::1:3000 on launch.
+    const candidates = [
         path.join(__dirname, 'config.json'),
         path.join(__dirname, 'config.default.json'),
     ];
-    for (const p of tryPaths) {
+    if (process.resourcesPath) {
+        candidates.push(path.join(process.resourcesPath, 'config.json'));
+        candidates.push(path.join(process.resourcesPath, 'config.default.json'));
+    }
+    for (const p of candidates) {
         try {
             if (fs.existsSync(p)) {
                 const parsed = JSON.parse(fs.readFileSync(p, 'utf-8'));
-                console.log(`📦 Loaded config from ${path.basename(p)}: backend=${parsed.backendUrl} web=${parsed.webUrl}`);
+                console.log(`📦 Loaded config from ${p}: backend=${parsed.backendUrl} web=${parsed.webUrl}`);
                 return parsed;
             }
         } catch (e) {
             console.warn(`Failed to read ${p}: ${e.message}`);
         }
     }
-    return { backendUrl: 'http://localhost:3000', webUrl: 'http://localhost:5173' };
+    // Defensive baseline → prod VPS, not localhost. If every config file is
+    // missing the app still works against production instead of breaking.
+    console.warn('⚠️  No config file found — using built-in prod baseline');
+    return { backendUrl: 'http://187.124.29.94:3000', webUrl: 'http://187.124.29.94:5173' };
 }
 
 const APP_CONFIG = loadAppConfig();
