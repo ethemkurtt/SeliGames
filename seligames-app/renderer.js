@@ -1341,6 +1341,22 @@ if (token && user) {
     });
 }
 
+// Stale/expired tokens cause the backend socket to fail auth and silently
+// drop all forwarded events. Catch that case and bounce back to login so the
+// user gets a fresh token without confusion ("eventler gelmiyor" symptom).
+if (window.api?.onBackendAuthError) {
+    window.api.onBackendAuthError((data) => {
+        console.warn('🔐 Backend auth failed — clearing token & forcing re-login:', data?.error);
+        try { localStorage.removeItem('token'); localStorage.removeItem('user'); } catch {}
+        try { appContainer.classList.remove('active'); loginOverlay.classList.remove('hidden'); } catch {}
+        if (typeof showToast === 'function') {
+            showToast('Oturum süresi doldu — lütfen tekrar giriş yap', true);
+        } else {
+            alert('Oturum süresi doldu. Lütfen tekrar giriş yapın.');
+        }
+    });
+}
+
 // Toggle Sidebar
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');

@@ -170,6 +170,14 @@ function connectToBackendSocket(token) {
 
     backendSocket.on('auth-error', (data) => {
         console.error('🔐 Backend auth error:', data.error);
+        // Surface to renderer so it can clear stale token + force re-login.
+        // Without this, the socket lives on without socket.userId and the
+        // server silently drops every tiktok-event we forward.
+        if (mainWindow) {
+            mainWindow.webContents.send('backend-auth-error', { error: data.error });
+        }
+        try { backendSocket?.disconnect(); } catch {}
+        backendSocket = null;
     });
 
     backendSocket.on('event-processed', (data) => {

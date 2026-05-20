@@ -45,6 +45,7 @@ contextBridge.exposeInMainWorld('api', {
     startLiveSession: () => ipcRenderer.invoke('start-live-session'),
     getBackendSocketStatus: () => ipcRenderer.invoke('get-backend-socket-status'),
     onBackendSocketStatus: (callback) => ipcRenderer.on('backend-socket-status', (event, data) => callback(data)),
+    onBackendAuthError: (callback) => ipcRenderer.on('backend-auth-error', (event, data) => callback(data)),
     onEventProcessed: (callback) => ipcRenderer.on('event-processed', (event, data) => callback(data)),
 
     // Event API
