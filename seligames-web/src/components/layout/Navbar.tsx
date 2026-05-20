@@ -38,9 +38,8 @@ export function Navbar() {
         )}>
             <div className="container mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
                 {/* Brand */}
-                <Link to="/" className="flex items-center gap-2.5 group">
-                    <img src="/web-logo.png" alt="SeliGames" className="h-10 w-auto group-hover:scale-110 transition-transform drop-shadow-[0_0_12px_rgba(0,255,157,0.35)]" />
-                    <span className="font-heading text-xl font-black tracking-widest text-gaming-gradient hidden sm:inline">SELIGAMES</span>
+                <Link to="/" className="flex items-center group">
+                    <img src="/app-logo.png" alt="SeliGames" className="h-12 sm:h-14 w-auto group-hover:scale-105 transition-transform drop-shadow-[0_0_14px_rgba(0,255,157,0.35)]" />
                 </Link>
 
                 {/* Desktop nav */}

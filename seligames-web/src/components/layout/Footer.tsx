@@ -7,10 +7,7 @@ export function Footer() {
             <div className="container mx-auto px-4 sm:px-6 py-12 grid gap-10 md:grid-cols-4">
                 {/* Brand */}
                 <div className="md:col-span-1">
-                    <div className="flex items-center gap-2 mb-3">
-                        <div className="w-8 h-8 rounded-lg bg-gaming-gradient flex items-center justify-center font-black text-black">S</div>
-                        <span className="font-heading text-lg font-black tracking-widest text-gaming-gradient">SELIGAMES</span>
-                    </div>
+                    <img src="/app-logo.png" alt="SeliGames" className="h-10 w-auto mb-3 drop-shadow-[0_0_10px_rgba(0,255,157,0.3)]" />
                     <p className="text-sm text-white/60 leading-relaxed">
                         TikTok Live ile oyunlarını izleyicilerinin kontrolüne aç. Her hediye bir aksiyon.
                     </p>
@@ -19,7 +16,6 @@ export function Footer() {
                 {/* Links */}
                 <FooterCol title="Ürün">
                     <FooterLink to="/features">Özellikler</FooterLink>
-                    <FooterLink to="/pricing">Fiyatlandırma</FooterLink>
                     <FooterLink to="/mods">Modlar</FooterLink>
                     <FooterLink to="/download">İndir</FooterLink>
                 </FooterCol>
