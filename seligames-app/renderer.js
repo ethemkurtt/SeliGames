@@ -2818,37 +2818,81 @@ function handleTikTokEvent(msg) {
         liveStats.gifts++;
         liveStats.actions++;
 
-        // Eulerstream's WebcastGiftMessage payload shape changes between
-        // protocol versions — gift identity can land on any of these fields.
-        // Resolve aggressively, then fall back to the catalog by giftId so
-        // we never end up dispatching the literal string "Hediye" to the
-        // mod-action index (which would silently miss every mapping).
+        // ── Debug: dump raw payload once per session so we can lock down
+        //    the right field paths for this Eulerstream protocol version.
+        //    `window.DEBUG_GIFT = true` (set in DevTools) to log every gift.
+        if (window.DEBUG_GIFT || !window._giftSampleLogged) {
+            try { console.log('[GIFT PAYLOAD]', JSON.stringify(eventData, null, 2)); } catch {}
+            window._giftSampleLogged = true;
+        }
+
+        // Recursive scan: walk the payload and return the first plausible
+        // gift name / icon URL we find at any depth. Eulerstream's frames
+        // shuffle naming across versions (gift, gift_details, giftDetails,
+        // describe, content, etc.) — a fixed cascade keeps missing one.
+        function scanGift(obj, depth = 0) {
+            if (!obj || typeof obj !== 'object' || depth > 5) return { name: '', icon: '' };
+            const out = { name: '', icon: '' };
+            const nameKeys = ['giftName', 'name', 'gift_name', 'displayName', 'display_name', 'describe', 'gift_describe'];
+            const iconKeys = ['giftPictureUrl', 'icon', 'iconUrl', 'icon_url', 'image_url'];
+            for (const k of nameKeys) {
+                const v = obj[k];
+                if (typeof v === 'string' && v.length > 0 && v.length < 80 && !/^https?:/i.test(v)) {
+                    out.name = v; break;
+                }
+            }
+            for (const k of iconKeys) {
+                const v = obj[k];
+                if (typeof v === 'string' && /^https?:\/\//i.test(v)) { out.icon = v; break; }
+                if (v && typeof v === 'object') {
+                    const urlList = v.url_list || v.urlList;
+                    if (Array.isArray(urlList) && urlList[0]) { out.icon = urlList[0]; break; }
+                    if (typeof v.uri === 'string' && /^https?:/i.test(v.uri)) { out.icon = v.uri; break; }
+                }
+            }
+            if (out.name && out.icon) return out;
+            // Recurse into nested objects/arrays
+            for (const k of Object.keys(obj)) {
+                const v = obj[k];
+                if (v && typeof v === 'object') {
+                    const child = scanGift(v, depth + 1);
+                    if (!out.name && child.name) out.name = child.name;
+                    if (!out.icon && child.icon) out.icon = child.icon;
+                    if (out.name && out.icon) break;
+                }
+            }
+            return out;
+        }
+
         const giftId = eventData?.giftId
             ?? eventData?.gift?.id
             ?? eventData?.gift?.gift_id
             ?? eventData?.gift_details?.gift_id
+            ?? eventData?.gift_details?.giftId
             ?? null;
-        let giftName = eventData?.giftName
-            || eventData?.gift?.name
-            || eventData?.giftDetails?.name
-            || eventData?.gift_details?.name
-            || eventData?.gift?.gift_name
-            || '';
-        let giftIcon = eventData?.gift?.image?.url_list?.[0]
-            || eventData?.gift?.icon
-            || eventData?.giftDetails?.icon
-            || eventData?.gift_details?.icon_url
-            || '';
-        // Catalog fallback by ID (gift names sometimes ship missing from
-        // older WS frames; the public gift catalog has the canonical name).
-        if ((!giftName || giftName === 'Hediye') && giftId != null && Array.isArray(giftCatalogCache)) {
-            const hit = giftCatalogCache.find((g) => String(g.id) === String(giftId) || String(g.giftId) === String(giftId));
+        const scanned = scanGift(eventData);
+        let giftName = scanned.name;
+        let giftIcon = scanned.icon;
+
+        // Catalog fallback. Match by ID first, then by name (in case
+        // payload has the name as-is but we want the canonical icon).
+        if (Array.isArray(giftCatalogCache) && giftCatalogCache.length) {
+            let hit = null;
+            if (giftId != null) {
+                hit = giftCatalogCache.find((g) =>
+                    String(g.id ?? '') === String(giftId)
+                    || String(g.giftId ?? '') === String(giftId)
+                );
+            }
+            if (!hit && giftName) {
+                const lower = giftName.trim().toLocaleLowerCase('tr-TR');
+                hit = giftCatalogCache.find((g) => String(g.name || '').toLocaleLowerCase('tr-TR') === lower);
+            }
             if (hit) {
-                giftName = hit.name || giftName;
+                giftName = giftName || hit.name || '';
                 giftIcon = giftIcon || hit.icon || hit.iconUrl || '';
             }
         }
-        // Last-ditch fallback so the UI shows something readable.
         if (!giftName) giftName = giftId ? `Hediye #${giftId}` : 'Hediye';
 
         const giftCount = eventData?.repeatCount || eventData?.count || 1;
