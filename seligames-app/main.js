@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, globalShortcut } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { execFile } = require('child_process');
@@ -243,17 +243,54 @@ function createWindow() {
     mainWindow.loadFile('index.html');
 }
 
+// ─── Global hotkey: arm/disarm mod actions without bringing app to focus ─
+// Default F8. Loaded from config.json (`modToggleHotkey`) so the user can
+// override per machine. Renderer toggles via 'hotkey-toggle-mods' ipc.
+let _registeredHotkey = null;
+function registerModHotkey(accelerator) {
+    if (_registeredHotkey) {
+        try { globalShortcut.unregister(_registeredHotkey); } catch {}
+        _registeredHotkey = null;
+    }
+    const acc = accelerator || APP_CONFIG.modToggleHotkey || 'F8';
+    try {
+        const ok = globalShortcut.register(acc, () => {
+            if (mainWindow) mainWindow.webContents.send('hotkey-toggle-mods');
+        });
+        if (ok) {
+            _registeredHotkey = acc;
+            console.log(`⌨️  Global hotkey registered: ${acc} (toggle mod actions)`);
+        } else {
+            console.warn(`⌨️  Failed to register hotkey ${acc} — may be taken by another app`);
+        }
+    } catch (e) {
+        console.warn(`⌨️  Hotkey error: ${e.message}`);
+    }
+}
+
 app.whenReady().then(() => {
     createWindow();
+    registerModHotkey();
 
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) createWindow();
     });
 });
 
+app.on('will-quit', () => {
+    try { globalShortcut.unregisterAll(); } catch {}
+});
+
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
 });
+
+ipcMain.handle('set-mod-hotkey', async (event, accelerator) => {
+    registerModHotkey(accelerator);
+    return { success: !!_registeredHotkey, accelerator: _registeredHotkey };
+});
+
+ipcMain.handle('get-mod-hotkey', async () => ({ accelerator: _registeredHotkey || 'F8' }));
 
 // IPC Handlers
 ipcMain.handle('login', async (event, { email, password }) => {

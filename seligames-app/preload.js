@@ -46,6 +46,9 @@ contextBridge.exposeInMainWorld('api', {
     getBackendSocketStatus: () => ipcRenderer.invoke('get-backend-socket-status'),
     onBackendSocketStatus: (callback) => ipcRenderer.on('backend-socket-status', (event, data) => callback(data)),
     onBackendAuthError: (callback) => ipcRenderer.on('backend-auth-error', (event, data) => callback(data)),
+    onHotkeyToggleMods: (callback) => ipcRenderer.on('hotkey-toggle-mods', () => callback()),
+    setModHotkey: (acc) => ipcRenderer.invoke('set-mod-hotkey', acc),
+    getModHotkey: () => ipcRenderer.invoke('get-mod-hotkey'),
     onEventProcessed: (callback) => ipcRenderer.on('event-processed', (event, data) => callback(data)),
 
     // Event API

@@ -3649,6 +3649,24 @@
                             <i class="fas fa-play-circle"></i> Mod Aksiyonlarını Başlat
                         </button>
                     </div>
+                    <!-- Global hotkey row -->
+                    <div style="margin-top:0.75rem;padding:0.6rem 0.85rem;background:rgba(189,0,255,0.05);border:1px solid rgba(189,0,255,0.18);border-radius:8px;display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+                        <span style="color:#bd00ff;font-size:0.78rem;font-weight:700;display:flex;align-items:center;gap:0.4rem;">
+                            <i class="fas fa-keyboard"></i> Global Hotkey
+                        </span>
+                        <input type="text" id="mod-hotkey-input" value="F8" readonly
+                            onkeydown="captureModHotkey(event)" onclick="this.select()"
+                            style="background:#0a0a0f;border:1px solid rgba(189,0,255,0.3);color:#fff;padding:0.4rem 0.7rem;border-radius:6px;font-size:0.82rem;font-weight:700;width:140px;text-align:center;cursor:pointer;"
+                            title="Tuşa odaklan ve istediğin tuş kombinasyonuna bas">
+                        <button onclick="saveModHotkey()" style="background:rgba(189,0,255,0.15);color:#bd00ff;border:1px solid rgba(189,0,255,0.3);padding:0.4rem 0.85rem;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;">Kaydet</button>
+                        <span style="color:#8b8b9a;font-size:0.7rem;flex:1;min-width:200px;">
+                            Uygulama arka planda olsa bile bu tuş mod aksiyonlarını <b>başlat/durdur</b> eder.
+                        </span>
+                    </div>
+                    <!-- Background-delivery warning -->
+                    <div style="margin-top:0.5rem;padding:0.55rem 0.8rem;background:rgba(255,200,0,0.05);border:1px solid rgba(255,200,0,0.15);border-radius:8px;color:#ffd000;font-size:0.72rem;line-height:1.5;">
+                        <i class="fas fa-exclamation-triangle"></i> <b>Önemli:</b> Tuşlar yalnızca <u>o anda odakta olan pencereye</u> gönderilir. Yayın boyunca oyun penceresi önde olmalı — Alt+Tab ile arkaya alırsan tuşlar başka uygulamaya iletilir.
+                    </div>
                     <div style="margin-top:0.75rem;">
                         <div style="color:#8b8b9a;font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:0.35rem;">
                             <i class="fas fa-bolt"></i> Son Fire Edilen Aksiyonlar

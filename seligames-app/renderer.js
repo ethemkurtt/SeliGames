@@ -1450,6 +1450,60 @@ async function toggleModActions() {
     else await armModActions();
 }
 
+// ─── Global hotkey wiring ────────────────────────────────────────────────
+// Captures key combo into the input and saves it via main.js globalShortcut.
+function captureModHotkey(e) {
+    e.preventDefault();
+    const parts = [];
+    if (e.ctrlKey) parts.push('Ctrl');
+    if (e.altKey) parts.push('Alt');
+    if (e.shiftKey) parts.push('Shift');
+    if (e.metaKey) parts.push(process.platform === 'darwin' ? 'Cmd' : 'Super');
+    // Ignore pure modifier key events — wait for an actual key.
+    const k = e.key;
+    if (['Control', 'Alt', 'Shift', 'Meta'].includes(k)) return;
+    let key = k.length === 1 ? k.toUpperCase() : k;
+    // Special-case function keys / common names so Electron accepts them.
+    if (/^F\d{1,2}$/i.test(key)) key = key.toUpperCase();
+    parts.push(key);
+    const accel = parts.join('+');
+    const input = document.getElementById('mod-hotkey-input');
+    if (input) input.value = accel;
+}
+
+async function saveModHotkey() {
+    const input = document.getElementById('mod-hotkey-input');
+    if (!input || !window.api?.setModHotkey) return;
+    const accel = (input.value || '').trim();
+    if (!accel) return;
+    const res = await window.api.setModHotkey(accel);
+    if (res?.success) {
+        try { localStorage.setItem('modToggleHotkey', accel); } catch {}
+        showToast?.(`⌨️ Hotkey kaydedildi: ${accel}`);
+    } else {
+        showToast?.('Bu hotkey kaydedilemedi (başka uygulama kullanıyor olabilir)', true);
+    }
+}
+
+// Listen for the global hotkey firing from main.js, toggle arm/disarm.
+if (window.api?.onHotkeyToggleMods) {
+    window.api.onHotkeyToggleMods(() => {
+        toggleModActions();
+    });
+}
+
+// Restore saved hotkey on load
+document.addEventListener('DOMContentLoaded', () => {
+    try {
+        const saved = localStorage.getItem('modToggleHotkey');
+        if (saved) {
+            const input = document.getElementById('mod-hotkey-input');
+            if (input) input.value = saved;
+            window.api?.setModHotkey?.(saved);
+        }
+    } catch {}
+});
+
 // Called from handleTikTokEvent on every event — fires any matching mod actions.
 //   - repeatCount honored: 10 gül birden = 10 keystroke (capped to 20 to
 //     protect against rapid-fire spam locking up the OS).
