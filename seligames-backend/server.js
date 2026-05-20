@@ -36,6 +36,15 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(bodyParser.json());
 
+// Serve uploaded mod cover images. Path matches what /api/mods/:id/image
+// writes to Mod.imageUrl: "/uploads/mod-images/<modId>.<ext>".
+const path = require('path');
+const MOD_IMAGES_DIR = process.env.MOD_IMAGES_DIR || '/var/seligames/mod-images';
+app.use('/uploads/mod-images', require('express').static(MOD_IMAGES_DIR, {
+    maxAge: '1d',
+    fallthrough: true,
+}));
+
 app.set('io', io);
 
 app.use('/api/auth', authRoutes);

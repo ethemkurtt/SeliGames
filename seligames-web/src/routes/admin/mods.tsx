@@ -9,6 +9,17 @@ export const Route = createFileRoute('/admin/mods')({
 
 const empty = { title: '', gameTitle: '', description: '', category: 'open-world', version: '1.0.0', imageUrl: '', downloadUrl: '', isActive: true, tags: [] as string[] }
 
+// Resolve a possibly-relative imageUrl (e.g. "/uploads/mod-images/xxx.png")
+// against the backend so img tags actually render. External https:// URLs
+// pass through unchanged.
+const API_BASE = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000'
+function resolveImg(url?: string) {
+    if (!url) return ''
+    if (/^https?:\/\//i.test(url)) return url
+    if (url.startsWith('/')) return `${API_BASE}${url}`
+    return url
+}
+
 function humanBytes(b: number) {
     if (!b || b < 0) return '0 B'
     const units = ['B', 'KB', 'MB', 'GB']
@@ -62,7 +73,7 @@ function ModsAdmin() {
                         <div key={m._id} className="rounded-xl bg-card border border-white/10 overflow-hidden hover:border-neon-purple/40 transition-all">
                             <div className="aspect-video bg-gradient-to-br from-white/5 to-black/30 relative overflow-hidden">
                                 {m.imageUrl
-                                    ? <img src={m.imageUrl} className="w-full h-full object-cover" />
+                                    ? <img src={resolveImg(m.imageUrl)} className="w-full h-full object-cover" />
                                     : <div className="w-full h-full flex items-center justify-center text-white/20"><ImageIcon size={32} /></div>}
                                 {!m.isActive && <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-xs font-black tracking-widest text-red-400">PASİF</div>}
                             </div>
@@ -103,7 +114,13 @@ function ModsAdmin() {
                                     <option value="moba">MOBA</option><option value="sandbox">Sandbox</option><option value="sports">Spor</option><option value="party">Parti</option><option value="other">Diğer</option>
                                 </select>
                             </Row>
-                            <Row label="Görsel URL" wide><input value={editing.imageUrl} onChange={(e) => setEditing({ ...editing, imageUrl: e.target.value })} placeholder="https://..." className="w-full px-3 py-2 rounded bg-input border border-white/10 text-sm" /></Row>
+                            <Row label="Görsel" wide>
+                                <ImageWidget
+                                    mod={editing}
+                                    onUploaded={(url) => setEditing({ ...editing, imageUrl: url })}
+                                    onUrlChange={(url) => setEditing({ ...editing, imageUrl: url })}
+                                />
+                            </Row>
                             <Row label="İndirme URL (VPS)" wide><input value={editing.downloadUrl} onChange={(e) => setEditing({ ...editing, downloadUrl: e.target.value })} placeholder="https://vps.seligame.com/..." className="w-full px-3 py-2 rounded bg-input border border-white/10 text-sm" /></Row>
                             <Row label="Açıklama" wide><textarea rows={3} value={editing.description} onChange={(e) => setEditing({ ...editing, description: e.target.value })} className="w-full px-3 py-2 rounded bg-input border border-white/10 text-sm font-sans" /></Row>
                             <Row label="Aktif">
@@ -131,6 +148,85 @@ function Row({ label, children, wide }: { label: string; children: React.ReactNo
         <div className={wide ? 'sm:col-span-2' : ''}>
             <label className="block text-xs font-bold uppercase tracking-widest text-white/60 mb-1.5">{label}</label>
             {children}
+        </div>
+    )
+}
+
+function ImageWidget({ mod, onUploaded, onUrlChange }: { mod: any; onUploaded: (url: string) => void; onUrlChange: (url: string) => void }) {
+    const inputRef = useRef<HTMLInputElement>(null)
+    const [busy, setBusy] = useState(false)
+    const [err, setErr] = useState('')
+    const hasId = !!mod._id
+    const preview = mod.imageUrl ? resolveImg(mod.imageUrl) : ''
+
+    async function pick(e: React.ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0]
+        if (!file) return
+        e.target.value = ''
+        if (!hasId) {
+            setErr('Önce "Kaydet"e bas — sonra görsel yükle')
+            setTimeout(() => setErr(''), 4000)
+            return
+        }
+        if (!/\.(png|jpe?g|webp|gif)$/i.test(file.name)) {
+            setErr('Sadece PNG / JPG / WEBP / GIF')
+            setTimeout(() => setErr(''), 3000)
+            return
+        }
+        setErr(''); setBusy(true)
+        try {
+            const fd = new FormData()
+            fd.append('image', file)
+            const res = await api.post(`/mods/${mod._id}/image`, fd, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+                timeout: 5 * 60 * 1000,
+            })
+            const url = res.data?.mod?.imageUrl
+            if (url) onUploaded(url)
+        } catch (e: any) {
+            setErr(e.response?.data?.error || e.message)
+            setTimeout(() => setErr(''), 4000)
+        } finally { setBusy(false) }
+    }
+
+    return (
+        <div className="space-y-2">
+            <div className="flex items-start gap-3">
+                <div className="w-32 h-20 rounded-lg overflow-hidden bg-gradient-to-br from-white/5 to-black/30 border border-white/10 flex-shrink-0 flex items-center justify-center">
+                    {preview
+                        ? <img src={preview} className="w-full h-full object-cover" alt="" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                        : <ImageIcon size={28} className="text-white/20" />}
+                </div>
+                <div className="flex-1">
+                    <div className="flex gap-2 mb-2">
+                        <input
+                            ref={inputRef}
+                            type="file"
+                            accept="image/png,image/jpeg,image/webp,image/gif"
+                            className="hidden"
+                            onChange={pick}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => inputRef.current?.click()}
+                            disabled={busy}
+                            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-neon-purple/15 border border-neon-purple/30 text-neon-purple text-sm font-bold hover:bg-neon-purple/25 disabled:opacity-50 transition-all"
+                            title={hasId ? 'Bilgisayardan görsel yükle (PNG/JPG/WEBP, ≤10MB)' : 'Önce modu kaydet'}
+                        >
+                            {busy ? <Loader2 className="animate-spin" size={14} /> : <Upload size={14} />}
+                            {busy ? 'Yükleniyor…' : 'Görsel Yükle'}
+                        </button>
+                        {!hasId && <span className="text-[11px] text-white/40 self-center">Önce kaydet, sonra görsel yükleyebilirsin</span>}
+                    </div>
+                    <input
+                        value={mod.imageUrl || ''}
+                        onChange={(e) => onUrlChange(e.target.value)}
+                        placeholder="…veya direkt URL yapıştır: https://…"
+                        className="w-full px-3 py-2 rounded bg-input border border-white/10 text-xs font-mono"
+                    />
+                </div>
+            </div>
+            {err && <div className="text-xs text-red-400">{err}</div>}
         </div>
     )
 }

@@ -14,8 +14,11 @@ const SECRET_KEY = process.env.JWT_SECRET || 'super_secret_key_for_seligames';
 // Where uploaded mod ZIPs live on disk.
 // `/var/seligames/mods` on the VPS, override with MOD_FILES_DIR for dev.
 const MOD_FILES_DIR = process.env.MOD_FILES_DIR || '/var/seligames/mods';
-try { if (!fs.existsSync(MOD_FILES_DIR)) fs.mkdirSync(MOD_FILES_DIR, { recursive: true }); }
-catch (e) { console.warn(`⚠️ Could not create ${MOD_FILES_DIR}:`, e.message); }
+const MOD_IMAGES_DIR = process.env.MOD_IMAGES_DIR || '/var/seligames/mod-images';
+for (const dir of [MOD_FILES_DIR, MOD_IMAGES_DIR]) {
+    try { if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true }); }
+    catch (e) { console.warn(`⚠️ Could not create ${dir}:`, e.message); }
+}
 
 // Multer disk storage — streams large files (up to 5 GB) directly to disk
 // instead of buffering in memory. Filename is always `<modId>.zip` so re-uploads
@@ -31,6 +34,33 @@ const upload = multer({
         const ok = file.originalname.toLowerCase().endsWith('.zip')
             || ['application/zip', 'application/x-zip-compressed', 'multipart/x-zip', 'application/octet-stream'].includes(file.mimetype);
         cb(ok ? null : new Error('Sadece .zip dosyası yüklenebilir'), ok);
+    },
+});
+
+// Mod cover-image upload (PNG/JPG/WEBP, ≤10 MB). Filename always
+// `<modId>.<ext>` so re-uploads overwrite. The mod's imageUrl is patched
+// to point at the statically-served path after a successful upload.
+const IMAGE_EXT_BY_MIME = {
+    'image/png': 'png',
+    'image/jpeg': 'jpg',
+    'image/jpg': 'jpg',
+    'image/webp': 'webp',
+    'image/gif': 'gif',
+};
+const imageUpload = multer({
+    storage: multer.diskStorage({
+        destination: (req, file, cb) => cb(null, MOD_IMAGES_DIR),
+        filename: (req, file, cb) => {
+            const ext = IMAGE_EXT_BY_MIME[file.mimetype]
+                || (path.extname(file.originalname || '').slice(1).toLowerCase())
+                || 'png';
+            cb(null, `${req.params.id}.${ext}`);
+        },
+    }),
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+    fileFilter: (req, file, cb) => {
+        const ok = !!IMAGE_EXT_BY_MIME[file.mimetype] || /\.(png|jpe?g|webp|gif)$/i.test(file.originalname || '');
+        cb(ok ? null : new Error('Sadece PNG / JPG / WEBP / GIF yüklenebilir'), ok);
     },
 });
 
@@ -238,6 +268,40 @@ router.post('/:id/upload', requireAdmin, (req, res) => {
             mod.fileUploadedAt = new Date();
             await mod.save();
             res.json({ message: 'Dosya yüklendi', mod });
+        } catch (e) {
+            try { fs.unlinkSync(req.file.path); } catch { }
+            res.status(500).json({ error: e.message });
+        }
+    });
+});
+
+// Admin: upload a mod cover image. The file lands at MOD_IMAGES_DIR/<id>.<ext>
+// and Mod.imageUrl is patched to point at the statically-served URL so the
+// admin doesn't have to copy/paste anything.
+router.post('/:id/image', requireAdmin, (req, res) => {
+    imageUpload.single('image')(req, res, async (uploadErr) => {
+        if (uploadErr) return res.status(400).json({ error: uploadErr.message });
+        if (!req.file) return res.status(400).json({ error: 'Görsel gönderilmedi' });
+        try {
+            const mod = await Mod.findById(req.params.id);
+            if (!mod) {
+                try { fs.unlinkSync(req.file.path); } catch { }
+                return res.status(404).json({ error: 'Mod bulunamadı' });
+            }
+            // Strip stale images of any other extension for this mod so we
+            // don't accumulate orphans when the user re-uploads a different
+            // format (e.g. previously .jpg, now .png).
+            const filename = path.basename(req.file.path);
+            try {
+                const others = fs.readdirSync(MOD_IMAGES_DIR).filter((f) =>
+                    f.startsWith(`${req.params.id}.`) && f !== filename
+                );
+                for (const f of others) try { fs.unlinkSync(path.join(MOD_IMAGES_DIR, f)); } catch { }
+            } catch { }
+
+            mod.imageUrl = `/uploads/mod-images/${filename}`;
+            await mod.save();
+            res.json({ message: 'Görsel yüklendi', mod });
         } catch (e) {
             try { fs.unlinkSync(req.file.path); } catch { }
             res.status(500).json({ error: e.message });
