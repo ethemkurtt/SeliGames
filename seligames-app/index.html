@@ -3360,6 +3360,40 @@
         .auto-empty { text-align: center; color: #9d8bbf; padding: 3rem 1rem; }
         .auto-empty i { font-size: 2.5rem; opacity: 0.3; margin-bottom: 0.75rem; display: block; }
 
+        /* ── Alignment fixes (review pass) ── */
+        /* Consistent control heights so flex rows line up cleanly */
+        .auto-input, select.auto-input { height: 40px; }
+        textarea.auto-input { height: auto; min-height: 64px; }
+        .auto-btn-sm { height: 40px; display: inline-flex; align-items: center; justify-content: center; }
+        .auto-cond-row select, .auto-cond-row input { height: 38px; box-sizing: border-box; }
+        .auto-cond-row .auto-icon-btn { width: 38px; height: 38px; flex-shrink: 0; }
+
+        /* url-copy-bar: equal-height buttons + graceful wrap on narrow panels */
+        .url-copy-bar { flex-wrap: wrap; }
+        .url-copy-bar input { min-width: 140px; }
+        .url-copy-bar .btn-icon { width: 34px; height: 34px; }
+        .url-copy-bar .btn-ov-test,
+        .url-copy-bar .btn-ov-customize {
+            height: 34px; padding: 0 0.85rem; display: inline-flex; align-items: center;
+            gap: 0.3rem; font-size: 0.75rem; box-sizing: border-box;
+        }
+        /* import/export + overlay-actions: wrap + equal heights */
+        .import-export-btns { flex-wrap: wrap; }
+        .overlay-actions .btn-ov-save, .overlay-actions .btn-ov-reset { height: 40px; box-sizing: border-box; }
+
+        /* Rule/Action modal footer: all three buttons equal height */
+        #rule-modal .btn-new-draft, #action-modal .btn-new-draft,
+        #rule-modal .auto-btn-ghost, #action-modal .auto-btn-ghost,
+        #rule-modal .auto-btn-test, #action-modal .auto-btn-test {
+            height: 42px; box-sizing: border-box; display: inline-flex;
+            align-items: center; justify-content: center;
+        }
+        /* Header action buttons on the automation page: equal height */
+        #automation-page .page-header .btn-new-draft { height: 40px; box-sizing: border-box; }
+        /* Gift/command rows in the rule editor align cleanly */
+        #rule-gift-row > div, #rule-command-row > div { align-items: stretch; }
+        #rule-gift-row .auto-input[readonly] { cursor: pointer; }
+
         /* ═══════════════════════════════════════════════════════════════
            THEME POLISH — matches seligame.com vibe (magenta/purple neon)
            Purely cosmetic; appended last so it wins specificity ties.
@@ -5168,7 +5202,8 @@
                 <div style="margin-top:0.65rem;padding:0.65rem;background:rgba(255,255,255,0.02);border-radius:6px;border:1px solid rgba(255,255,255,0.04);">
                     <p style="color:#9d8bbf;font-size:0.68rem;line-height:1.5;">
                         <strong style="color:#ff2eb8;">Nasıl Kullanılır:</strong>
-                        Ayarları yapılandırın → Kaydet → URL'yi kopyalayın → OBS'de "Browser Source" ekleyin → URL'yi yapıştırın (400x200)
+                        Ayarları yapılandırın → Kaydet → URL'yi kopyalayın → OBS'de "Browser Source" ekleyin → URL'yi yapıştırın.
+                        <br><span id="ov-size-hint" style="color:#7a6e94;">Boyut: bilgi panelleri için 400×200, MyActions / Hediye Topu / Kalp Çeşmesi / Emoji Yağmuru için <b>1920×1080 (tam ekran)</b>.</span>
                     </p>
                 </div>
             </div>

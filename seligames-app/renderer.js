@@ -4038,15 +4038,58 @@ function applyCurrentStyle() {
 }
 
 function testOverlay() {
-    var currentEl = document.getElementById('ov-current');
-    var targetEl = document.getElementById('ov-target');
-    if (currentEl && targetEl) {
-        var target = parseInt(targetEl.value) || 100;
-        var testVal = Math.floor(target * 0.65);
-        currentEl.value = testVal;
-        updateOverlayPreview();
-        showToast('Test değeri: ' + testVal);
+    const type = currentOverlayContext?.overlayType;
+
+    // Goals: just preview a filled bar.
+    if (type === 'goal') {
+        const currentEl = document.getElementById('ov-current');
+        const targetEl = document.getElementById('ov-target');
+        if (currentEl && targetEl) {
+            const target = parseInt(targetEl.value) || 100;
+            const testVal = Math.floor(target * 0.65);
+            currentEl.value = testVal;
+            updateOverlayPreview();
+            showToast('Test değeri: ' + testVal);
+        }
+        return;
     }
+
+    // Live overlays react to real TikTok events. Fire a representative
+    // sample through the backend so an OPEN overlay (OBS/browser) animates.
+    // Requires the backend socket connected (it is, after login).
+    const samples = {
+        'gift-cannon':  { eventType: 'gift', giftName: 'Gül', giftId: 5655, count: 5 },
+        'like-fountain':{ eventType: 'like', likeCount: 20, count: 20 },
+        'emoji-rain':   { eventType: 'chat', comment: 'harika yayın 🔥😍🎉💯' },
+        'gift-alert':   { eventType: 'gift', giftName: 'Gül', giftId: 5655, count: 1, diamondCount: 1 },
+        'leaderboard':  { eventType: currentOverlayContext?.subType === 'likes' ? 'like' : 'gift', giftName: 'Gül', count: 50, likeCount: 50 },
+        'chart':        { eventType: 'viewer', viewerCount: 1234, count: 1 },
+        'last-x':       { eventType: currentOverlayContext?.subType === 'follows' ? 'follow' : (currentOverlayContext?.subType === 'likes' ? 'like' : 'gift'), giftName: 'Gül', count: 1 },
+        'chat':         { eventType: 'chat', comment: 'Merhaba! Harika yayın 👏' },
+        'event-feed':   { eventType: 'gift', giftName: 'Gül', count: 3, diamondCount: 3 },
+        'subathon':     { eventType: 'gift', giftName: 'Gül', count: 1, diamondCount: 1 },
+        'wheel':        { eventType: 'gift', giftName: currentOverlayContext?.overlayId ? '' : 'Gül', count: 1 },
+    };
+
+    const sample = samples[type];
+    if (!sample) {
+        // actions-feed → test via the Automation page; interaction-slider is data-driven.
+        if (type === 'actions-feed') {
+            showToast('MyActions\'ı test etmek için: Aksiyonlar & Olaylar sayfasından bir aksiyonu "Test Et"', false);
+        } else if (type === 'interaction-slider') {
+            showToast('Etkileşim Şeridi, hediye kurallarından otomatik dolar — kural ekleyince görünür', false);
+        } else {
+            showToast('Bu overlay için canlı test yok — kaydet ve OBS\'de izle', false);
+        }
+        return;
+    }
+
+    if (!window.api?.forwardTikTokEvent) { showToast('Backend bağlantısı yok', true); return; }
+    const payload = { username: 'TestKullanıcı', nickname: 'TestKullanıcı', profilePicture: '', ...sample };
+    window.api.forwardTikTokEvent(payload).then((r) => {
+        if (r?.success) showToast('🧪 Test event gönderildi — açık overlay\'de görmelisin');
+        else showToast('Test gönderilemedi — yayın bağlantısı gerekebilir', true);
+    }).catch(() => showToast('Test gönderilemedi', true));
 }
 
 function importCustomCSS() {
