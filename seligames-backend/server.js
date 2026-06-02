@@ -16,6 +16,8 @@ const giftRoutes = require('./src/routes/gifts');
 const adminRoutes = require('./src/routes/admin');
 const siteRoutes = require('./src/routes/site');
 const proxyRoutes = require('./src/routes/proxy');
+const automationRoutes = require('./src/routes/automation');
+const ruleEngine = require('./src/services/ruleEngine');
 const Goal = require('./src/models/Goal');
 const Overlay = require('./src/models/Overlay');
 const Event = require('./src/models/Event');
@@ -58,6 +60,7 @@ app.use('/api/gifts', giftRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/site', siteRoutes);
 app.use('/api/proxy', proxyRoutes);
+app.use('/api/automation', automationRoutes);
 
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', message: 'SeliGames API is running' });
@@ -334,6 +337,17 @@ io.on('connection', (socket) => {
                 eventType,
                 username: username || nickname
             });
+
+            // ─── Actions & Events engine ───────────────────────────────
+            // Run the user's automation rules against this event. Fires
+            // overlay/sound/tts actions (→ MyActions overlay) and OS-level
+            // keyboard/launch actions (→ Electron client). Wrapped so a
+            // rule error never breaks the core overlay pipeline above.
+            try {
+                await ruleEngine.evaluate({ ...data, userId, eventType }, { io });
+            } catch (ruleErr) {
+                console.error('RuleEngine error:', ruleErr.message);
+            }
 
         } catch (error) {
             console.error('Event processing error:', error);

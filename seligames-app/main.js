@@ -246,6 +246,39 @@ function connectToBackendSocket(token) {
         }
     });
 
+    // Actions & Events engine — the backend fires OS-level actions
+    // (keyboard / mouse / text / launch) by emitting 'execute-action' to
+    // this user's room. Run them straight from the main process (it owns
+    // executeAction + the launch handler). Honour repeatCount with a small
+    // gap so games register discrete taps.
+    backendSocket.on('execute-action', async (payload) => {
+        try {
+            const type = payload?.actionType || payload?.type;
+            if (type === 'launch') {
+                const parsed = _parseLaunch?.(payload.command);
+                if (parsed) {
+                    const child = spawn(parsed.bin, parsed.args, { detached: true, stdio: 'ignore', windowsHide: false });
+                    child.unref?.();
+                    console.log(`⚙️→🚀 rule-launched: ${payload.command}`);
+                }
+                return;
+            }
+            if (['keyboard', 'mouse', 'text'].includes(type)) {
+                const action = { type, value: payload.value };
+                const fires = Math.max(1, Math.min(20, Number(payload.repeatCount) || 1));
+                for (let i = 0; i < fires; i++) {
+                    try { await executeAction(action); }
+                    catch (e) { console.warn('rule action failed:', e.message); break; }
+                    if (i < fires - 1) await new Promise(r => setTimeout(r, 40));
+                }
+                console.log(`⚙️→⌨️ rule-fired ${type}:${payload.value} ×${fires}`);
+                if (mainWindow) mainWindow.webContents.send('rule-action-fired', { type, value: payload.value, fires });
+            }
+        } catch (e) {
+            console.warn('execute-action handler error:', e.message);
+        }
+    });
+
     backendSocket.on('disconnect', () => {
         console.log('🔌 Backend socket disconnected');
         if (mainWindow) {
