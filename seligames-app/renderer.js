@@ -139,10 +139,10 @@ async function loadDashboard() {
             if (statusEl) {
                 if (u.tiktokUsername) {
                     statusEl.innerHTML = u.isLive
-                        ? `<span style="color:#00ff9d">● CANLI</span><br><small style="color:#8b8b9a">@${u.tiktokUsername}</small>`
-                        : `<span style="color:#8b8b9a">● OFFLINE</span><br><small style="color:#8b8b9a">@${u.tiktokUsername}</small>`;
+                        ? `<span style="color:#ff2eb8">● CANLI</span><br><small style="color:#9d8bbf">@${u.tiktokUsername}</small>`
+                        : `<span style="color:#9d8bbf">● OFFLINE</span><br><small style="color:#9d8bbf">@${u.tiktokUsername}</small>`;
                 } else {
-                    statusEl.innerHTML = `<span style="color:#ff006e;font-size:0.75rem">Profilden bağla</span>`;
+                    statusEl.innerHTML = `<span style="color:#ff2eb8;font-size:0.75rem">Profilden bağla</span>`;
                 }
             }
         }
@@ -182,9 +182,9 @@ function renderRecentActivity(events) {
             <div style="padding:0.55rem 0.8rem;display:flex;gap:0.6rem;align-items:center;border-bottom:1px solid rgba(255,255,255,0.03);">
                 <span style="font-size:1rem;width:22px;text-align:center;flex-shrink:0;">${typeIcon(e.eventType)}</span>
                 <div style="flex:1;min-width:0;font-size:0.78rem;color:#d0d0d0;">
-                    <b style="color:#00ff9d;">${escapeHtml(user)}</b> <span style="color:#8b8b9a;">${desc}</span>
+                    <b style="color:#ff2eb8;">${escapeHtml(user)}</b> <span style="color:#9d8bbf;">${desc}</span>
                 </div>
-                <span style="color:#8b8b9a;font-size:0.68rem;flex-shrink:0;">${time}</span>
+                <span style="color:#9d8bbf;font-size:0.68rem;flex-shrink:0;">${time}</span>
             </div>`;
     }).join('');
 }
@@ -315,9 +315,9 @@ function renderGiftDesignerSlots() {
     if (!wrap) return;
     const layout = GD_LAYOUTS[giftDesign.type] || GD_LAYOUTS.classic;
     const meta = {
-        top:    { label: 'Üst Hediyeler',  icon: '↑', color: '#bd00ff' },
-        left:   { label: 'Sol Hediyeler',  icon: '←', color: '#00d9ff' },
-        right:  { label: 'Sağ Hediyeler',  icon: '→', color: '#00ff9d' },
+        top:    { label: 'Üst Hediyeler',  icon: '↑', color: '#a855f7' },
+        left:   { label: 'Sol Hediyeler',  icon: '←', color: '#a855f7' },
+        right:  { label: 'Sağ Hediyeler',  icon: '→', color: '#ff2eb8' },
         bottom: { label: 'Alt Hediyeler',  icon: '↓', color: '#ffd700' },
     };
 
@@ -408,7 +408,7 @@ function renderGiftPickerList() {
     if (countEl) countEl.textContent = `${items.length} / ${giftCatalogCache.length} hediye`;
 
     if (!items.length) {
-        list.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#8b8b9a;padding:2rem;">Eşleşen hediye yok</div>';
+        list.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#9d8bbf;padding:2rem;">Eşleşen hediye yok</div>';
         return;
     }
 
@@ -558,7 +558,7 @@ function renderGiftCardEl(item) {
 
     const img = document.createElement('img');
     img.src = item.iconUrl ? gdProxify(item.iconUrl) : 'data:image/svg+xml;utf8,' + encodeURIComponent(
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="rgba(189,0,255,0.3)"/><text x="50%" y="58%" text-anchor="middle" font-size="44" fill="#bd00ff" font-weight="bold">♪</text></svg>'
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="rgba(168, 85, 247,0.3)"/><text x="50%" y="58%" text-anchor="middle" font-size="44" fill="#a855f7" font-weight="bold">♪</text></svg>'
     );
     img.crossOrigin = 'anonymous';
     img.style.width = giftDesign.giftSize + 'px';
@@ -974,7 +974,7 @@ async function updateProfileField(fieldName) {
         if (result.success) {
             // Show success
             btn.innerHTML = '<i class="fas fa-check-circle"></i>';
-            btn.style.background = 'rgba(0, 255, 157, 0.4)';
+            btn.style.background = 'rgba(255, 46, 184, 0.4)';
             
             // Update display if username
             if (fieldName === 'username') {
@@ -1125,7 +1125,7 @@ function filterGiftSoundMap() {
     setText('gift-unmapped-count', (total - mapped).toLocaleString('tr-TR'));
 
     if (!items.length) {
-        list.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#8b8b9a;padding:1.5rem;">Eşleşen hediye yok</div>';
+        list.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#9d8bbf;padding:1.5rem;">Eşleşen hediye yok</div>';
         return;
     }
 
@@ -1609,8 +1609,8 @@ function updateArmBadge() {
     const armedCountEl = document.getElementById('mod-armed-count');
     if (armedEl) {
         armedEl.innerHTML = armedCount > 0
-            ? `<span style="color:#00ff9d;font-weight:700;">● ${armedCount} MOD AKTİF</span>`
-            : `<span style="color:#8b8b9a;">● Hiçbiri</span>`;
+            ? `<span style="color:#ff2eb8;font-weight:700;">● ${armedCount} MOD AKTİF</span>`
+            : `<span style="color:#9d8bbf;">● Hiçbiri</span>`;
     }
     if (armedCountEl) armedCountEl.textContent = armedCount > 0 ? `${totalActions} aksiyon hazır` : '';
     if (armedBtnEl) {
@@ -1618,8 +1618,8 @@ function updateArmBadge() {
             ? '<i class="fas fa-stop-circle"></i> Tümünü Durdur'
             : '<i class="fas fa-play-circle"></i> Tümünü Başlat';
         armedBtnEl.style.background = armedCount > 0
-            ? 'linear-gradient(135deg,#ff006e,#ff5722)'
-            : 'linear-gradient(135deg,#00ff9d,#00f0ff)';
+            ? 'linear-gradient(135deg,#ff2eb8,#ff5722)'
+            : 'linear-gradient(135deg,#ff2eb8,#a855f7)';
     }
 }
 
@@ -1735,15 +1735,15 @@ function renderActionLog() {
     const el = document.getElementById('mod-action-log');
     if (!el) return;
     if (!lastActionLog.length) {
-        el.innerHTML = '<div style="color:#8b8b9a;text-align:center;padding:1rem;font-size:0.75rem;font-style:italic;">Henüz fire edilen aksiyon yok</div>';
+        el.innerHTML = '<div style="color:#9d8bbf;text-align:center;padding:1rem;font-size:0.75rem;font-style:italic;">Henüz fire edilen aksiyon yok</div>';
         return;
     }
     el.innerHTML = lastActionLog.slice(0, 15).map(l => `
         <div style="display:flex;gap:0.5rem;align-items:center;padding:0.35rem 0.6rem;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.72rem;">
-            <span style="color:${l.ok ? '#00ff9d' : '#ff006e'};font-size:0.8rem;">${l.ok ? '✓' : '✗'}</span>
+            <span style="color:${l.ok ? '#ff2eb8' : '#ff2eb8'};font-size:0.8rem;">${l.ok ? '✓' : '✗'}</span>
             <span style="color:#fff;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(l.giftName)} → <span style="color:#ffd700;">${escapeHtml(l.action.value)}</span></span>
-            <span style="color:#8b8b9a;font-size:0.65rem;">${l.modTitle}</span>
-            <span style="color:#8b8b9a;font-size:0.65rem;">${l.time.toLocaleTimeString('tr-TR')}</span>
+            <span style="color:#9d8bbf;font-size:0.65rem;">${l.modTitle}</span>
+            <span style="color:#9d8bbf;font-size:0.65rem;">${l.time.toLocaleTimeString('tr-TR')}</span>
         </div>`).join('');
 }
 
@@ -1760,7 +1760,7 @@ async function testModShortcut(giftName) {
 async function loadMods() {
     const modsGrid = document.getElementById('mods-grid');
     const noMods = document.getElementById('no-mods');
-    if (modsGrid) modsGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#8b8b9a;padding:3rem;"><i class="fas fa-spinner fa-spin" style="font-size:2rem;opacity:0.5;"></i><p style="margin-top:0.75rem;">Yükleniyor...</p></div>';
+    if (modsGrid) modsGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#9d8bbf;padding:3rem;"><i class="fas fa-spinner fa-spin" style="font-size:2rem;opacity:0.5;"></i><p style="margin-top:0.75rem;">Yükleniyor...</p></div>';
     if (noMods) noMods.style.display = 'none';
 
     try {
@@ -1777,7 +1777,7 @@ async function loadMods() {
         filterMods();
     } catch (error) {
         console.error('Failed to load mods:', error);
-        if (modsGrid) modsGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#ff006e;padding:3rem;"><i class="fas fa-exclamation-triangle" style="font-size:2rem;"></i><p style="margin-top:0.75rem;">Modlar yüklenemedi</p></div>';
+        if (modsGrid) modsGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#ff2eb8;padding:3rem;"><i class="fas fa-exclamation-triangle" style="font-size:2rem;"></i><p style="margin-top:0.75rem;">Modlar yüklenemedi</p></div>';
     }
 }
 
@@ -1931,7 +1931,7 @@ function renderModDetailHero() {
     setText('md-description', mod.description || '');
     const heroBg = document.getElementById('md-hero-bg');
     if (heroBg && mod.imageUrl) heroBg.style.backgroundImage = `url('${mod.imageUrl.replace(/'/g, "\\'")}')`;
-    else if (heroBg) heroBg.style.backgroundImage = 'linear-gradient(135deg, #1a1a2e, #0a0a0f)';
+    else if (heroBg) heroBg.style.backgroundImage = 'linear-gradient(135deg, #1a1a2e, #07030f)';
 
     // Install/uninstall button states
     const isInstalled = !!currentModConfig?.installed;
@@ -2030,7 +2030,7 @@ function renderModGiftActions() {
     setText('md-unmapped-count', totalGifts - mapped);
 
     if (!items.length) {
-        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#8b8b9a;padding:2rem;">Eşleşen hediye yok</div>';
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#9d8bbf;padding:2rem;">Eşleşen hediye yok</div>';
         return;
     }
 
@@ -2251,21 +2251,21 @@ function showInstallProgress(mod) {
         z-index:10000;display:flex;align-items:center;justify-content:center;padding:1rem;
     `;
     el.innerHTML = `
-        <div style="background:#13131a;border:1px solid rgba(0,255,157,0.25);border-radius:16px;padding:1.5rem 1.75rem;max-width:480px;width:100%;box-shadow:0 0 40px rgba(0,255,157,0.15);">
+        <div style="background:#160a2e;border:1px solid rgba(255, 46, 184,0.25);border-radius:16px;padding:1.5rem 1.75rem;max-width:480px;width:100%;box-shadow:0 0 40px rgba(255, 46, 184,0.15);">
             <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem;">
-                <div style="width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,#00ff9d,#00f0ff);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                    <i class="fas fa-download" style="color:#0a0a0f;font-size:1.1rem;"></i>
+                <div style="width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,#ff2eb8,#a855f7);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="fas fa-download" style="color:#07030f;font-size:1.1rem;"></i>
                 </div>
                 <div style="min-width:0;flex:1;">
                     <div style="color:#fff;font-weight:700;font-size:1rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(mod.title)}</div>
-                    <div id="ip-phase" style="color:#8b8b9a;font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;margin-top:0.15rem;">Hazırlanıyor...</div>
+                    <div id="ip-phase" style="color:#9d8bbf;font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;margin-top:0.15rem;">Hazırlanıyor...</div>
                 </div>
-                <div id="ip-pct" style="color:#00ff9d;font-weight:800;font-size:1.4rem;font-variant-numeric:tabular-nums;">0%</div>
+                <div id="ip-pct" style="color:#ff2eb8;font-weight:800;font-size:1.4rem;font-variant-numeric:tabular-nums;">0%</div>
             </div>
             <div style="height:8px;border-radius:4px;background:rgba(255,255,255,0.06);overflow:hidden;margin-bottom:0.5rem;">
-                <div id="ip-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#00ff9d,#00f0ff);box-shadow:0 0 12px #00ff9d88;transition:width 0.2s ease;"></div>
+                <div id="ip-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#ff2eb8,#a855f7);box-shadow:0 0 12px #ff2eb888;transition:width 0.2s ease;"></div>
             </div>
-            <div id="ip-meta" style="color:#8b8b9a;font-size:0.72rem;font-variant-numeric:tabular-nums;text-align:right;">—</div>
+            <div id="ip-meta" style="color:#9d8bbf;font-size:0.72rem;font-variant-numeric:tabular-nums;text-align:right;">—</div>
             <div id="ip-msg" style="display:none;margin-top:0.75rem;padding:0.55rem 0.75rem;border-radius:8px;font-size:0.78rem;"></div>
         </div>
     `;
@@ -2309,10 +2309,10 @@ function updateInstallProgress(p) {
     if (msgEl && p.message) {
         msgEl.style.display = 'block';
         const colors = p.phase === 'error'
-            ? 'background:rgba(255,0,110,0.1);color:#ff6b9d;border:1px solid rgba(255,0,110,0.3);'
+            ? 'background:rgba(255, 46, 184,0.1);color:#ff6b9d;border:1px solid rgba(255, 46, 184,0.3);'
             : p.phase === 'warn'
                 ? 'background:rgba(255,165,0,0.1);color:#ffa500;border:1px solid rgba(255,165,0,0.3);'
-                : 'background:rgba(0,255,157,0.1);color:#00ff9d;border:1px solid rgba(0,255,157,0.3);';
+                : 'background:rgba(255, 46, 184,0.1);color:#ff2eb8;border:1px solid rgba(255, 46, 184,0.3);';
         msgEl.style.cssText += colors;
         msgEl.textContent = p.message;
     }
@@ -2547,12 +2547,12 @@ function startPerformanceMonitor() {
 
         if (cpuElem) {
             cpuElem.textContent = `${cpu}%`;
-            cpuElem.style.color = cpu > 80 ? '#ff006e' : '#00ff9d';
+            cpuElem.style.color = cpu > 80 ? '#ff2eb8' : '#ff2eb8';
         }
         if (ramElem) ramElem.textContent = `${ram}GB`;
         if (fpsElem) {
             fpsElem.textContent = fps;
-            fpsElem.style.color = fps < 30 ? '#ff006e' : '#00ff9d';
+            fpsElem.style.color = fps < 30 ? '#ff2eb8' : '#ff2eb8';
         }
     }, 2000);
 }
@@ -2603,13 +2603,13 @@ async function loadTikTokUsername() {
             userTikTokUsername = result.data.tiktokUsername;
             if (usernameDisplay) {
                 usernameDisplay.textContent = '@' + result.data.tiktokUsername;
-                usernameDisplay.style.color = '#00d9ff';
+                usernameDisplay.style.color = '#a855f7';
             }
             console.log('✅ TikTok username loaded from backend:', result.data.tiktokUsername);
         } else {
             if (usernameDisplay) {
                 usernameDisplay.textContent = 'Profil sayfasından TikTok kullanıcı adınızı ekleyin';
-                usernameDisplay.style.color = '#ff006e';
+                usernameDisplay.style.color = '#ff2eb8';
             }
         }
     } catch (error) {
@@ -2617,7 +2617,7 @@ async function loadTikTokUsername() {
         const usernameDisplay = document.getElementById('tiktok-username-text');
         if (usernameDisplay) {
             usernameDisplay.textContent = 'Yüklenemedi';
-            usernameDisplay.style.color = '#ff006e';
+            usernameDisplay.style.color = '#ff2eb8';
         }
     }
 }
@@ -2658,7 +2658,7 @@ function handleChatMessage(data) {
             user: user,
             message: comment,
             icon: '💬',
-            color: '#00ff9d'
+            color: '#ff2eb8'
         });
         updateLiveStats();
     }
@@ -2679,7 +2679,7 @@ function handleGiftMessage(data) {
         user: user,
         message: `${giftName} ${giftCount > 1 ? 'x' + giftCount : ''} ${diamonds > 0 ? '(' + diamonds + ' 💎)' : ''}`,
         icon: '🎁',
-        color: '#ff0050'
+        color: '#ff2eb8'
     });
     updateLiveStats();
 }
@@ -2697,7 +2697,7 @@ function handleLikeMessage(data) {
         user: user,
         message: `Beğendi${totalLikes > 0 ? ' (Toplam: ' + totalLikes + ')' : ''}`,
         icon: '❤️',
-        color: '#00f0ff'
+        color: '#a855f7'
     });
     updateLiveStats();
 }
@@ -2713,7 +2713,7 @@ function handleMemberMessage(data) {
         user: user,
         message: 'Yayına katıldı',
         icon: '👋',
-        color: '#bd00ff'
+        color: '#a855f7'
     });
 }
 
@@ -2783,8 +2783,8 @@ function connectToTikTokLive() {
             console.log('✅ WebSocket connected!');
 
             if (statusDot && statusText) {
-                statusDot.style.background = '#00ff9d';
-                statusDot.style.boxShadow = '0 0 10px #00ff9d';
+                statusDot.style.background = '#ff2eb8';
+                statusDot.style.boxShadow = '0 0 10px #ff2eb8';
                 statusText.textContent = 'Bağlı ✓';
             }
 
@@ -2794,11 +2794,11 @@ function connectToTikTokLive() {
 
             if (container) {
                 container.innerHTML = `
-                    <div style="text-align: center; color: #00ff9d; padding: 2rem;">
+                    <div style="text-align: center; color: #ff2eb8; padding: 2rem;">
                         <i class="fas fa-check-circle" style="font-size: 4rem; margin-bottom: 1rem;"></i>
                         <p style="font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem;">✅ Canlı Bağlantı Aktif!</p>
-                        <p style="color: #8b8b9a;">@${username} kullanıcısının canlı yayınına bağlandınız</p>
-                        <p style="color: #00ff9d; font-size: 0.85rem; margin-top: 1rem;">🔴 CANLI - Event'ler gerçek zamanlı alınıyor</p>
+                        <p style="color: #9d8bbf;">@${username} kullanıcısının canlı yayınına bağlandınız</p>
+                        <p style="color: #ff2eb8; font-size: 0.85rem; margin-top: 1rem;">🔴 CANLI - Event'ler gerçek zamanlı alınıyor</p>
                     </div>
                 `;
             }
@@ -2808,7 +2808,7 @@ function connectToTikTokLive() {
                 user: 'Sistem',
                 message: `@${username} canlı yayınına bağlandı`,
                 icon: '✅',
-                color: '#00ff9d'
+                color: '#ff2eb8'
             });
         };
 
@@ -2833,8 +2833,8 @@ function connectToTikTokLive() {
             console.error('❌ WebSocket error:', error);
 
             if (statusDot && statusText) {
-                statusDot.style.background = '#ff006e';
-                statusDot.style.boxShadow = '0 0 10px #ff006e';
+                statusDot.style.background = '#ef4444';
+                statusDot.style.boxShadow = '0 0 10px #ef4444';
                 statusText.textContent = 'Bağlantı Hatası';
             }
         };
@@ -2843,8 +2843,8 @@ function connectToTikTokLive() {
             console.log('🔌 WebSocket closed');
 
             if (statusDot && statusText) {
-                statusDot.style.background = '#ff006e';
-                statusDot.style.boxShadow = '0 0 10px #ff006e';
+                statusDot.style.background = '#ef4444';
+                statusDot.style.boxShadow = '0 0 10px #ef4444';
                 statusText.textContent = 'Bağlantı Kesildi';
             }
         };
@@ -2853,8 +2853,8 @@ function connectToTikTokLive() {
         console.error('❌ Connection error:', error);
 
         if (statusDot && statusText) {
-            statusDot.style.background = '#ff006e';
-            statusDot.style.boxShadow = '0 0 10px #ff006e';
+            statusDot.style.background = '#ef4444';
+            statusDot.style.boxShadow = '0 0 10px #ef4444';
             statusText.textContent = 'Hata';
         }
 
@@ -3027,7 +3027,7 @@ function handleTikTokEvent(msg) {
             message: `${giftName} x${giftCount}${diamonds > 0 ? ' (💎 ' + diamonds + ')' : ''}`,
             icon: giftIcon ? '🎁' : '🎁',  // keep the emoji fallback for the badge
             iconUrl: giftIcon,                // event-feed reads this when present
-            color: '#ff006e',
+            color: '#ff2eb8',
             profilePhoto: profilePhoto
         });
 
@@ -3053,7 +3053,7 @@ function handleTikTokEvent(msg) {
             user: getUserInfo(eventData),
             message: `${likeCount} kalp`,
             icon: '❤️',
-            color: '#ff006e',
+            color: '#ff2eb8',
             profilePhoto: profilePhoto
         });
 
@@ -3069,7 +3069,7 @@ function handleTikTokEvent(msg) {
             user: getUserInfo(eventData),
             message: `katıldı (${memberCount} izleyici)`,
             icon: '👋',
-            color: '#00d9ff',
+            color: '#a855f7',
             profilePhoto: profilePhoto
         });
 
@@ -3097,7 +3097,7 @@ function handleTikTokEvent(msg) {
                 user: getUserInfo(eventData),
                 message: 'paylaştı!',
                 icon: '📤',
-                color: '#00d9ff',
+                color: '#a855f7',
                 profilePhoto: profilePhoto
             });
             forwardToBackend('share', eventData);
@@ -3117,7 +3117,7 @@ function handleTikTokEvent(msg) {
             user: 'Sistem',
             message: 'Yayın durumu güncellendi',
             icon: '📡',
-            color: '#00ff9d'
+            color: '#ff2eb8'
         });
     }
     // Unknown / internal protocol messages — log to console only, don't pollute the feed.
@@ -3144,8 +3144,8 @@ function disconnectTikTokLive() {
     const statusText = document.getElementById('connection-status-text');
 
     if (statusDot && statusText) {
-        statusDot.style.background = '#ff006e';
-        statusDot.style.boxShadow = '0 0 10px #ff006e';
+        statusDot.style.background = '#ef4444';
+        statusDot.style.boxShadow = '0 0 10px #ef4444';
         statusText.textContent = 'Bağlı Değil';
     }
 
@@ -3153,7 +3153,7 @@ function disconnectTikTokLive() {
     const container = document.getElementById('live-stream-container');
     if (container) {
         container.innerHTML = `
-            <div id="stream-placeholder" style="text-align: center; color: #8b8b9a;">
+            <div id="stream-placeholder" style="text-align: center; color: #9d8bbf;">
                 <i class="fab fa-tiktok" style="font-size: 4rem; opacity: 0.3; margin-bottom: 1rem;"></i>
                 <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">Canlı Yayın Bağlı Değil</p>
                 <p style="font-size: 0.9rem;">Kullanıcı adı girerek bağlanın</p>
@@ -3170,7 +3170,7 @@ function disconnectTikTokLive() {
         user: 'Sistem',
         message: 'Bağlantı kapatıldı',
         icon: '🔌',
-        color: '#ff006e'
+        color: '#ff2eb8'
     });
 }
 
@@ -3226,7 +3226,7 @@ function addEventToFeed(event) {
                 ${event.iconUrl
                     ? `<img src="${event.iconUrl}" style="width:28px;height:28px;object-fit:contain;" onerror="this.outerHTML='<span style=\\'font-size:1.2rem\\'>${event.icon}</span>'">`
                     : `<span style="font-size: 1.2rem;">${event.icon}</span>`}
-                <span style="font-size: 0.7rem; color: #8b8b9a;">${new Date().toLocaleTimeString('tr-TR')}</span>
+                <span style="font-size: 0.7rem; color: #9d8bbf;">${new Date().toLocaleTimeString('tr-TR')}</span>
             </div>
         </div>
     `;
@@ -3251,7 +3251,7 @@ function clearEventFeed() {
     const feed = document.getElementById('event-feed');
     if (feed) {
         feed.innerHTML = `
-            <div style="text-align: center; color: #8b8b9a; padding: 4rem 2rem;">
+            <div style="text-align: center; color: #9d8bbf; padding: 4rem 2rem;">
                 <i class="fas fa-satellite-dish" style="font-size: 3rem; opacity: 0.3; margin-bottom: 1rem; display: block;"></i>
                 <p style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">Canlı Event Bekleniyor...</p>
                 <p style="font-size: 0.9rem; opacity: 0.7;">TikTok Live'a bağlandığınızda event'ler burada görünecek</p>
@@ -3272,14 +3272,14 @@ document.addEventListener('DOMContentLoaded', () => {
             // Update button styles
             filterButtons.forEach(b => {
                 if (b.dataset.filter === filter) {
-                    b.style.borderColor = '#00ff9d';
-                    b.style.background = 'rgba(0,255,157,0.2)';
-                    b.style.color = '#00ff9d';
+                    b.style.borderColor = '#ff2eb8';
+                    b.style.background = 'rgba(255, 46, 184,0.2)';
+                    b.style.color = '#ff2eb8';
                     b.classList.add('active');
                 } else {
                     b.style.borderColor = 'rgba(255,255,255,0.1)';
                     b.style.background = 'rgba(255,255,255,0.05)';
-                    b.style.color = '#8b8b9a';
+                    b.style.color = '#9d8bbf';
                     b.classList.remove('active');
                 }
             });
@@ -3690,7 +3690,7 @@ async function loadOverlayDrafts() {
 
         listEl.innerHTML = '';
         drafts.forEach((ov) => {
-            const barColor = ov.style?.barColor || '#00ff9d';
+            const barColor = ov.style?.barColor || '#ff2eb8';
             const target = ov.targetValue || 0;
             const current = ov.currentValue || 0;
             const pct = target > 0 ? Math.min((current / target) * 100, 100) : 0;
@@ -3707,7 +3707,7 @@ async function loadOverlayDrafts() {
                     </div>
                     <div class="draft-meta"><span>İlerleme</span><span><b>${current.toLocaleString()}</b> / ${target.toLocaleString()}</span></div>
                 ` : `
-                    <div class="draft-meta"><span>${ov.overlayType} / ${ov.subType || ''}</span><span style="color:${ov.isActive ? '#00ff9d' : '#ff006e'}">${ov.isActive ? '● AKTİF' : '● PASİF'}</span></div>
+                    <div class="draft-meta"><span>${ov.overlayType} / ${ov.subType || ''}</span><span style="color:${ov.isActive ? '#ff2eb8' : '#ff2eb8'}">${ov.isActive ? '● AKTİF' : '● PASİF'}</span></div>
                 `}
                 <div class="draft-actions">
                     <button class="btn-draft btn-resume" data-id="${ov._id}" data-action="resume">
@@ -3745,7 +3745,7 @@ async function loadOverlayDrafts() {
         });
     } catch (err) {
         console.error('loadOverlayDrafts error:', err);
-        listEl.innerHTML = '<div class="ov-drafts-empty" style="color:#ff006e">Taslaklar yüklenemedi</div>';
+        listEl.innerHTML = '<div class="ov-drafts-empty" style="color:#ff2eb8">Taslaklar yüklenemedi</div>';
     }
 }
 
@@ -3842,7 +3842,7 @@ function populateOverlayForm(ov) {
     document.getElementById('ov-duration').value = ov.config?.duration || 5;
 
     const s = ov.style || {};
-    setColorInput('ov-barColor', s.barColor || '#00ff9d');
+    setColorInput('ov-barColor', s.barColor || '#ff2eb8');
     setColorInput('ov-textColor', s.textColor || '#ffffff');
     setColorInput('ov-bgColor', s.backgroundColor || '#000000');
     document.getElementById('ov-fontSize').value = s.fontSize || 18;
@@ -3866,7 +3866,7 @@ function resetOverlayForm(info) {
     document.getElementById('ov-current').value = 0;
     document.getElementById('ov-maxitems').value = 5;
     document.getElementById('ov-duration').value = 5;
-    setColorInput('ov-barColor', '#00ff9d');
+    setColorInput('ov-barColor', '#ff2eb8');
     setColorInput('ov-textColor', '#ffffff');
     setColorInput('ov-bgColor', '#000000');
     document.getElementById('ov-fontSize').value = 18;
@@ -3979,11 +3979,11 @@ function openOverlayUrl() {
 // Style carousel
 var currentStyleIndex = 0;
 var overlayStyles = [
-    { name: 'Neon', theme: 'neon', barColor: '#00ff9d', bgColor: '#000000', textColor: '#ffffff' },
+    { name: 'Neon', theme: 'neon', barColor: '#ff2eb8', bgColor: '#000000', textColor: '#ffffff' },
     { name: 'Minimal', theme: 'minimal', barColor: '#4fc3f7', bgColor: '#1a1a2e', textColor: '#e0e0e0' },
-    { name: 'Gaming', theme: 'gaming', barColor: '#ff006e', bgColor: '#0a0a1a', textColor: '#ffffff' },
-    { name: 'Gradient', theme: 'gradient', barColor: '#bd00ff', bgColor: '#0d0d18', textColor: '#ffffff' },
-    { name: 'Glass', theme: 'glass', barColor: '#00f0ff', bgColor: '#111122', textColor: '#ffffff' },
+    { name: 'Gaming', theme: 'gaming', barColor: '#ff2eb8', bgColor: '#0a0a1a', textColor: '#ffffff' },
+    { name: 'Gradient', theme: 'gradient', barColor: '#a855f7', bgColor: '#0d0d18', textColor: '#ffffff' },
+    { name: 'Glass', theme: 'glass', barColor: '#a855f7', bgColor: '#111122', textColor: '#ffffff' },
     { name: 'Fire', theme: 'neon', barColor: '#ff5722', bgColor: '#1a0a00', textColor: '#ffccbc' },
     { name: 'Gold', theme: 'gradient', barColor: '#ffd700', bgColor: '#1a1500', textColor: '#fff8e1' }
 ];
@@ -4215,7 +4215,7 @@ function updateOverlayPreview() {
 }
 
 function getThemeCSS(s) {
-    const bc = s.barColor || '#00ff9d';
+    const bc = s.barColor || '#ff2eb8';
     const bg = s.backgroundColor || 'rgba(0,0,0,0.6)';
     const themes = {
         neon: {
@@ -4251,15 +4251,15 @@ function getThemeCSS(s) {
 
 // Gallery
 const galleryTemplates = [
-    { name: 'Neon Like Goal', overlayType: 'goal', subType: 'likes', style: { barColor:'#00ff9d', textColor:'#fff', backgroundColor:'rgba(0,0,0,0.6)', fontSize:18, borderRadius:12, theme:'neon', animation:'smooth', showPercentage:true, showNumbers:true }, targetValue: 500 },
-    { name: 'Gaming Follow Goal', overlayType: 'goal', subType: 'follows', style: { barColor:'#ff0050', textColor:'#fff', backgroundColor:'rgba(0,0,0,0.7)', fontSize:20, borderRadius:8, theme:'gaming', animation:'bounce', showPercentage:true, showNumbers:true }, targetValue: 200 },
-    { name: 'Glass Share Goal', overlayType: 'goal', subType: 'shares', style: { barColor:'#00d9ff', textColor:'#fff', backgroundColor:'rgba(255,255,255,0.08)', fontSize:16, borderRadius:16, theme:'glass', animation:'smooth', showPercentage:true, showNumbers:true }, targetValue: 100 },
+    { name: 'Neon Like Goal', overlayType: 'goal', subType: 'likes', style: { barColor:'#ff2eb8', textColor:'#fff', backgroundColor:'rgba(0,0,0,0.6)', fontSize:18, borderRadius:12, theme:'neon', animation:'smooth', showPercentage:true, showNumbers:true }, targetValue: 500 },
+    { name: 'Gaming Follow Goal', overlayType: 'goal', subType: 'follows', style: { barColor:'#ff2eb8', textColor:'#fff', backgroundColor:'rgba(0,0,0,0.7)', fontSize:20, borderRadius:8, theme:'gaming', animation:'bounce', showPercentage:true, showNumbers:true }, targetValue: 200 },
+    { name: 'Glass Share Goal', overlayType: 'goal', subType: 'shares', style: { barColor:'#a855f7', textColor:'#fff', backgroundColor:'rgba(255,255,255,0.08)', fontSize:16, borderRadius:16, theme:'glass', animation:'smooth', showPercentage:true, showNumbers:true }, targetValue: 100 },
     { name: 'Gradient Gift Alert', overlayType: 'gift-alert', subType: 'alert', style: { barColor:'#ffd700', textColor:'#fff', backgroundColor:'rgba(0,0,0,0.5)', fontSize:22, borderRadius:16, theme:'gradient', animation:'bounce' }, config: { duration: 5 } },
-    { name: 'Minimal Leaderboard', overlayType: 'leaderboard', subType: 'gifts', style: { barColor:'#00ff9d', textColor:'#fff', backgroundColor:'rgba(0,0,0,0.6)', fontSize:16, borderRadius:12, theme:'minimal' }, config: { maxItems: 5 } },
-    { name: 'Neon Chat Dock', overlayType: 'chat', subType: 'chat', style: { barColor:'#00ff9d', textColor:'#fff', backgroundColor:'rgba(0,0,0,0.5)', fontSize:14, borderRadius:12, theme:'neon' }, config: { maxMessages: 20 } },
-    { name: 'Glass Event Feed', overlayType: 'event-feed', subType: 'events', style: { barColor:'#00d9ff', textColor:'#fff', backgroundColor:'rgba(255,255,255,0.08)', fontSize:14, borderRadius:12, theme:'glass' }, config: { maxEvents: 15 } },
-    { name: 'Gaming Last Follower', overlayType: 'last-x', subType: 'follows', style: { barColor:'#ff0050', textColor:'#fff', backgroundColor:'rgba(0,0,0,0.7)', fontSize:24, borderRadius:8, theme:'gaming' } },
-    { name: 'Gradient Viewer Chart', overlayType: 'chart', subType: 'viewer_count', style: { barColor:'#bd00ff', textColor:'#fff', backgroundColor:'rgba(0,0,0,0.5)', fontSize:16, borderRadius:12, theme:'gradient' }, config: { maxItems: 5 } },
+    { name: 'Minimal Leaderboard', overlayType: 'leaderboard', subType: 'gifts', style: { barColor:'#ff2eb8', textColor:'#fff', backgroundColor:'rgba(0,0,0,0.6)', fontSize:16, borderRadius:12, theme:'minimal' }, config: { maxItems: 5 } },
+    { name: 'Neon Chat Dock', overlayType: 'chat', subType: 'chat', style: { barColor:'#ff2eb8', textColor:'#fff', backgroundColor:'rgba(0,0,0,0.5)', fontSize:14, borderRadius:12, theme:'neon' }, config: { maxMessages: 20 } },
+    { name: 'Glass Event Feed', overlayType: 'event-feed', subType: 'events', style: { barColor:'#a855f7', textColor:'#fff', backgroundColor:'rgba(255,255,255,0.08)', fontSize:14, borderRadius:12, theme:'glass' }, config: { maxEvents: 15 } },
+    { name: 'Gaming Last Follower', overlayType: 'last-x', subType: 'follows', style: { barColor:'#ff2eb8', textColor:'#fff', backgroundColor:'rgba(0,0,0,0.7)', fontSize:24, borderRadius:8, theme:'gaming' } },
+    { name: 'Gradient Viewer Chart', overlayType: 'chart', subType: 'viewer_count', style: { barColor:'#a855f7', textColor:'#fff', backgroundColor:'rgba(0,0,0,0.5)', fontSize:16, borderRadius:12, theme:'gradient' }, config: { maxItems: 5 } },
 ];
 
 function loadGalleryTemplates() {
@@ -4268,8 +4268,8 @@ function loadGalleryTemplates() {
     grid.innerHTML = '';
 
     galleryTemplates.forEach((tmpl, idx) => {
-        const themeColors = { neon:'#00ff9d', minimal:'#8b8b9a', gaming:'#ff0050', gradient:'#bd00ff', glass:'#00d9ff' };
-        const color = tmpl.style.barColor || themeColors[tmpl.style.theme] || '#00ff9d';
+        const themeColors = { neon:'#ff2eb8', minimal:'#9d8bbf', gaming:'#ff2eb8', gradient:'#a855f7', glass:'#a855f7' };
+        const color = tmpl.style.barColor || themeColors[tmpl.style.theme] || '#ff2eb8';
         const card = document.createElement('div');
         card.className = 'gallery-card';
         card.onclick = () => applyGalleryTemplate(tmpl);
@@ -4290,14 +4290,14 @@ function loadGalleryTemplates() {
 async function loadMyOverlays() {
     const grid = document.getElementById('gallery-grid');
     if (!grid) return;
-    grid.innerHTML = '<div style="text-align:center;color:#8b8b9a;padding:2rem;">Yükleniyor...</div>';
+    grid.innerHTML = '<div style="text-align:center;color:#9d8bbf;padding:2rem;">Yükleniyor...</div>';
 
     try {
         const result = await window.api.getOverlays({});
         if (result.success && result.data.length > 0) {
             grid.innerHTML = '';
             result.data.forEach(ov => {
-                const color = ov.style?.barColor || '#00ff9d';
+                const color = ov.style?.barColor || '#ff2eb8';
                 const liveUrl = buildOverlayLiveUrl(ov);
                 const card = document.createElement('div');
                 card.className = 'gallery-card';
@@ -4311,16 +4311,16 @@ async function loadMyOverlays() {
                         <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
                             <button class="btn-icon" onclick="event.stopPropagation();copyToClipboard('${liveUrl}')" title="URL Kopyala"><i class="fas fa-copy"></i></button>
                             <button class="btn-icon" onclick="event.stopPropagation();window.api.openExternal('${liveUrl}')" title="Aç"><i class="fas fa-external-link-alt"></i></button>
-                            <button class="btn-icon" style="border-color:rgba(255,0,110,0.3);color:#ff006e;background:rgba(255,0,110,0.1);" onclick="event.stopPropagation();deleteOverlayById('${ov._id}')" title="Sil"><i class="fas fa-trash"></i></button>
+                            <button class="btn-icon" style="border-color:rgba(255, 46, 184,0.3);color:#ff2eb8;background:rgba(255, 46, 184,0.1);" onclick="event.stopPropagation();deleteOverlayById('${ov._id}')" title="Sil"><i class="fas fa-trash"></i></button>
                         </div>
                     </div>`;
                 grid.appendChild(card);
             });
         } else {
-            grid.innerHTML = '<div style="text-align:center;color:#8b8b9a;padding:3rem;"><i class="fas fa-inbox" style="font-size:2.5rem;opacity:0.3;margin-bottom:1rem;display:block;"></i><p>Henüz overlay oluşturmadınız</p></div>';
+            grid.innerHTML = '<div style="text-align:center;color:#9d8bbf;padding:3rem;"><i class="fas fa-inbox" style="font-size:2.5rem;opacity:0.3;margin-bottom:1rem;display:block;"></i><p>Henüz overlay oluşturmadınız</p></div>';
         }
     } catch (e) {
-        grid.innerHTML = '<div style="text-align:center;color:#ff006e;padding:2rem;">Yüklenemedi</div>';
+        grid.innerHTML = '<div style="text-align:center;color:#ff2eb8;padding:2rem;">Yüklenemedi</div>';
     }
 }
 
@@ -4404,14 +4404,14 @@ function updateScannerUI() {
             <span class="sr-gift">${g.giftName} ${g.count > 1 ? 'x' + g.count : ''}</span>
             <span class="sr-value">${g.coins} 💎</span>
         </div>`
-    ).join('') || '<div style="text-align:center;color:#8b8b9a;padding:2rem;">Filtre ile eşleşen hediye yok</div>';
+    ).join('') || '<div style="text-align:center;color:#9d8bbf;padding:2rem;">Filtre ile eşleşen hediye yok</div>';
 }
 
 function filterScannerLog() { updateScannerUI(); }
 function clearScannerLog() {
     scannerData = { gifts: [], totalCoins: 0, gifters: {} };
     updateScannerUI();
-    document.getElementById('scanner-log').innerHTML = '<div style="text-align:center;color:#8b8b9a;padding:3rem;"><i class="fas fa-gift" style="font-size:2.5rem;opacity:0.3;margin-bottom:1rem;display:block;"></i><p>Hediyeler temizlendi</p></div>';
+    document.getElementById('scanner-log').innerHTML = '<div style="text-align:center;color:#9d8bbf;padding:3rem;"><i class="fas fa-gift" style="font-size:2.5rem;opacity:0.3;margin-bottom:1rem;display:block;"></i><p>Hediyeler temizlendi</p></div>';
 }
 
 // Toast notification
@@ -4421,8 +4421,8 @@ function showToast(msg, isError = false) {
 
     const toast = document.createElement('div');
     toast.id = 'app-toast';
-    toast.style.cssText = `position:fixed;bottom:30px;left:50%;transform:translateX(-50%);padding:0.8rem 1.5rem;border-radius:10px;font-size:0.9rem;font-weight:600;z-index:9999;animation:fadeIn 0.3s ease;
-        background:${isError ? 'rgba(255,0,110,0.9)' : 'rgba(0,255,157,0.9)'};color:${isError ? '#fff' : '#0a0a0f'};`;
+    toast.style.cssText = `position:fixed;bottom:30px;left:50%;transform:translateX(-50%);padding:0.8rem 1.5rem;border-radius:12px;font-size:0.9rem;font-weight:700;z-index:9999;animation:fadeIn 0.3s ease;backdrop-filter:blur(12px);
+        background:${isError ? 'rgba(239, 68, 68, 0.95)' : 'linear-gradient(135deg, #ff2eb8, #a855f7)'};color:#fff;box-shadow:0 8px 28px ${isError ? 'rgba(239,68,68,0.35)' : 'rgba(255,46,184,0.35)'};`;
     toast.textContent = msg;
     document.body.appendChild(toast);
     setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(() => toast.remove(), 300); }, 3000);
@@ -4447,7 +4447,7 @@ handleTikTokEvent = function(msg) {
         addToScanner({ user, giftName, coins: diamonds, count: giftCount });
 
         // Update scanner status
-        document.getElementById('scanner-status-dot').style.background = '#00ff9d';
+        document.getElementById('scanner-status-dot').style.background = '#ff2eb8';
         document.getElementById('scanner-status-text').textContent = 'Aktif';
     }
 };
@@ -4474,7 +4474,7 @@ function renderSubathonGiftRows(map) {
     wrap.innerHTML = '';
     const entries = Object.entries(map || {});
     if (entries.length === 0) {
-        wrap.innerHTML = '<div style="color:#8b8b9a;font-size:0.75rem;font-style:italic;padding:0.5rem 0;">Henüz hediye eklenmedi. Yukarıdaki + ile ekle ya da preset seç.</div>';
+        wrap.innerHTML = '<div style="color:#9d8bbf;font-size:0.75rem;font-style:italic;padding:0.5rem 0;">Henüz hediye eklenmedi. Yukarıdaki + ile ekle ya da preset seç.</div>';
         return;
     }
     entries.forEach(([gift, sec], i) => {
@@ -4483,7 +4483,7 @@ function renderSubathonGiftRows(map) {
         row.innerHTML = `
             <input type="text" class="ov-input" placeholder="Hediye adı" value="${escapeHtml(gift)}" style="flex:1;" data-sub-key="${i}">
             <input type="number" class="ov-input" placeholder="sn" value="${sec}" min="0" step="1" style="width:90px;" data-sub-val="${i}">
-            <button class="btn-icon" onclick="removeSubathonGiftRow(${i})" style="background:rgba(255,0,110,0.08);color:#ff006e;" title="Sil"><i class="fas fa-times"></i></button>
+            <button class="btn-icon" onclick="removeSubathonGiftRow(${i})" style="background:rgba(255, 46, 184,0.08);color:#ff2eb8;" title="Sil"><i class="fas fa-times"></i></button>
         `;
         wrap.appendChild(row);
     });
@@ -4588,7 +4588,7 @@ resetOverlayForm = function (info) {
 // ==================== END SUBATHON TIMER ====================
 
 // ==================== WHEEL OF ACTIONS ====================
-const WHEEL_COLORS = ['#ff006e', '#bd00ff', '#00d9ff', '#00ff9d', '#ffd000', '#ff7800', '#7c3aed', '#10b981'];
+const WHEEL_COLORS = ['#ff2eb8', '#a855f7', '#a855f7', '#ff2eb8', '#ffd000', '#ff7800', '#7c3aed', '#10b981'];
 const WHEEL_PRESETS = {
     classic: [
         { label: 'Şarkı söyle', weight: 1 },
@@ -4615,7 +4615,7 @@ function renderWheelSliceRows(slices) {
     if (!wrap) return;
     wrap.innerHTML = '';
     if (!slices || slices.length === 0) {
-        wrap.innerHTML = '<div style="color:#8b8b9a;font-size:0.75rem;font-style:italic;padding:0.5rem 0;">Henüz dilim yok. + ile ekle ya da preset seç.</div>';
+        wrap.innerHTML = '<div style="color:#9d8bbf;font-size:0.75rem;font-style:italic;padding:0.5rem 0;">Henüz dilim yok. + ile ekle ya da preset seç.</div>';
         return;
     }
     slices.forEach((sl, i) => {
@@ -4626,7 +4626,7 @@ function renderWheelSliceRows(slices) {
             <input type="color" value="${color}" style="width:38px;height:34px;background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:6px;cursor:pointer;" data-w-color="${i}">
             <input type="text" class="ov-input" placeholder="Dilim etiketi" value="${escapeHtml(sl.label || '')}" style="flex:1;" data-w-label="${i}">
             <input type="number" class="ov-input" placeholder="ağırlık" value="${sl.weight ?? 1}" min="0" step="0.1" style="width:80px;" data-w-weight="${i}" title="Ağırlık (yüksek = daha sık çıkar)">
-            <button class="btn-icon" onclick="removeWheelSlice(${i})" style="background:rgba(255,0,110,0.08);color:#ff006e;" title="Sil"><i class="fas fa-times"></i></button>
+            <button class="btn-icon" onclick="removeWheelSlice(${i})" style="background:rgba(255, 46, 184,0.08);color:#ff2eb8;" title="Sil"><i class="fas fa-times"></i></button>
         `;
         wrap.appendChild(row);
     });
@@ -4724,15 +4724,15 @@ function updateModArmButton(modId) {
     if (!btn || !modId) return;
     const armed = isModArmed(modId);
     if (armed) {
-        btn.style.background = 'linear-gradient(135deg,#ff006e,#ff5722)';
-        btn.style.boxShadow = '0 4px 12px rgba(255,0,110,0.3)';
+        btn.style.background = 'linear-gradient(135deg,#ff2eb8,#ff5722)';
+        btn.style.boxShadow = '0 4px 12px rgba(255, 46, 184,0.3)';
         btn.innerHTML = '<i class="fas fa-stop-circle"></i> <span id="md-arm-btn-label">Bu Modu Durdur</span>';
-        if (status) { status.textContent = '● AKTİF'; status.style.color = '#00ff9d'; }
+        if (status) { status.textContent = '● AKTİF'; status.style.color = '#ff2eb8'; }
     } else {
-        btn.style.background = 'linear-gradient(135deg,#00ff9d,#00d9ff)';
-        btn.style.boxShadow = '0 4px 12px rgba(0,255,157,0.25)';
+        btn.style.background = 'linear-gradient(135deg,#ff2eb8,#a855f7)';
+        btn.style.boxShadow = '0 4px 12px rgba(255, 46, 184,0.25)';
         btn.innerHTML = '<i class="fas fa-play-circle"></i> <span id="md-arm-btn-label">Bu Modu Başlat</span>';
-        if (status) { status.textContent = '● Pasif'; status.style.color = '#8b8b9a'; }
+        if (status) { status.textContent = '● Pasif'; status.style.color = '#9d8bbf'; }
     }
 }
 

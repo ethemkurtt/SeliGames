@@ -7,18 +7,63 @@
     <title>SeliGames - Oyun Modlama Platformu</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* ═══ SeliGames theme tokens — mirrors seligame.com ═══ */
+        :root {
+            --bg:          #07030f;
+            --bg-2:        #0f0720;
+            --bg-3:        #160a2e;
+            --surface:     #1f0d3d;
+            --p-200:       #c4a8f0;
+            --p-400:       #a855f7;
+            --p-500:       #8b3fd9;
+            --p-700:       #4a1a6e;
+            --m-300:       #ff9fdc;
+            --m-400:       #ff5fc4;
+            --m-500:       #ff2eb8;
+            --c-400:       #22d3ee;
+            --fg:          #f5edff;
+            --fg-soft:     rgba(245, 237, 255, 0.65);
+            --fg-mute:     rgba(245, 237, 255, 0.4);
+            /* Legacy aliases used by older rules (were undefined before) */
+            --primary:     #ff2eb8;
+            --secondary:   #a855f7;
+            --bg-surface:  #160a2e;
+            --bg-card:     #1f0d3d;
+            --accent:      #a855f7;
+            --text:        #f5edff;
+            --text-muted:  #9d8bbf;
+            --border:      rgba(168, 85, 247, 0.18);
+            --gradient:    linear-gradient(135deg, #ff2eb8, #a855f7);
+            --font-display:'Bricolage Grotesque', sans-serif;
+            --font-mono:   'JetBrains Mono', ui-monospace, monospace;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
+        /* Subtle radial glow backdrop like the site. z-index:-1 keeps it
+           behind all app content but above the solid body background. */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: -1;
+            background:
+                radial-gradient(circle at 0% 0%, rgba(168, 85, 247, 0.12), transparent 45%),
+                radial-gradient(circle at 100% 100%, rgba(255, 46, 184, 0.10), transparent 45%);
+        }
+
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: #0a0a0f;
-            color: #e0e0e0;
+            font-family: 'Space Grotesk', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #07030f;
+            color: #f5edff;
             height: 100vh;
             display: flex;
             justify-content: center;
@@ -34,7 +79,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            background: #0a0a0f;
+            background: #07030f;
         }
 
         #login-overlay.hidden {
@@ -42,30 +87,32 @@
         }
 
         .login-container {
-            background: rgba(26, 26, 36, 0.95);
-            border: 1px solid rgba(0, 255, 157, 0.15);
+            background: rgba(31, 13, 61, 0.95);
+            border: 1px solid rgba(255, 46, 184, 0.15);
             border-radius: 14px;
             padding: 2rem;
             width: 100%;
             max-width: 380px;
-            box-shadow: 0 0 30px rgba(0, 255, 157, 0.1);
+            box-shadow: 0 0 30px rgba(255, 46, 184, 0.1);
         }
 
         .login-logo {
-            font-size: 1.8rem;
-            font-weight: 900;
+            font-family: var(--font-display);
+            font-size: 2.1rem;
+            font-weight: 800;
             text-align: center;
             margin-bottom: 0.3rem;
-            background: linear-gradient(135deg, #00ff9d, #00f0ff);
+            background: linear-gradient(135deg, #ff2eb8, #a855f7);
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
-            letter-spacing: 3px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
         }
 
         .login-subtitle {
             text-align: center;
-            color: #8b8b9a;
+            color: #9d8bbf;
             margin-bottom: 1.5rem;
             font-size: 0.8rem;
         }
@@ -77,7 +124,7 @@
         .form-group label {
             display: block;
             margin-bottom: 0.35rem;
-            color: #8b8b9a;
+            color: #9d8bbf;
             font-size: 0.72rem;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -92,13 +139,13 @@
             left: 1rem;
             top: 50%;
             transform: translateY(-50%);
-            color: #8b8b9a;
+            color: #9d8bbf;
         }
 
         input {
             width: 100%;
             padding: 0.65rem 0.65rem 0.65rem 2.5rem;
-            background: #13131a;
+            background: #160a2e;
             border: 1px solid rgba(255,255,255,0.06);
             border-radius: 8px;
             color: #fff;
@@ -108,17 +155,17 @@
 
         input:focus {
             outline: none;
-            border-color: #00ff9d;
-            box-shadow: 0 0 10px rgba(0, 255, 157, 0.15);
+            border-color: #ff2eb8;
+            box-shadow: 0 0 10px rgba(255, 46, 184, 0.15);
         }
 
         .btn-primary {
             width: 100%;
             padding: 0.75rem;
-            background: linear-gradient(135deg, #00ff9d, #00f0ff);
+            background: linear-gradient(135deg, #ff2eb8, #a855f7);
             border: none;
             border-radius: 8px;
-            color: #0a0a0f;
+            color: #07030f;
             font-weight: 700;
             font-size: 0.85rem;
             text-transform: uppercase;
@@ -128,7 +175,7 @@
         }
 
         .btn-primary:hover {
-            box-shadow: 0 6px 20px rgba(0, 255, 157, 0.3);
+            box-shadow: 0 6px 20px rgba(255, 46, 184, 0.3);
         }
 
         /* App Container (hidden initially) - FIXED */
@@ -150,7 +197,7 @@
             min-width: 210px;
             max-width: 210px;
             flex-shrink: 0;
-            background: #111118;
+            background: #0f0720;
             padding: 1rem 0.75rem;
             display: flex;
             flex-direction: column;
@@ -161,7 +208,7 @@
             border-right: 1px solid rgba(255,255,255,0.04);
         }
         .sidebar::-webkit-scrollbar { width: 3px; }
-        .sidebar::-webkit-scrollbar-thumb { background: rgba(0,255,157,0.15); border-radius: 3px; }
+        .sidebar::-webkit-scrollbar-thumb { background: rgba(255, 46, 184,0.15); border-radius: 3px; }
 
         .sidebar.collapsed {
             width: 56px;
@@ -182,19 +229,21 @@
         }
 
         .sidebar-logo {
-            font-size: 1.3rem;
-            font-weight: 900;
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 800;
             margin-bottom: 0.15rem;
-            background: linear-gradient(135deg, #00ff9d, #00f0ff);
+            background: linear-gradient(135deg, #ff2eb8, #a855f7);
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
-            letter-spacing: 2px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
         }
 
         .sidebar-subtitle {
             font-size: 0.65rem;
-            color: #8b8b9a;
+            color: #9d8bbf;
             margin-bottom: 0.5rem;
         }
 
@@ -204,13 +253,13 @@
             right: -12px;
             width: 24px;
             height: 24px;
-            background: #00ff9d;
+            background: #ff2eb8;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            color: #0a0a0f;
+            color: #07030f;
             font-size: 0.65rem;
             transition: all 0.3s;
             z-index: 10;
@@ -229,19 +278,19 @@
             display: flex;
             align-items: center;
             gap: 0.65rem;
-            color: #8b8b9a;
+            color: #9d8bbf;
             font-size: 0.8rem;
         }
 
         .nav-item:hover {
-            background: rgba(0, 255, 157, 0.08);
-            color: #00ff9d;
+            background: rgba(255, 46, 184, 0.08);
+            color: #ff2eb8;
         }
 
         .nav-item.active {
-            background: rgba(0, 255, 157, 0.12);
-            color: #00ff9d;
-            border-left: 2px solid #00ff9d;
+            background: rgba(255, 46, 184, 0.12);
+            color: #ff2eb8;
+            border-left: 2px solid #ff2eb8;
         }
 
         .nav-item i {
@@ -267,12 +316,12 @@
             width: 30px;
             height: 30px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #00ff9d, #00f0ff);
+            background: linear-gradient(135deg, #ff2eb8, #a855f7);
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 700;
-            color: #0a0a0f;
+            color: #07030f;
             font-size: 0.8rem;
             flex-shrink: 0;
         }
@@ -289,16 +338,16 @@
 
         .user-status {
             font-size: 0.65rem;
-            color: #8b8b9a;
+            color: #9d8bbf;
         }
 
         .btn-logout {
             width: 100%;
             padding: 0.5rem;
-            background: rgba(255, 0, 110, 0.08);
-            border: 1px solid rgba(255,0,110,0.3);
+            background: rgba(255, 46, 184, 0.08);
+            border: 1px solid rgba(255, 46, 184,0.3);
             border-radius: 6px;
-            color: #ff006e;
+            color: #ff2eb8;
             font-weight: 600;
             font-size: 0.75rem;
             cursor: pointer;
@@ -310,7 +359,7 @@
         }
 
         .btn-logout:hover {
-            background: rgba(255, 0, 110, 0.15);
+            background: rgba(255, 46, 184, 0.15);
         }
 
         /* Main Content - COMPACT */
@@ -320,14 +369,14 @@
             padding: 1.25rem 1.5rem;
             overflow-y: auto;
             overflow-x: hidden;
-            background: #0d0d14;
+            background: #0b0518;
             height: 100vh;
             max-width: 100%;
             width: 100%;
             box-sizing: border-box;
         }
         .main-content::-webkit-scrollbar { width: 5px; }
-        .main-content::-webkit-scrollbar-thumb { background: rgba(0,255,157,0.12); border-radius: 3px; }
+        .main-content::-webkit-scrollbar-thumb { background: rgba(255, 46, 184,0.12); border-radius: 3px; }
 
         .page {
             display: none;
@@ -354,16 +403,18 @@
         }
 
         .page-title {
-            font-size: 1.35rem;
-            font-weight: 700;
+            font-family: var(--font-display);
+            font-size: 1.6rem;
+            font-weight: 800;
             margin-bottom: 0.25rem;
             color: #fff;
-            line-height: 1.2;
+            line-height: 1.15;
+            letter-spacing: -0.01em;
             word-wrap: break-word;
         }
 
         .page-subtitle {
-            color: #8b8b9a;
+            color: #9d8bbf;
             font-size: 0.82rem;
             line-height: 1.4;
             word-wrap: break-word;
@@ -400,7 +451,7 @@
         }
 
         .stat-card {
-            background: #13131a;
+            background: #160a2e;
             border: 1px solid rgba(255,255,255,0.04);
             border-radius: 10px;
             padding: 0.9rem;
@@ -417,14 +468,14 @@
         }
 
         .stat-card:hover {
-            border-color: rgba(0,255,157,0.2);
+            border-color: rgba(255, 46, 184,0.2);
             transform: translateY(-2px);
         }
 
         .stat-icon {
             font-size: 1.3rem;
             margin-bottom: 0.4rem;
-            color: #00ff9d;
+            color: #ff2eb8;
             opacity: 0.9;
         }
 
@@ -437,7 +488,7 @@
         }
 
         .stat-label {
-            color: #8b8b9a;
+            color: #9d8bbf;
             font-size: 0.7rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -447,7 +498,7 @@
 
         /* Profile Page - Compact */
         .profile-header {
-            background: #13131a;
+            background: #160a2e;
             border: 1px solid rgba(255,255,255,0.04);
             border-radius: 12px;
             padding: 1.25rem;
@@ -462,14 +513,14 @@
         .profile-avatar {
             width: 70px;
             height: 70px;
-            background: linear-gradient(135deg, #00ff9d, #00f0ff);
+            background: linear-gradient(135deg, #ff2eb8, #a855f7);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 1.8rem;
             font-weight: 700;
-            color: #0a0a0f;
+            color: #07030f;
         }
 
         .profile-info { flex: 1; }
@@ -482,7 +533,7 @@
         }
 
         .profile-email {
-            color: #8b8b9a;
+            color: #9d8bbf;
             font-size: 0.82rem;
             margin-bottom: 0.75rem;
         }
@@ -491,7 +542,7 @@
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
-            background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(189, 0, 255, 0.1));
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(168, 85, 247, 0.1));
             border: 1px solid rgba(255, 215, 0, 0.2);
             padding: 0.4rem 0.9rem;
             border-radius: 50px;
@@ -524,7 +575,7 @@
             font-size: 0.85rem;
         }
 
-        .info-value { color: #8b8b9a; font-size: 0.82rem; }
+        .info-value { color: #9d8bbf; font-size: 0.82rem; }
 
         .stat-mini {
             text-align: center;
@@ -535,7 +586,7 @@
             transition: all 0.2s;
         }
 
-        .stat-mini:hover { border-color: rgba(0, 255, 157, 0.2); }
+        .stat-mini:hover { border-color: rgba(255, 46, 184, 0.2); }
 
         .stat-mini-value {
             font-size: 1.6rem;
@@ -544,7 +595,7 @@
         }
 
         .stat-mini-label {
-            color: #8b8b9a;
+            color: #9d8bbf;
             font-size: 0.7rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -563,7 +614,7 @@
 
         /* Card Styles */
         .card {
-            background: #13131a;
+            background: #160a2e;
             border: 1px solid rgba(255,255,255,0.04);
             border-radius: 10px;
             padding: 1.15rem;
@@ -575,14 +626,14 @@
         }
 
         .card:hover {
-            border-color: rgba(0, 255, 157, 0.15);
+            border-color: rgba(255, 46, 184, 0.15);
         }
 
         .card-header-title {
             font-size: 1rem;
             font-weight: 700;
             margin-bottom: 0.85rem;
-            color: #00ff9d;
+            color: #ff2eb8;
             display: flex;
             align-items: center;
             gap: 0.4rem;
@@ -615,7 +666,7 @@
 
         /* Settings Page */
         .settings-section {
-            background: #13131a;
+            background: #160a2e;
             border: 1px solid rgba(255,255,255,0.04);
             border-radius: 10px;
             padding: 1.15rem;
@@ -625,7 +676,7 @@
         }
 
         .settings-section h3 {
-            color: #00ff9d;
+            color: #ff2eb8;
             font-size: 1rem;
             margin-bottom: 0.85rem;
             font-weight: 700;
@@ -652,7 +703,7 @@
 
         .setting-desc {
             font-size: 0.75rem;
-            color: #8b8b9a;
+            color: #9d8bbf;
         }
 
         /* Toggle Switch */
@@ -694,7 +745,7 @@
         }
 
         input:checked+.toggle-slider {
-            background: linear-gradient(135deg, #00ff9d, #00f0ff);
+            background: linear-gradient(135deg, #ff2eb8, #a855f7);
         }
 
         input:checked+.toggle-slider:before {
@@ -736,7 +787,7 @@
         }
 
         .mod-card {
-            background: #13131a;
+            background: #160a2e;
             border: 1px solid rgba(255,255,255,0.04);
             border-radius: 10px;
             overflow: hidden;
@@ -753,14 +804,14 @@
 
         .mod-card:hover {
             transform: translateY(-3px);
-            border-color: rgba(0,255,157,0.2);
+            border-color: rgba(255, 46, 184,0.2);
         }
 
         .mod-badge {
             position: absolute;
             top: 1rem;
             left: 1rem;
-            background: linear-gradient(135deg, #bd00ff, #ff006e);
+            background: linear-gradient(135deg, #a855f7, #ff2eb8);
             color: white;
             padding: 0.4rem 1rem;
             border-radius: 20px;
@@ -790,7 +841,7 @@
         .mod-title {
             font-size: 0.95rem;
             font-weight: 700;
-            color: #00ff9d;
+            color: #ff2eb8;
             margin-bottom: 0.3rem;
             word-wrap: break-word;
             overflow-wrap: break-word;
@@ -798,8 +849,8 @@
 
         .mod-version {
             display: inline-block;
-            background: rgba(0, 255, 157, 0.1);
-            color: #00ff9d;
+            background: rgba(255, 46, 184, 0.1);
+            color: #ff2eb8;
             padding: 0.3rem 0.8rem;
             border-radius: 15px;
             font-size: 0.75rem;
@@ -807,7 +858,7 @@
         }
 
         .mod-description {
-            color: #8b8b9a;
+            color: #9d8bbf;
             line-height: 1.5;
             font-size: 0.85rem;
             word-wrap: break-word;
@@ -822,7 +873,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(10, 10, 15, 0.95);
+            background: rgba(7, 3, 15, 0.95);
             backdrop-filter: blur(10px);
             z-index: 3000;
             justify-content: center;
@@ -834,8 +885,8 @@
         }
 
         .modal-content {
-            background: #13131a;
-            border: 1px solid rgba(0,255,157,0.2);
+            background: #160a2e;
+            border: 1px solid rgba(255, 46, 184,0.2);
             border-radius: 12px;
             padding: 1.25rem;
             max-width: 800px;
@@ -854,28 +905,28 @@
         .modal-title {
             font-size: 1.2rem;
             font-weight: 700;
-            color: #00ff9d;
+            color: #ff2eb8;
         }
 
         .modal-close {
             width: 30px;
             height: 30px;
             border-radius: 50%;
-            background: rgba(255, 0, 110, 0.15);
-            border: 1px solid rgba(255,0,110,0.3);
-            color: #ff006e;
+            background: rgba(255, 46, 184, 0.15);
+            border: 1px solid rgba(255, 46, 184,0.3);
+            color: #ff2eb8;
             font-size: 0.9rem;
             cursor: pointer;
             transition: all 0.2s;
         }
 
         .modal-close:hover {
-            background: rgba(255, 0, 110, 0.3);
+            background: rgba(255, 46, 184, 0.3);
             transform: rotate(90deg);
         }
 
         .modal-description {
-            color: #8b8b9a;
+            color: #9d8bbf;
             margin-bottom: 2rem;
             line-height: 1.6;
         }
@@ -888,7 +939,7 @@
 
         .gift-item {
             background: var(--bg-surface);
-            border: 1px solid rgba(0, 255, 157, 0.1);
+            border: 1px solid rgba(255, 46, 184, 0.1);
             border-radius: 10px;
             padding: 1.5rem;
             display: grid;
@@ -900,7 +951,7 @@
         .gift-icon {
             width: 70px;
             height: 70px;
-            background: linear-gradient(135deg, #bd00ff, #ff006e);
+            background: linear-gradient(135deg, #a855f7, #ff2eb8);
             border-radius: 15px;
             display: flex;
             align-items: center;
@@ -920,14 +971,14 @@
 
         .gift-coins {
             font-size: 0.85rem;
-            color: #8b8b9a;
+            color: #9d8bbf;
         }
 
         .action-select {
             width: 100%;
             padding: 0.8rem 1rem;
             background: var(--bg-surface);
-            border: 2px solid rgba(0, 255, 157, 0.1);
+            border: 2px solid rgba(255, 46, 184, 0.1);
             border-radius: 10px;
             color: white;
             font-size: 0.95rem;
@@ -943,7 +994,7 @@
         .action-label {
             display: block;
             margin-bottom: 0.5rem;
-            color: #8b8b9a;
+            color: #9d8bbf;
             font-size: 0.85rem;
             text-transform: uppercase;
         }
@@ -959,7 +1010,7 @@
             background: rgba(255,255,255,0.04);
             border: 1px solid rgba(255,255,255,0.08);
             border-radius: 6px;
-            color: #8b8b9a;
+            color: #9d8bbf;
             font-weight: 600;
             font-size: 0.8rem;
             cursor: pointer;
@@ -972,7 +1023,7 @@
 
         .btn-success {
             padding: 0.55rem 1.2rem;
-            background: linear-gradient(135deg, #00ff9d, #00f0ff);
+            background: linear-gradient(135deg, #ff2eb8, #a855f7);
             border: none;
             border-radius: 6px;
             color: #000;
@@ -986,7 +1037,7 @@
         }
 
         .btn-success:hover {
-            box-shadow: 0 4px 15px rgba(0, 255, 157, 0.3);
+            box-shadow: 0 4px 15px rgba(255, 46, 184, 0.3);
         }
 
         @keyframes shimmer {
@@ -1012,7 +1063,7 @@
         }
 
         .stat-box {
-            background: #13131a;
+            background: #160a2e;
             border: 1px solid rgba(255,255,255,0.04);
             border-radius: 10px;
             padding: 0.9rem;
@@ -1025,7 +1076,7 @@
 
         .stat-box:hover {
             transform: translateY(-2px);
-            border-color: rgba(0,255,157,0.15);
+            border-color: rgba(255, 46, 184,0.15);
         }
 
         .stat-box::before {
@@ -1035,7 +1086,7 @@
             left: 0;
             width: 100%;
             height: 4px;
-            background: linear-gradient(90deg, #00ff9d, #00f0ff);
+            background: linear-gradient(90deg, #ff2eb8, #a855f7);
         }
 
         .stat-box-icon {
@@ -1060,14 +1111,14 @@
         }
 
         .stat-box-label {
-            color: #8b8b9a;
+            color: #9d8bbf;
             font-size: 0.7rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
         .history-section {
-            background: #13131a;
+            background: #160a2e;
             border: 1px solid rgba(255,255,255,0.04);
             border-radius: 10px;
             padding: 1rem;
@@ -1097,7 +1148,7 @@
             align-items: center;
             justify-content: center;
             padding: 3rem;
-            color: #8b8b9a;
+            color: #9d8bbf;
             gap: 1rem;
         }
 
@@ -1111,16 +1162,16 @@
             position: fixed;
             bottom: 20px;
             right: 20px;
-            background: rgba(19, 19, 26, 0.9);
+            background: rgba(22, 10, 46, 0.9);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(0, 255, 157, 0.2);
+            border: 1px solid rgba(255, 46, 184, 0.2);
             border-radius: 10px;
             padding: 10px 15px;
             display: flex;
             gap: 15px;
             z-index: 1000;
             box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
-            font-family: 'Courier New', monospace;
+            font-family: 'JetBrains Mono', ui-monospace, monospace;
             font-size: 0.8rem;
         }
 
@@ -1131,7 +1182,7 @@
         }
 
         .perf-label {
-            color: #8b8b9a;
+            color: #9d8bbf;
             font-weight: 700;
         }
 
@@ -1142,7 +1193,7 @@
 
         /* TikTok Page */
         .tiktok-status-card {
-            background: #13131a;
+            background: #160a2e;
             border: 1px solid rgba(255,255,255,0.04);
             border-radius: 10px;
             padding: 1.5rem;
@@ -1154,14 +1205,14 @@
             width: 60px;
             height: 60px;
             border-radius: 50%;
-            background: rgba(255, 0, 110, 0.08);
-            border: 1px solid rgba(255,0,110,0.3);
+            background: rgba(255, 46, 184, 0.08);
+            border: 1px solid rgba(255, 46, 184,0.3);
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0 auto 0.85rem;
             font-size: 1.5rem;
-            color: #ff006e;
+            color: #ff2eb8;
         }
 
         .status-text {
@@ -1171,12 +1222,12 @@
         }
 
         .status-subtext {
-            color: #8b8b9a;
+            color: #9d8bbf;
             font-size: 0.82rem;
         }
 
         .tiktok-connect-card {
-            background: #13131a;
+            background: #160a2e;
             border: 1px solid rgba(255,255,255,0.04);
             border-radius: 10px;
             padding: 1rem;
@@ -1191,7 +1242,7 @@
 
         .tiktok-input {
             flex: 1;
-            background: #0a0a0f;
+            background: #07030f;
             border: 1px solid rgba(255,255,255,0.06);
             border-radius: 6px;
             padding: 0.5rem;
@@ -1205,7 +1256,7 @@
         }
 
         .btn-tiktok {
-            background: linear-gradient(135deg, #ff0050, #00f2ea);
+            background: linear-gradient(135deg, #ff2eb8, #a855f7);
             border: none;
             border-radius: 10px;
             padding: 0 2rem;
@@ -1220,11 +1271,11 @@
 
         .btn-tiktok:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(255, 0, 80, 0.3);
+            box-shadow: 0 10px 20px rgba(255, 46, 184, 0.3);
         }
 
         .info-card {
-            background: #13131a;
+            background: #160a2e;
             border: 1px solid rgba(255,255,255,0.04);
             border-radius: 10px;
             padding: 1rem;
@@ -1235,7 +1286,7 @@
         .info-title {
             font-size: 0.95rem;
             font-weight: 700;
-            color: #00ff9d;
+            color: #ff2eb8;
             margin-bottom: 0.65rem;
             display: flex;
             align-items: center;
@@ -1245,7 +1296,7 @@
 
         .info-list {
             list-style: none;
-            color: #8b8b9a;
+            color: #9d8bbf;
         }
 
         .info-list li {
@@ -1272,7 +1323,7 @@
         }
 
         .contact-card {
-            background: #13131a;
+            background: #160a2e;
             border: 1px solid rgba(255,255,255,0.04);
             border-radius: 10px;
             padding: 1.15rem;
@@ -1284,20 +1335,20 @@
 
         .contact-card:hover {
             transform: translateY(-2px);
-            border-color: rgba(0,255,157,0.15);
+            border-color: rgba(255, 46, 184,0.15);
         }
 
         .contact-icon {
             width: 50px;
             height: 50px;
-            background: rgba(0, 255, 157, 0.08);
+            background: rgba(255, 46, 184, 0.08);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0 auto 0.85rem;
             font-size: 1.3rem;
-            color: #00ff9d;
+            color: #ff2eb8;
         }
 
         .contact-title {
@@ -1307,7 +1358,7 @@
         }
 
         .contact-text {
-            color: #8b8b9a;
+            color: #9d8bbf;
             margin-bottom: 0.85rem;
             font-size: 0.8rem;
         }
@@ -1339,10 +1390,10 @@
 
         @keyframes glow {
             0%, 100% {
-                box-shadow: 0 0 10px rgba(255, 0, 80, 0.5);
+                box-shadow: 0 0 10px rgba(255, 46, 184, 0.5);
             }
             50% {
-                box-shadow: 0 0 20px rgba(255, 0, 80, 1), 0 0 30px rgba(0, 242, 234, 0.5);
+                box-shadow: 0 0 20px rgba(255, 46, 184, 1), 0 0 30px rgba(168, 85, 247, 0.5);
             }
         }
 
@@ -1379,20 +1430,20 @@
         }
 
         .sound-option:hover {
-            border-color: rgba(0,255,157,0.2);
-            background: rgba(0, 255, 157, 0.04);
+            border-color: rgba(255, 46, 184,0.2);
+            background: rgba(255, 46, 184, 0.04);
         }
 
         .sound-option.active {
-            border-color: rgba(0,255,157,0.3);
-            background: rgba(0, 255, 157, 0.08);
+            border-color: rgba(255, 46, 184,0.3);
+            background: rgba(255, 46, 184, 0.08);
         }
 
         .sound-play-btn {
             width: 30px;
             height: 30px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #00ff9d, #00f0ff);
+            background: linear-gradient(135deg, #ff2eb8, #a855f7);
             border: none;
             color: #000;
             font-size: 0.75rem;
@@ -1421,7 +1472,7 @@
 
         .sound-desc {
             font-size: 0.68rem;
-            color: #8b8b9a;
+            color: #9d8bbf;
         }
 
         /* Profile Page - Editable Inputs */
@@ -1439,7 +1490,7 @@
 
         .profile-input:focus {
             outline: none;
-            border-color: #00ff9d;
+            border-color: #ff2eb8;
         }
 
         .profile-input:read-only {
@@ -1449,10 +1500,10 @@
 
         .btn-update-field {
             padding: 0.45rem 0.65rem;
-            background: rgba(0, 255, 157, 0.1);
-            border: 1px solid rgba(0,255,157,0.2);
+            background: rgba(255, 46, 184, 0.1);
+            border: 1px solid rgba(255, 46, 184,0.2);
             border-radius: 6px;
-            color: #00ff9d;
+            color: #ff2eb8;
             cursor: pointer;
             transition: all 0.2s;
             font-size: 0.82rem;
@@ -1460,7 +1511,7 @@
         }
 
         .btn-update-field:hover {
-            background: rgba(0, 255, 157, 0.2);
+            background: rgba(255, 46, 184, 0.2);
         }
 
         .btn-update-field:disabled {
@@ -1470,8 +1521,8 @@
 
         /* TikTok Page - COMPACT & FIXED STYLES */
         .tiktok-connection-card {
-            background: linear-gradient(135deg, rgba(255, 0, 80, 0.1), rgba(0, 242, 234, 0.1));
-            border: 1px solid rgba(255, 0, 80, 0.3);
+            background: linear-gradient(135deg, rgba(255, 46, 184, 0.1), rgba(168, 85, 247, 0.1));
+            border: 1px solid rgba(255, 46, 184, 0.3);
             border-radius: 12px;
             padding: 0.75rem 1rem;
             margin-bottom: 1rem;
@@ -1494,8 +1545,8 @@
             width: 12px;
             height: 12px;
             border-radius: 50%;
-            background: #ff006e;
-            box-shadow: 0 0 10px #ff006e;
+            background: #ff2eb8;
+            box-shadow: 0 0 10px #ff2eb8;
             animation: pulse 2s infinite;
         }
 
@@ -1510,20 +1561,20 @@
             align-items: center;
             gap: 0.75rem;
             flex: 1;
-            background: rgba(0, 217, 255, 0.1);
-            border: 1px solid rgba(0, 217, 255, 0.3);
+            background: rgba(168, 85, 247, 0.1);
+            border: 1px solid rgba(168, 85, 247, 0.3);
             border-radius: 8px;
             padding: 0.6rem 1rem;
         }
 
         #tiktok-username-text {
-            color: #00d9ff;
+            color: #a855f7;
             font-weight: 700;
             font-size: 1rem;
         }
 
         .btn-start-live {
-            background: linear-gradient(135deg, #ff0050, #00f2ea);
+            background: linear-gradient(135deg, #ff2eb8, #a855f7);
             border: none;
             border-radius: 8px;
             padding: 0.6rem 1.5rem;
@@ -1540,7 +1591,7 @@
 
         .btn-start-live:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(255, 0, 80, 0.5);
+            box-shadow: 0 4px 15px rgba(255, 46, 184, 0.5);
         }
 
         .tiktok-compact-stats {
@@ -1582,7 +1633,7 @@
         }
 
         .tiktok-event-container {
-            background: #13131a;
+            background: #160a2e;
             border: 1px solid rgba(255,255,255,0.04);
             border-radius: 8px;
             overflow: hidden;
@@ -1595,8 +1646,8 @@
         }
 
         .tiktok-event-header {
-            background: linear-gradient(135deg, rgba(0, 255, 157, 0.1), rgba(0, 240, 255, 0.1));
-            border-bottom: 1px solid rgba(0, 255, 157, 0.2);
+            background: linear-gradient(135deg, rgba(255, 46, 184, 0.1), rgba(168, 85, 247, 0.1));
+            border-bottom: 1px solid rgba(255, 46, 184, 0.2);
             padding: 0.75rem 1rem;
             display: flex;
             align-items: center;
@@ -1609,7 +1660,7 @@
         .event-title {
             font-size: 1rem;
             font-weight: 700;
-            color: #00ff9d;
+            color: #ff2eb8;
             display: flex;
             align-items: center;
             gap: 0.5rem;
@@ -1618,7 +1669,7 @@
 
         .live-badge {
             font-size: 0.65rem;
-            background: linear-gradient(135deg, #ff0050, #00f2ea);
+            background: linear-gradient(135deg, #ff2eb8, #a855f7);
             padding: 0.25rem 0.6rem;
             border-radius: 12px;
             font-weight: 700;
@@ -1638,7 +1689,7 @@
             border-radius: 8px;
             border: 2px solid rgba(255, 255, 255, 0.1);
             background: rgba(255, 255, 255, 0.05);
-            color: #8b8b9a;
+            color: #9d8bbf;
             cursor: pointer;
             font-size: 0.8rem;
             font-weight: 600;
@@ -1646,22 +1697,22 @@
         }
 
         .event-filter-btn.active {
-            border-color: #00ff9d;
-            background: rgba(0, 255, 157, 0.2);
-            color: #00ff9d;
+            border-color: #ff2eb8;
+            background: rgba(255, 46, 184, 0.2);
+            color: #ff2eb8;
         }
 
         .event-filter-btn:hover {
-            border-color: #00ff9d;
-            background: rgba(0, 255, 157, 0.1);
+            border-color: #ff2eb8;
+            background: rgba(255, 46, 184, 0.1);
         }
 
         .btn-clear-feed {
             padding: 0.4rem 0.8rem;
-            background: rgba(255, 0, 110, 0.2);
-            border: 2px solid rgba(255, 0, 110, 0.5);
+            background: rgba(255, 46, 184, 0.2);
+            border: 2px solid rgba(255, 46, 184, 0.5);
             border-radius: 8px;
-            color: #ff006e;
+            color: #ff2eb8;
             font-size: 0.8rem;
             font-weight: 600;
             cursor: pointer;
@@ -1669,7 +1720,7 @@
         }
 
         .btn-clear-feed:hover {
-            background: rgba(255, 0, 110, 0.3);
+            background: rgba(255, 46, 184, 0.3);
         }
 
         .tiktok-event-feed {
@@ -1684,7 +1735,7 @@
 
         .event-placeholder {
             text-align: center;
-            color: #8b8b9a;
+            color: #9d8bbf;
             padding: 3rem 2rem;
         }
 
@@ -1787,7 +1838,7 @@
             font-size: 0.6rem;
             text-transform: uppercase;
             letter-spacing: 1.5px;
-            color: #00ff9d;
+            color: #ff2eb8;
             padding: 0.75rem 0.8rem 0.3rem;
             font-weight: 700;
             opacity: 0.6;
@@ -1803,12 +1854,12 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            color: #8b8b9a;
+            color: #9d8bbf;
             font-size: 0.78rem;
             user-select: none;
         }
-        .nav-accordion-header:hover { background: rgba(0,255,157,0.08); color: #00ff9d; }
-        .nav-accordion-header.active, .nav-accordion-header.open { color: #00ff9d; }
+        .nav-accordion-header:hover { background: rgba(255, 46, 184,0.08); color: #ff2eb8; }
+        .nav-accordion-header.active, .nav-accordion-header.open { color: #ff2eb8; }
         .nav-accordion-header i.nav-acc-icon { width: 14px; text-align: center; font-size: 0.82rem; }
         .nav-accordion-header .acc-arrow {
             margin-left: auto;
@@ -1829,14 +1880,14 @@
             display: flex;
             align-items: center;
             gap: 0.4rem;
-            color: #6b6b7a;
+            color: #7a6e94;
             font-size: 0.72rem;
         }
-        .nav-sub-item:hover { background: rgba(0,255,157,0.06); color: #00ff9d; }
+        .nav-sub-item:hover { background: rgba(255, 46, 184,0.06); color: #ff2eb8; }
         .nav-sub-item.active {
-            background: rgba(0,255,157,0.1);
-            color: #00ff9d;
-            border-left: 2px solid #00ff9d;
+            background: rgba(255, 46, 184,0.1);
+            color: #ff2eb8;
+            border-left: 2px solid #ff2eb8;
         }
         .sidebar.collapsed .nav-accordion-header span,
         .sidebar.collapsed .nav-accordion-header .acc-arrow,
@@ -1851,14 +1902,14 @@
         @media (max-width: 1200px) { .overlay-panel { grid-template-columns: 1fr; } }
 
         .overlay-settings {
-            background: #13131a;
+            background: #160a2e;
             border: 1px solid rgba(255,255,255,0.04);
             border-radius: 10px;
             padding: 1rem;
         }
 
         .overlay-preview-card {
-            background: #13131a;
+            background: #160a2e;
             border: 1px solid rgba(255,255,255,0.04);
             border-radius: 10px;
             padding: 1rem;
@@ -1867,8 +1918,8 @@
         }
 
         .overlay-preview-frame {
-            background: #0d0d18;
-            border: 1px dashed rgba(0,255,157,0.12);
+            background: #0b0518;
+            border: 1px dashed rgba(255, 46, 184,0.12);
             border-radius: 8px;
             min-height: 150px;
             display: flex;
@@ -1893,7 +1944,7 @@
             border-radius: 50%;
             border: 1px solid rgba(255,255,255,0.1);
             background: rgba(255,255,255,0.05);
-            color: #8b8b9a;
+            color: #9d8bbf;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -1901,8 +1952,8 @@
             font-size: 0.7rem;
             transition: all 0.2s;
         }
-        .style-carousel button:hover { border-color: #00ff9d; color: #00ff9d; }
-        .style-carousel span { font-size: 0.72rem; color: #8b8b9a; }
+        .style-carousel button:hover { border-color: #ff2eb8; color: #ff2eb8; }
+        .style-carousel span { font-size: 0.72rem; color: #9d8bbf; }
 
         .setting-group {
             margin-bottom: 0.85rem;
@@ -1910,7 +1961,7 @@
         .setting-group label {
             display: block;
             font-size: 0.7rem;
-            color: #8b8b9a;
+            color: #9d8bbf;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             margin-bottom: 0.3rem;
@@ -1932,26 +1983,26 @@
         .ov-input {
             width: 100%;
             padding: 0.45rem 0.65rem;
-            background: #0a0a0f;
+            background: #07030f;
             border: 1px solid rgba(255,255,255,0.06);
             border-radius: 6px;
             color: #fff;
             font-size: 0.8rem;
             transition: border-color 0.2s;
         }
-        .ov-input:focus { outline: none; border-color: #00ff9d; }
+        .ov-input:focus { outline: none; border-color: #ff2eb8; }
 
         .ov-select {
             width: 100%;
             padding: 0.45rem 0.65rem;
-            background: #0a0a0f;
+            background: #07030f;
             border: 1px solid rgba(255,255,255,0.06);
             border-radius: 6px;
             color: #fff;
             font-size: 0.8rem;
             cursor: pointer;
         }
-        .ov-select:focus { outline: none; border-color: #00ff9d; }
+        .ov-select:focus { outline: none; border-color: #ff2eb8; }
 
         .ov-color {
             width: 32px;
@@ -1968,7 +2019,7 @@
             -webkit-appearance: none;
             height: 4px;
             border-radius: 2px;
-            background: #1a1a2e;
+            background: #1f0d3d;
             outline: none;
         }
         .ov-range::-webkit-slider-thumb {
@@ -1976,13 +2027,13 @@
             width: 14px;
             height: 14px;
             border-radius: 50%;
-            background: #00ff9d;
+            background: #ff2eb8;
             cursor: pointer;
         }
 
         .ov-range-value {
             font-size: 0.72rem;
-            color: #00ff9d;
+            color: #ff2eb8;
             font-weight: 700;
             min-width: 32px;
             text-align: center;
@@ -1992,7 +2043,7 @@
             display: flex;
             align-items: center;
             gap: 0.35rem;
-            background: #0a0a0f;
+            background: #07030f;
             border: 1px solid rgba(255,255,255,0.06);
             border-radius: 6px;
             padding: 0.3rem 0.4rem;
@@ -2001,8 +2052,8 @@
             flex: 1;
             background: transparent;
             border: none;
-            color: #00ff9d;
-            font-family: 'Courier New', monospace;
+            color: #ff2eb8;
+            font-family: 'JetBrains Mono', ui-monospace, monospace;
             font-size: 0.7rem;
             padding: 0.25rem;
         }
@@ -2014,7 +2065,7 @@
             border-radius: 6px;
             border: 1px solid rgba(255,255,255,0.06);
             background: rgba(255,255,255,0.03);
-            color: #8b8b9a;
+            color: #9d8bbf;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -2022,7 +2073,7 @@
             font-size: 0.75rem;
             transition: all 0.2s;
         }
-        .btn-icon:hover { background: rgba(0,255,157,0.1); color: #00ff9d; border-color: rgba(0,255,157,0.2); }
+        .btn-icon:hover { background: rgba(255, 46, 184,0.1); color: #ff2eb8; border-color: rgba(255, 46, 184,0.2); }
 
         .overlay-actions {
             display: flex;
@@ -2032,28 +2083,28 @@
         .btn-ov-save {
             flex: 1;
             padding: 0.5rem 1rem;
-            background: linear-gradient(135deg, #00ff9d, #00f0ff);
+            background: linear-gradient(135deg, #ff2eb8, #a855f7);
             border: none;
             border-radius: 6px;
-            color: #0a0a0f;
+            color: #07030f;
             font-weight: 700;
             font-size: 0.8rem;
             cursor: pointer;
             transition: all 0.2s;
         }
-        .btn-ov-save:hover { box-shadow: 0 4px 12px rgba(0,255,157,0.25); }
+        .btn-ov-save:hover { box-shadow: 0 4px 12px rgba(255, 46, 184,0.25); }
         .btn-ov-reset {
             padding: 0.5rem 1rem;
-            background: rgba(255,0,110,0.08);
-            border: 1px solid rgba(255,0,110,0.2);
+            background: rgba(255, 46, 184,0.08);
+            border: 1px solid rgba(255, 46, 184,0.2);
             border-radius: 6px;
-            color: #ff006e;
+            color: #ff2eb8;
             font-weight: 600;
             font-size: 0.8rem;
             cursor: pointer;
             transition: all 0.2s;
         }
-        .btn-ov-reset:hover { background: rgba(255,0,110,0.15); }
+        .btn-ov-reset:hover { background: rgba(255, 46, 184,0.15); }
 
         .btn-ov-test {
             padding: 0.5rem 1rem;
@@ -2070,10 +2121,10 @@
 
         .btn-ov-customize {
             padding: 0.5rem 1rem;
-            background: rgba(0,255,157,0.08);
-            border: 1px solid rgba(0,255,157,0.15);
+            background: rgba(255, 46, 184,0.08);
+            border: 1px solid rgba(255, 46, 184,0.15);
             border-radius: 6px;
-            color: #00ff9d;
+            color: #ff2eb8;
             font-weight: 600;
             font-size: 0.8rem;
             cursor: pointer;
@@ -2082,7 +2133,7 @@
             align-items: center;
             gap: 0.3rem;
         }
-        .btn-ov-customize:hover { background: rgba(0,255,157,0.15); }
+        .btn-ov-customize:hover { background: rgba(255, 46, 184,0.15); }
 
         .overlay-list { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
         .overlay-list-item {
@@ -2095,22 +2146,22 @@
             padding: 0.6rem 0.75rem;
             transition: all 0.2s;
         }
-        .overlay-list-item:hover { border-color: rgba(0,255,157,0.15); }
+        .overlay-list-item:hover { border-color: rgba(255, 46, 184,0.15); }
         .overlay-list-item .oli-title { flex: 1; font-weight: 600; font-size: 0.82rem; }
-        .overlay-list-item .oli-type { color: #8b8b9a; font-size: 0.7rem; }
-        .overlay-list-item .oli-active { color: #00ff9d; font-size: 0.65rem; }
-        .overlay-list-item .oli-inactive { color: #ff006e; font-size: 0.65rem; }
+        .overlay-list-item .oli-type { color: #9d8bbf; font-size: 0.7rem; }
+        .overlay-list-item .oli-active { color: #ff2eb8; font-size: 0.65rem; }
+        .overlay-list-item .oli-inactive { color: #ff2eb8; font-size: 0.65rem; }
 
         /* Custom CSS Import Section */
         .custom-import-section {
             background: rgba(255,255,255,0.02);
-            border: 1px dashed rgba(0,255,157,0.12);
+            border: 1px dashed rgba(255, 46, 184,0.12);
             border-radius: 8px;
             padding: 0.75rem;
             margin-top: 0.75rem;
         }
         .custom-import-section h5 {
-            color: #00ff9d;
+            color: #ff2eb8;
             font-size: 0.78rem;
             margin-bottom: 0.5rem;
             display: flex;
@@ -2121,15 +2172,15 @@
             width: 100%;
             min-height: 80px;
             padding: 0.5rem;
-            background: #0a0a0f;
+            background: #07030f;
             border: 1px solid rgba(255,255,255,0.06);
             border-radius: 6px;
-            color: #00ff9d;
-            font-family: 'Courier New', monospace;
+            color: #ff2eb8;
+            font-family: 'JetBrains Mono', ui-monospace, monospace;
             font-size: 0.72rem;
             resize: vertical;
         }
-        .custom-css-textarea:focus { outline: none; border-color: #00ff9d; }
+        .custom-css-textarea:focus { outline: none; border-color: #ff2eb8; }
         .import-export-btns {
             display: flex;
             gap: 0.4rem;
@@ -2137,15 +2188,15 @@
         }
         .btn-import-file {
             padding: 0.35rem 0.7rem;
-            background: rgba(0,255,157,0.08);
-            border: 1px solid rgba(0,255,157,0.15);
+            background: rgba(255, 46, 184,0.08);
+            border: 1px solid rgba(255, 46, 184,0.15);
             border-radius: 4px;
-            color: #00ff9d;
+            color: #ff2eb8;
             font-size: 0.7rem;
             cursor: pointer;
             transition: all 0.2s;
         }
-        .btn-import-file:hover { background: rgba(0,255,157,0.15); }
+        .btn-import-file:hover { background: rgba(255, 46, 184,0.15); }
 
         /* Gallery Cards - Compact */
         .gallery-grid {
@@ -2154,14 +2205,14 @@
             gap: 0.75rem;
         }
         .gallery-card {
-            background: #13131a;
+            background: #160a2e;
             border: 1px solid rgba(255,255,255,0.04);
             border-radius: 10px;
             overflow: hidden;
             cursor: pointer;
             transition: all 0.2s;
         }
-        .gallery-card:hover { transform: translateY(-2px); border-color: rgba(0,255,157,0.2); }
+        .gallery-card:hover { transform: translateY(-2px); border-color: rgba(255, 46, 184,0.2); }
         .gallery-card-preview {
             height: 100px;
             display: flex;
@@ -2172,11 +2223,11 @@
         }
         .gallery-card-info { padding: 0.6rem 0.85rem; }
         .gallery-card-title { font-weight: 700; font-size: 0.82rem; margin-bottom: 0.15rem; }
-        .gallery-card-desc { color: #8b8b9a; font-size: 0.7rem; }
+        .gallery-card-desc { color: #9d8bbf; font-size: 0.7rem; }
 
         /* Event log for gift scanner - Compact */
         .scanner-log {
-            background: #0a0a0f;
+            background: #07030f;
             border: 1px solid rgba(255,255,255,0.04);
             border-radius: 8px;
             height: 350px;
@@ -2191,15 +2242,15 @@
             border-bottom: 1px solid rgba(255,255,255,0.02);
             font-size: 0.78rem;
         }
-        .scanner-row .sr-time { color: #8b8b9a; font-size: 0.65rem; min-width: 50px; }
-        .scanner-row .sr-user { color: #00ff9d; font-weight: 600; }
-        .scanner-row .sr-gift { color: #ff006e; }
+        .scanner-row .sr-time { color: #9d8bbf; font-size: 0.65rem; min-width: 50px; }
+        .scanner-row .sr-user { color: #ff2eb8; font-weight: 600; }
+        .scanner-row .sr-gift { color: #ff2eb8; }
         .scanner-row .sr-value { color: #ffd700; margin-left: auto; font-weight: 700; }
 
         /* ─── Overlay Drafts / Saved Overlays ─── */
         .ov-drafts-section {
             margin-top: 1.25rem;
-            background: #13131a;
+            background: #160a2e;
             border: 1px solid rgba(255,255,255,0.04);
             border-radius: 12px;
             padding: 1rem 1.1rem;
@@ -2213,7 +2264,7 @@
             flex-wrap: wrap;
         }
         .ov-drafts-title {
-            color: #00ff9d;
+            color: #ff2eb8;
             font-size: 0.95rem;
             font-weight: 700;
             display: flex;
@@ -2222,12 +2273,12 @@
             margin: 0 0 0.2rem 0;
         }
         .ov-drafts-sub {
-            color: #8b8b9a;
+            color: #9d8bbf;
             font-size: 0.72rem;
         }
         .btn-new-draft {
-            background: linear-gradient(135deg, #00ff9d, #00f0ff);
-            color: #0a0a0f;
+            background: linear-gradient(135deg, #ff2eb8, #a855f7);
+            color: #07030f;
             border: none;
             border-radius: 8px;
             padding: 0.5rem 0.9rem;
@@ -2241,7 +2292,7 @@
             white-space: nowrap;
         }
         .btn-new-draft:hover {
-            box-shadow: 0 4px 14px rgba(0,255,157,0.3);
+            box-shadow: 0 4px 14px rgba(255, 46, 184,0.3);
             transform: translateY(-1px);
         }
         .ov-drafts-grid {
@@ -2251,7 +2302,7 @@
         }
         .ov-drafts-empty {
             grid-column: 1 / -1;
-            color: #8b8b9a;
+            color: #9d8bbf;
             text-align: center;
             padding: 1.5rem 0.5rem;
             font-size: 0.82rem;
@@ -2268,13 +2319,13 @@
             overflow: hidden;
         }
         .draft-card:hover {
-            border-color: rgba(0,255,157,0.25);
+            border-color: rgba(255, 46, 184,0.25);
             background: rgba(255,255,255,0.04);
             transform: translateY(-2px);
         }
         .draft-card.active {
-            border-color: #00ff9d;
-            box-shadow: 0 0 0 1px #00ff9d44, 0 0 18px #00ff9d22;
+            border-color: #ff2eb8;
+            box-shadow: 0 0 0 1px #ff2eb844, 0 0 18px #ff2eb822;
         }
         .draft-card.active::after {
             content: 'DÜZENLENİYOR';
@@ -2282,9 +2333,9 @@
             top: 0.4rem;
             right: 0.4rem;
             font-size: 0.55rem;
-            color: #00ff9d;
-            background: rgba(0,255,157,0.08);
-            border: 1px solid rgba(0,255,157,0.3);
+            color: #ff2eb8;
+            background: rgba(255, 46, 184,0.08);
+            border: 1px solid rgba(255, 46, 184,0.3);
             padding: 2px 6px;
             border-radius: 999px;
             letter-spacing: 0.5px;
@@ -2312,14 +2363,14 @@
             transition: width 0.3s ease;
         }
         .draft-meta {
-            color: #8b8b9a;
+            color: #9d8bbf;
             font-size: 0.7rem;
             display: flex;
             justify-content: space-between;
             margin-bottom: 0.55rem;
             font-variant-numeric: tabular-nums;
         }
-        .draft-meta b { color: #00ff9d; font-weight: 700; }
+        .draft-meta b { color: #ff2eb8; font-weight: 700; }
         .draft-actions {
             display: flex;
             gap: 0.3rem;
@@ -2342,11 +2393,11 @@
             white-space: nowrap;
         }
         .btn-draft.btn-resume {
-            background: rgba(0,255,157,0.08);
-            border-color: rgba(0,255,157,0.3);
-            color: #00ff9d;
+            background: rgba(255, 46, 184,0.08);
+            border-color: rgba(255, 46, 184,0.3);
+            color: #ff2eb8;
         }
-        .btn-draft.btn-resume:hover { background: rgba(0,255,157,0.18); }
+        .btn-draft.btn-resume:hover { background: rgba(255, 46, 184,0.18); }
         .btn-draft.btn-reset {
             background: rgba(255,215,0,0.08);
             border-color: rgba(255,215,0,0.3);
@@ -2354,13 +2405,13 @@
         }
         .btn-draft.btn-reset:hover { background: rgba(255,215,0,0.18); }
         .btn-draft.btn-delete {
-            background: rgba(255,0,110,0.08);
-            border-color: rgba(255,0,110,0.3);
-            color: #ff006e;
+            background: rgba(255, 46, 184,0.08);
+            border-color: rgba(255, 46, 184,0.3);
+            color: #ff2eb8;
             flex: 0 0 auto;
             padding: 0.35rem 0.55rem;
         }
-        .btn-draft.btn-delete:hover { background: rgba(255,0,110,0.2); }
+        .btn-draft.btn-delete:hover { background: rgba(255, 46, 184,0.2); }
 
         /* ─── Statistics page ─── */
         .stats-overview {
@@ -2370,7 +2421,7 @@
             margin-bottom: 1rem;
         }
         .stat-box {
-            background: #13131a;
+            background: #160a2e;
             border: 1px solid rgba(255,255,255,0.05);
             border-radius: 12px;
             padding: 0.9rem;
@@ -2379,14 +2430,14 @@
             transition: all 0.2s;
         }
         .stat-box:hover {
-            border-color: rgba(0,255,157,0.2);
+            border-color: rgba(255, 46, 184,0.2);
             transform: translateY(-2px);
         }
         .stat-box-icon {
             width: 36px; height: 36px;
             border-radius: 9px;
             display: flex; align-items: center; justify-content: center;
-            color: #0a0a0f;
+            color: #07030f;
             font-size: 1rem;
             margin-bottom: 0.5rem;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
@@ -2399,7 +2450,7 @@
             font-variant-numeric: tabular-nums;
         }
         .stat-box-label {
-            color: #8b8b9a;
+            color: #9d8bbf;
             font-size: 0.65rem;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -2407,7 +2458,7 @@
             font-weight: 600;
         }
         .stat-box-sub {
-            color: #00ff9d;
+            color: #ff2eb8;
             font-size: 0.7rem;
             margin-top: 0.35rem;
             font-weight: 600;
@@ -2421,7 +2472,7 @@
             margin-top: 0.5rem;
         }
         .stats-card {
-            background: #13131a;
+            background: #160a2e;
             border: 1px solid rgba(255,255,255,0.05);
             border-radius: 12px;
             overflow: hidden;
@@ -2436,7 +2487,7 @@
             flex-wrap: wrap;
         }
         .stats-card-head h3 {
-            color: #00ff9d;
+            color: #ff2eb8;
             font-size: 0.85rem;
             font-weight: 700;
             display: flex;
@@ -2445,9 +2496,9 @@
             margin: 0;
         }
         .stats-card-count {
-            background: rgba(0,255,157,0.08);
-            border: 1px solid rgba(0,255,157,0.2);
-            color: #00ff9d;
+            background: rgba(255, 46, 184,0.08);
+            border: 1px solid rgba(255, 46, 184,0.2);
+            color: #ff2eb8;
             padding: 0.15rem 0.55rem;
             border-radius: 999px;
             font-size: 0.7rem;
@@ -2458,7 +2509,7 @@
             padding: 0.5rem 0;
         }
         .stats-empty {
-            color: #8b8b9a;
+            color: #9d8bbf;
             text-align: center;
             padding: 1.5rem 1rem;
             font-size: 0.78rem;
@@ -2501,12 +2552,12 @@
             white-space: nowrap;
         }
         .stat-row .sr-sub {
-            color: #8b8b9a;
+            color: #9d8bbf;
             font-size: 0.68rem;
             margin-top: 0.1rem;
         }
         .stat-row .sr-value {
-            color: #00ff9d;
+            color: #ff2eb8;
             font-weight: 800;
             font-size: 0.85rem;
             font-variant-numeric: tabular-nums;
@@ -2515,7 +2566,7 @@
         }
         .stat-row .sr-value.gold { color: #ffd700; }
         .stat-row .sr-time {
-            color: #8b8b9a;
+            color: #9d8bbf;
             font-size: 0.68rem;
             flex-shrink: 0;
             min-width: 60px;
@@ -2532,14 +2583,14 @@
         .session-row:last-child { border-bottom: none; }
         .session-dot {
             width: 8px; height: 8px; border-radius: 50%;
-            background: #00ff9d;
-            box-shadow: 0 0 8px #00ff9d;
+            background: #ff2eb8;
+            box-shadow: 0 0 8px #ff2eb8;
             flex-shrink: 0;
         }
         .session-main { flex: 1; min-width: 0; }
         .session-date { color: #fff; font-weight: 600; font-size: 0.82rem; }
-        .session-info { color: #8b8b9a; font-size: 0.7rem; margin-top: 0.15rem; display: flex; gap: 0.75rem; flex-wrap: wrap; }
-        .session-info b { color: #00ff9d; }
+        .session-info { color: #9d8bbf; font-size: 0.7rem; margin-top: 0.15rem; display: flex; gap: 0.75rem; flex-wrap: wrap; }
+        .session-info b { color: #ff2eb8; }
 
         /* ─── Gift Sound Map grid ─── */
         .gift-map-grid {
@@ -2551,7 +2602,7 @@
             padding-right: 0.35rem;
         }
         .gift-map-grid::-webkit-scrollbar { width: 6px; }
-        .gift-map-grid::-webkit-scrollbar-thumb { background: rgba(0,255,157,0.2); border-radius: 3px; }
+        .gift-map-grid::-webkit-scrollbar-thumb { background: rgba(255, 46, 184,0.2); border-radius: 3px; }
         .gift-map-row {
             background: rgba(255,255,255,0.02);
             border: 1px solid rgba(255,255,255,0.05);
@@ -2562,8 +2613,8 @@
             gap: 0.55rem;
             transition: all 0.2s;
         }
-        .gift-map-row:hover { border-color: rgba(0,255,157,0.2); }
-        .gift-map-row.mapped { border-color: rgba(0,255,157,0.3); background: rgba(0,255,157,0.04); }
+        .gift-map-row:hover { border-color: rgba(255, 46, 184,0.2); }
+        .gift-map-row.mapped { border-color: rgba(255, 46, 184,0.3); background: rgba(255, 46, 184,0.04); }
         .gift-map-row img.gift-icon-sm {
             width: 38px; height: 38px; object-fit: contain; flex-shrink: 0;
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
@@ -2582,7 +2633,7 @@
             flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end;
         }
         .gift-map-select {
-            background: #0a0a0f;
+            background: #07030f;
             border: 1px solid rgba(255,255,255,0.08);
             color: #fff;
             border-radius: 6px;
@@ -2593,7 +2644,7 @@
         .gift-map-btn {
             background: rgba(255,255,255,0.04);
             border: 1px solid rgba(255,255,255,0.08);
-            color: #e0e0e0;
+            color: #f5edff;
             border-radius: 6px;
             padding: 0.25rem 0.45rem;
             font-size: 0.65rem;
@@ -2604,14 +2655,14 @@
             align-items: center;
             gap: 2px;
         }
-        .gift-map-btn:hover { background: rgba(0,255,157,0.1); border-color: rgba(0,255,157,0.25); color: #00ff9d; }
-        .gift-map-btn.btn-preview { color: #00d9ff; }
-        .gift-map-btn.btn-preview:hover { background: rgba(0,217,255,0.1); border-color: rgba(0,217,255,0.3); color: #00d9ff; }
-        .gift-map-btn.btn-clear { color: #ff006e; }
-        .gift-map-btn.btn-clear:hover { background: rgba(255,0,110,0.1); border-color: rgba(255,0,110,0.3); color: #ff006e; }
+        .gift-map-btn:hover { background: rgba(255, 46, 184,0.1); border-color: rgba(255, 46, 184,0.25); color: #ff2eb8; }
+        .gift-map-btn.btn-preview { color: #a855f7; }
+        .gift-map-btn.btn-preview:hover { background: rgba(168, 85, 247,0.1); border-color: rgba(168, 85, 247,0.3); color: #a855f7; }
+        .gift-map-btn.btn-clear { color: #ff2eb8; }
+        .gift-map-btn.btn-clear:hover { background: rgba(255, 46, 184,0.1); border-color: rgba(255, 46, 184,0.3); color: #ff2eb8; }
         .gift-map-chip-mp3 {
-            background: linear-gradient(135deg, #00ff9d, #00d9ff);
-            color: #0a0a0f;
+            background: linear-gradient(135deg, #ff2eb8, #a855f7);
+            color: #07030f;
             font-size: 0.6rem;
             font-weight: 800;
             padding: 2px 6px;
@@ -2626,7 +2677,7 @@
             gap: 1rem;
         }
         .mod-card {
-            background: #13131a;
+            background: #160a2e;
             border: 1px solid rgba(255,255,255,0.05);
             border-radius: 14px;
             overflow: hidden;
@@ -2637,13 +2688,13 @@
         }
         .mod-card:hover {
             transform: translateY(-4px);
-            border-color: rgba(0,255,157,0.3);
-            box-shadow: 0 8px 24px rgba(0,255,157,0.12), 0 4px 10px rgba(0,0,0,0.3);
+            border-color: rgba(255, 46, 184,0.3);
+            box-shadow: 0 8px 24px rgba(255, 46, 184,0.12), 0 4px 10px rgba(0,0,0,0.3);
         }
         .mod-card-image {
             width: 100%;
             aspect-ratio: 16 / 10;
-            background: linear-gradient(135deg, #1a1a2e, #0a0a0f);
+            background: linear-gradient(135deg, #1f0d3d, #07030f);
             object-fit: cover;
             display: block;
             border-bottom: 1px solid rgba(255,255,255,0.05);
@@ -2660,19 +2711,19 @@
         .mod-card-badge {
             background: rgba(0,0,0,0.65);
             backdrop-filter: blur(8px);
-            color: #00ff9d;
+            color: #ff2eb8;
             font-size: 0.65rem;
             font-weight: 700;
             padding: 3px 8px;
             border-radius: 4px;
             letter-spacing: 0.5px;
             text-transform: uppercase;
-            border: 1px solid rgba(0,255,157,0.3);
+            border: 1px solid rgba(255, 46, 184,0.3);
         }
         .mod-card-badge.installed {
-            background: rgba(0,255,157,0.9);
-            color: #0a0a0f;
-            border-color: rgba(0,255,157,0.6);
+            background: rgba(255, 46, 184,0.9);
+            color: #07030f;
+            border-color: rgba(255, 46, 184,0.6);
         }
         .mod-card-body {
             padding: 0.85rem 1rem 1rem;
@@ -2682,7 +2733,7 @@
             gap: 0.5rem;
         }
         .mod-card-game {
-            color: #8b8b9a;
+            color: #9d8bbf;
             font-size: 0.7rem;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -2696,7 +2747,7 @@
             margin: 0.1rem 0 0.25rem;
         }
         .mod-card-desc {
-            color: #8b8b9a;
+            color: #9d8bbf;
             font-size: 0.78rem;
             line-height: 1.4;
             flex: 1;
@@ -2714,15 +2765,15 @@
             gap: 0.5rem;
         }
         .mod-card-stats {
-            color: #8b8b9a;
+            color: #9d8bbf;
             font-size: 0.68rem;
             display: flex;
             gap: 0.5rem;
             align-items: center;
         }
-        .mod-card-stats b { color: #00ff9d; font-variant-numeric: tabular-nums; }
+        .mod-card-stats b { color: #ff2eb8; font-variant-numeric: tabular-nums; }
         .mod-card-arrow {
-            color: #00ff9d;
+            color: #ff2eb8;
             font-size: 0.8rem;
             transition: transform 0.2s;
         }
@@ -2747,7 +2798,7 @@
         .mod-hero-overlay {
             position: absolute;
             inset: 0;
-            background: linear-gradient(135deg, rgba(10,10,15,0.6), rgba(10,10,15,0.92));
+            background: linear-gradient(135deg, rgba(7, 3, 15,0.6), rgba(7, 3, 15,0.92));
         }
         .mod-hero-content {
             position: relative;
@@ -2762,9 +2813,9 @@
             flex-wrap: wrap;
         }
         .mod-hero-chip {
-            background: rgba(0,255,157,0.12);
-            border: 1px solid rgba(0,255,157,0.3);
-            color: #00ff9d;
+            background: rgba(255, 46, 184,0.12);
+            border: 1px solid rgba(255, 46, 184,0.3);
+            color: #ff2eb8;
             font-size: 0.68rem;
             font-weight: 700;
             padding: 3px 10px;
@@ -2773,9 +2824,9 @@
             text-transform: uppercase;
         }
         .mod-hero-chip-version {
-            background: rgba(189,0,255,0.12);
-            border-color: rgba(189,0,255,0.3);
-            color: #bd00ff;
+            background: rgba(168, 85, 247,0.12);
+            border-color: rgba(168, 85, 247,0.3);
+            color: #a855f7;
         }
         .mod-hero-chip-installs {
             background: rgba(255,215,0,0.1);
@@ -2790,14 +2841,14 @@
             line-height: 1.1;
         }
         .mod-hero-game {
-            color: #00ff9d;
+            color: #ff2eb8;
             font-size: 0.85rem;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 1px;
         }
         .mod-hero-desc {
-            color: #d0d0d0;
+            color: #e8def7;
             font-size: 0.9rem;
             line-height: 1.5;
             max-width: 700px;
@@ -2820,7 +2871,7 @@
             padding-right: 0.35rem;
         }
         .md-gift-grid::-webkit-scrollbar { width: 6px; }
-        .md-gift-grid::-webkit-scrollbar-thumb { background: rgba(0,255,157,0.2); border-radius: 3px; }
+        .md-gift-grid::-webkit-scrollbar-thumb { background: rgba(255, 46, 184,0.2); border-radius: 3px; }
         .md-gift-row {
             background: rgba(255,255,255,0.02);
             border: 1px solid rgba(255,255,255,0.05);
@@ -2831,8 +2882,8 @@
             gap: 0.55rem;
             transition: all 0.2s;
         }
-        .md-gift-row:hover { border-color: rgba(0,255,157,0.2); }
-        .md-gift-row.mapped { border-color: rgba(0,255,157,0.3); background: rgba(0,255,157,0.04); }
+        .md-gift-row:hover { border-color: rgba(255, 46, 184,0.2); }
+        .md-gift-row.mapped { border-color: rgba(255, 46, 184,0.3); background: rgba(255, 46, 184,0.04); }
         .md-gift-row img.md-gift-icon {
             width: 34px; height: 34px; object-fit: contain; flex-shrink: 0;
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
@@ -2853,7 +2904,7 @@
             flex-shrink: 0;
         }
         .md-action-type {
-            background: #0a0a0f;
+            background: #07030f;
             border: 1px solid rgba(255,255,255,0.08);
             color: #fff;
             border-radius: 6px;
@@ -2863,36 +2914,36 @@
         }
         .md-shortcut-input {
             width: 120px;
-            background: #0a0a0f;
+            background: #07030f;
             border: 1px solid rgba(255,255,255,0.08);
-            color: #00ff9d;
+            color: #ff2eb8;
             border-radius: 6px;
             padding: 0.35rem 0.5rem;
             font-size: 0.72rem;
-            font-family: 'Courier New', monospace;
+            font-family: 'JetBrains Mono', ui-monospace, monospace;
             font-weight: 700;
             text-align: center;
             cursor: pointer;
             transition: all 0.2s;
         }
-        .md-shortcut-input:hover { border-color: rgba(0,255,157,0.3); background: rgba(0,255,157,0.04); }
+        .md-shortcut-input:hover { border-color: rgba(255, 46, 184,0.3); background: rgba(255, 46, 184,0.04); }
         .md-shortcut-input:focus,
         .md-shortcut-input.capturing {
             outline: none;
-            border-color: #00ff9d;
-            box-shadow: 0 0 0 2px rgba(0,255,157,0.25), 0 0 12px rgba(0,255,157,0.3);
+            border-color: #ff2eb8;
+            box-shadow: 0 0 0 2px rgba(255, 46, 184,0.25), 0 0 12px rgba(255, 46, 184,0.3);
             color: #ffd700;
-            background: rgba(0,255,157,0.08);
+            background: rgba(255, 46, 184,0.08);
             animation: capturePulse 1.2s ease infinite;
         }
         @keyframes capturePulse {
-            0%, 100% { box-shadow: 0 0 0 2px rgba(0,255,157,0.25), 0 0 12px rgba(0,255,157,0.3); }
-            50% { box-shadow: 0 0 0 2px rgba(0,255,157,0.5), 0 0 20px rgba(0,255,157,0.5); }
+            0%, 100% { box-shadow: 0 0 0 2px rgba(255, 46, 184,0.25), 0 0 12px rgba(255, 46, 184,0.3); }
+            50% { box-shadow: 0 0 0 2px rgba(255, 46, 184,0.5), 0 0 20px rgba(255, 46, 184,0.5); }
         }
         .md-gift-btn {
             background: rgba(255,255,255,0.04);
             border: 1px solid rgba(255,255,255,0.08);
-            color: #e0e0e0;
+            color: #f5edff;
             border-radius: 6px;
             padding: 0.3rem 0.5rem;
             font-size: 0.65rem;
@@ -2900,9 +2951,9 @@
             cursor: pointer;
             transition: all 0.15s;
         }
-        .md-gift-btn:hover { background: rgba(255,0,110,0.1); border-color: rgba(255,0,110,0.3); color: #ff006e; }
-        .md-gift-btn-test { background: rgba(189,0,255,0.1); border-color: rgba(189,0,255,0.3); color: #bd00ff; }
-        .md-gift-btn-test:hover:not([disabled]) { background: rgba(189,0,255,0.25); color: #fff; box-shadow: 0 0 8px rgba(189,0,255,0.4); }
+        .md-gift-btn:hover { background: rgba(255, 46, 184,0.1); border-color: rgba(255, 46, 184,0.3); color: #ff2eb8; }
+        .md-gift-btn-test { background: rgba(168, 85, 247,0.1); border-color: rgba(168, 85, 247,0.3); color: #a855f7; }
+        .md-gift-btn-test:hover:not([disabled]) { background: rgba(168, 85, 247,0.25); color: #fff; box-shadow: 0 0 8px rgba(168, 85, 247,0.4); }
 
         /* ─── Gift Designer (Hediye Tasarımı) ─── */
         .gd-grid {
@@ -2922,7 +2973,7 @@
         .gd-right-col { display: flex; flex-direction: column; gap: 0.75rem; }
         .gd-settings { padding: 1rem 1.1rem; }
         .gd-settings h3 {
-            color: #00ff9d;
+            color: #ff2eb8;
             font-size: 0.78rem;
             text-transform: uppercase;
             letter-spacing: 1.5px;
@@ -2942,7 +2993,7 @@
             display: flex;
             flex-direction: column;
             gap: 0.3rem;
-            color: #8b8b9a;
+            color: #9d8bbf;
             font-size: 0.7rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -2951,7 +3002,7 @@
         .gd-settings input[type="text"],
         .gd-settings input[type="number"],
         .gd-settings select {
-            background: #0a0a0f;
+            background: #07030f;
             border: 1px solid rgba(255,255,255,0.08);
             border-radius: 6px;
             padding: 0.5rem 0.65rem;
@@ -2964,9 +3015,9 @@
             transition: border-color 0.15s;
         }
         .gd-settings input:focus,
-        .gd-settings select:focus { border-color: rgba(189,0,255,0.5); }
+        .gd-settings select:focus { border-color: rgba(168, 85, 247,0.5); }
         .gd-settings input[type="color"] {
-            background: #0a0a0f;
+            background: #07030f;
             border: 1px solid rgba(255,255,255,0.08);
             border-radius: 6px;
             height: 36px;
@@ -2974,7 +3025,7 @@
             padding: 2px;
         }
         .gd-settings input[type="checkbox"] {
-            accent-color: #00ff9d;
+            accent-color: #ff2eb8;
             width: 18px;
             height: 18px;
             margin-top: 0.3rem;
@@ -3014,7 +3065,7 @@
         }
         .gd-slot-row img.gd-icon, .gd-slot-row .gd-icon-placeholder {
             width: 32px; height: 32px;
-            background: #0a0a0f;
+            background: #07030f;
             border: 1px solid rgba(255,255,255,0.08);
             border-radius: 6px;
             object-fit: contain;
@@ -3024,10 +3075,10 @@
             font-size: 0.85rem;
             color: rgba(255,255,255,0.3);
         }
-        .gd-slot-row img.gd-icon:hover { border-color: rgba(189,0,255,0.4); }
+        .gd-slot-row img.gd-icon:hover { border-color: rgba(168, 85, 247,0.4); }
         .gd-slot-row input[type="text"] {
             flex: 1; min-width: 0;
-            background: #0a0a0f;
+            background: #07030f;
             border: 1px solid rgba(255,255,255,0.08);
             border-radius: 6px;
             padding: 0.4rem 0.55rem;
@@ -3056,22 +3107,22 @@
             flex-shrink: 0;
         }
         .gd-slot-btn.add {
-            color: #bd00ff;
-            background: rgba(189,0,255,0.1);
-            border-color: rgba(189,0,255,0.3);
+            color: #a855f7;
+            background: rgba(168, 85, 247,0.1);
+            border-color: rgba(168, 85, 247,0.3);
         }
-        .gd-slot-btn.add:hover { background: rgba(189,0,255,0.2); }
+        .gd-slot-btn.add:hover { background: rgba(168, 85, 247,0.2); }
         .gd-slot-btn.del {
-            color: #ff006e;
-            background: rgba(255,0,110,0.1);
-            border-color: rgba(255,0,110,0.3);
+            color: #ff2eb8;
+            background: rgba(255, 46, 184,0.1);
+            border-color: rgba(255, 46, 184,0.3);
         }
-        .gd-slot-btn.del:hover { background: rgba(255,0,110,0.2); }
+        .gd-slot-btn.del:hover { background: rgba(255, 46, 184,0.2); }
         .gd-slot-add-all {
             width: 100%;
-            background: rgba(189,0,255,0.12);
-            border: 1px solid rgba(189,0,255,0.3);
-            color: #bd00ff;
+            background: rgba(168, 85, 247,0.12);
+            border: 1px solid rgba(168, 85, 247,0.3);
+            color: #a855f7;
             border-radius: 8px;
             padding: 0.5rem;
             font-size: 0.78rem;
@@ -3080,7 +3131,7 @@
             margin-top: 0.3rem;
             transition: background 0.15s;
         }
-        .gd-slot-add-all:hover { background: rgba(189,0,255,0.2); }
+        .gd-slot-add-all:hover { background: rgba(168, 85, 247,0.2); }
 
         /* Preview canvas — starts at 16:9, grows vertically when content overflows */
         .gd-preview-wrap {
@@ -3088,13 +3139,13 @@
             /* JS sets height each render; this is the floor (16:9 of width). */
             min-height: 0;
             background:
-                linear-gradient(45deg, #0e0e16 25%, transparent 25%),
-                linear-gradient(-45deg, #0e0e16 25%, transparent 25%),
-                linear-gradient(45deg, transparent 75%, #0e0e16 75%),
-                linear-gradient(-45deg, transparent 75%, #0e0e16 75%);
+                linear-gradient(45deg, #0f0720 25%, transparent 25%),
+                linear-gradient(-45deg, #0f0720 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #0f0720 75%),
+                linear-gradient(-45deg, transparent 75%, #0f0720 75%);
             background-size: 16px 16px;
             background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
-            background-color: #060608;
+            background-color: #07030f;
             border-radius: 10px;
             border: 1px solid rgba(255,255,255,0.06);
             overflow: hidden;
@@ -3130,7 +3181,7 @@
             padding-right: 0.3rem;
         }
         .gd-picker-grid::-webkit-scrollbar { width: 6px; }
-        .gd-picker-grid::-webkit-scrollbar-thumb { background: rgba(189,0,255,0.25); border-radius: 3px; }
+        .gd-picker-grid::-webkit-scrollbar-thumb { background: rgba(168, 85, 247,0.25); border-radius: 3px; }
         .gd-picker-card {
             background: rgba(255,255,255,0.04);
             border: 1px solid rgba(255,255,255,0.08);
@@ -3141,8 +3192,8 @@
             transition: all 0.15s;
         }
         .gd-picker-card:hover {
-            border-color: rgba(189,0,255,0.5);
-            background: rgba(189,0,255,0.08);
+            border-color: rgba(168, 85, 247,0.5);
+            background: rgba(168, 85, 247,0.08);
             transform: translateY(-2px);
         }
         .gd-picker-card img {
@@ -3159,6 +3210,89 @@
         .gd-picker-card .coins {
             font-size: 0.65rem; color: #ffd700;
             margin-top: 0.15rem;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           THEME POLISH — matches seligame.com vibe (magenta/purple neon)
+           Purely cosmetic; appended last so it wins specificity ties.
+           ═══════════════════════════════════════════════════════════════ */
+
+        /* Themed scrollbars */
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: rgba(168, 85, 247, 0.05); }
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #8b3fd9, #ff2eb8);
+            border-radius: 999px;
+            border: 2px solid #07030f;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, #a855f7, #ff5fc4);
+        }
+
+        /* Sidebar logo + login glow */
+        .sidebar-logo { text-shadow: 0 0 24px rgba(255, 46, 184, 0.35); }
+        .login-logo  { text-shadow: 0 0 28px rgba(255, 46, 184, 0.30); }
+
+        /* Login card: gradient halo */
+        .login-container {
+            position: relative;
+            background: rgba(22, 10, 46, 0.85) !important;
+            backdrop-filter: blur(18px);
+            box-shadow:
+                0 24px 70px rgba(0,0,0,0.5),
+                0 0 0 1px rgba(255, 46, 184, 0.12),
+                0 0 60px rgba(168, 85, 247, 0.18) !important;
+        }
+
+        /* Primary buttons: lift + glow on hover */
+        .btn-primary {
+            background: linear-gradient(135deg, #ff2eb8, #a855f7) !important;
+            box-shadow: 0 6px 22px rgba(255, 46, 184, 0.30);
+            transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 30px rgba(255, 46, 184, 0.45);
+            filter: brightness(1.06);
+        }
+
+        /* Nav active item: gradient left-rail + soft fill */
+        .nav-item.active,
+        .nav-sub-item.active {
+            background: linear-gradient(90deg, rgba(255,46,184,0.14), rgba(168,85,247,0.05)) !important;
+            box-shadow: inset 3px 0 0 #ff2eb8;
+        }
+
+        /* Cards: subtle purple hairline + hover lift */
+        .card,
+        .stat-box,
+        .draft-card,
+        .mod-card,
+        .overlay-template-card {
+            transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+        }
+        .card:hover,
+        .draft-card:hover,
+        .mod-card:hover,
+        .overlay-template-card:hover {
+            border-color: rgba(255, 46, 184, 0.30) !important;
+            box-shadow: 0 12px 34px rgba(168, 85, 247, 0.14);
+        }
+
+        /* Section labels / mono badges get JetBrains Mono */
+        .nav-section-label,
+        .sidebar-subtitle,
+        .badge,
+        .pill,
+        .stat-box-label {
+            font-family: var(--font-mono);
+            letter-spacing: 0.08em;
+        }
+
+        /* Status dot pulse for the live magenta state */
+        @keyframes sg-pulse {
+            0%, 100% { box-shadow: 0 0 8px rgba(255,46,184,0.6); }
+            50%      { box-shadow: 0 0 16px rgba(255,46,184,0.95); }
         }
     </style>
 </head>
@@ -3362,22 +3496,22 @@
 
                 <!-- Welcome Banner -->
                 <div
-                    style="background: linear-gradient(135deg, rgba(0, 255, 157, 0.06), rgba(0, 240, 255, 0.06)); border: 1px solid rgba(0, 255, 157, 0.1); border-radius: 10px; padding: 1.25rem; margin-bottom: 1.25rem; position: relative; overflow: hidden;">
+                    style="background: linear-gradient(135deg, rgba(255, 46, 184, 0.06), rgba(168, 85, 247, 0.06)); border: 1px solid rgba(255, 46, 184, 0.1); border-radius: 10px; padding: 1.25rem; margin-bottom: 1.25rem; position: relative; overflow: hidden;">
                     <div style="position: relative; z-index: 1;">
                         <h2
-                            style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.3rem; background: linear-gradient(135deg, #00ff9d, #00f0ff); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">
+                            style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.3rem; background: linear-gradient(135deg, #ff2eb8, #a855f7); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">
                             Oyun Deneyiminizi Güçlendirin
                         </h2>
-                        <p style="color: #8b8b9a; font-size: 0.8rem; margin-bottom: 0.85rem;">
+                        <p style="color: #9d8bbf; font-size: 0.8rem; margin-bottom: 0.85rem;">
                             TikTok izleyicilerinizle etkileşimli oyun deneyimi yaşatın.
                         </p>
                         <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
                             <button onclick="navigateTo('mods')"
-                                style="background: linear-gradient(135deg, #00ff9d, #00f0ff); color: #0a0a0f; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.3rem; font-size: 0.78rem;">
+                                style="background: linear-gradient(135deg, #ff2eb8, #a855f7); color: #07030f; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.3rem; font-size: 0.78rem;">
                                 <i class="fas fa-rocket"></i> Modları Keşfet
                             </button>
                             <button onclick="navigateTo('guide')"
-                                style="background: rgba(255, 255, 255, 0.04); color: #00ff9d; border: 1px solid rgba(0, 255, 157, 0.15); padding: 0.5rem 1rem; border-radius: 6px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.3rem; font-size: 0.78rem;">
+                                style="background: rgba(255, 255, 255, 0.04); color: #ff2eb8; border: 1px solid rgba(255, 46, 184, 0.15); padding: 0.5rem 1rem; border-radius: 6px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.3rem; font-size: 0.78rem;">
                                 <i class="fas fa-book"></i> Kullanım Kılavuzu
                             </button>
                         </div>
@@ -3397,7 +3531,7 @@
                         <div class="stat-label">KAYITLI OVERLAY</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-icon" style="color:#ff006e"><i class="fas fa-gift"></i></div>
+                        <div class="stat-icon" style="color:#ff2eb8"><i class="fas fa-gift"></i></div>
                         <div class="stat-value" id="stat-total-gifts">—</div>
                         <div class="stat-label">TOPLAM HEDİYE</div>
                     </div>
@@ -3407,7 +3541,7 @@
                         <div class="stat-label">KAZANILAN ELMAS</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-icon" style="color:#00d9ff"><i class="fas fa-heart"></i></div>
+                        <div class="stat-icon" style="color:#a855f7"><i class="fas fa-heart"></i></div>
                         <div class="stat-value" id="stat-total-likes">—</div>
                         <div class="stat-label">TOPLAM BEĞENİ</div>
                     </div>
@@ -3420,60 +3554,60 @@
 
                 <!-- Quick Actions -->
                 <div style="margin: 1rem 0;">
-                    <h3 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 0.75rem; color: #00ff9d;">Hızlı Aksiyonlar</h3>
+                    <h3 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 0.75rem; color: #ff2eb8;">Hızlı Aksiyonlar</h3>
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr)); gap: 0.65rem; width: 100%; max-width: 100%; overflow: hidden;">
                         <div onclick="navigateTo('tiktok')"
-                            style="background: #13131a; border: 1px solid rgba(255,255,255,0.04); border-radius: 8px; padding: 0.85rem; cursor: pointer; transition: all 0.2s;"
-                            onmouseover="this.style.borderColor='rgba(0,255,157,0.15)';"
+                            style="background: #160a2e; border: 1px solid rgba(255,255,255,0.04); border-radius: 8px; padding: 0.85rem; cursor: pointer; transition: all 0.2s;"
+                            onmouseover="this.style.borderColor='rgba(255, 46, 184,0.15)';"
                             onmouseout="this.style.borderColor='rgba(255,255,255,0.04)';">
-                            <div style="width: 32px; height: 32px; background: rgba(255, 0, 80, 0.08); border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem;">
-                                <i class="fab fa-tiktok" style="font-size: 0.9rem; background: linear-gradient(135deg, #ff0050, #00f2ea); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;"></i>
+                            <div style="width: 32px; height: 32px; background: rgba(255, 46, 184, 0.08); border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem;">
+                                <i class="fab fa-tiktok" style="font-size: 0.9rem; background: linear-gradient(135deg, #ff2eb8, #a855f7); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;"></i>
                             </div>
                             <h4 style="font-weight: 700; margin-bottom: 0.2rem; font-size: 0.82rem;">TikTok Bağla</h4>
-                            <p style="color: #8b8b9a; font-size: 0.7rem;">Canlı yayına mod entegrasyonu</p>
+                            <p style="color: #9d8bbf; font-size: 0.7rem;">Canlı yayına mod entegrasyonu</p>
                         </div>
 
                         <div onclick="navigateTo('mods')"
-                            style="background: #13131a; border: 1px solid rgba(255,255,255,0.04); border-radius: 8px; padding: 0.85rem; cursor: pointer; transition: all 0.2s;"
-                            onmouseover="this.style.borderColor='rgba(0,255,157,0.15)';"
+                            style="background: #160a2e; border: 1px solid rgba(255,255,255,0.04); border-radius: 8px; padding: 0.85rem; cursor: pointer; transition: all 0.2s;"
+                            onmouseover="this.style.borderColor='rgba(255, 46, 184,0.15)';"
                             onmouseout="this.style.borderColor='rgba(255,255,255,0.04)';">
-                            <div style="width: 32px; height: 32px; background: rgba(0, 255, 157, 0.08); border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem;">
-                                <i class="fas fa-download" style="font-size: 0.9rem; color: #00ff9d;"></i>
+                            <div style="width: 32px; height: 32px; background: rgba(255, 46, 184, 0.08); border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem;">
+                                <i class="fas fa-download" style="font-size: 0.9rem; color: #ff2eb8;"></i>
                             </div>
                             <h4 style="font-weight: 700; margin-bottom: 0.2rem; font-size: 0.82rem;">Mod İndir</h4>
-                            <p style="color: #8b8b9a; font-size: 0.7rem;">Yeni modlar indirin</p>
+                            <p style="color: #9d8bbf; font-size: 0.7rem;">Yeni modlar indirin</p>
                         </div>
 
                         <div onclick="navigateTo('statistics')"
-                            style="background: #13131a; border: 1px solid rgba(255,255,255,0.04); border-radius: 8px; padding: 0.85rem; cursor: pointer; transition: all 0.2s;"
-                            onmouseover="this.style.borderColor='rgba(0,255,157,0.15)';"
+                            style="background: #160a2e; border: 1px solid rgba(255,255,255,0.04); border-radius: 8px; padding: 0.85rem; cursor: pointer; transition: all 0.2s;"
+                            onmouseover="this.style.borderColor='rgba(255, 46, 184,0.15)';"
                             onmouseout="this.style.borderColor='rgba(255,255,255,0.04)';">
-                            <div style="width: 32px; height: 32px; background: rgba(0, 240, 255, 0.08); border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem;">
-                                <i class="fas fa-chart-line" style="font-size: 0.9rem; color: #00f0ff;"></i>
+                            <div style="width: 32px; height: 32px; background: rgba(168, 85, 247, 0.08); border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem;">
+                                <i class="fas fa-chart-line" style="font-size: 0.9rem; color: #a855f7;"></i>
                             </div>
                             <h4 style="font-weight: 700; margin-bottom: 0.2rem; font-size: 0.82rem;">İstatistikler</h4>
-                            <p style="color: #8b8b9a; font-size: 0.7rem;">Performans metrikleri</p>
+                            <p style="color: #9d8bbf; font-size: 0.7rem;">Performans metrikleri</p>
                         </div>
 
                         <div onclick="navigateTo('settings')"
-                            style="background: #13131a; border: 1px solid rgba(255,255,255,0.04); border-radius: 8px; padding: 0.85rem; cursor: pointer; transition: all 0.2s;"
-                            onmouseover="this.style.borderColor='rgba(0,255,157,0.15)';"
+                            style="background: #160a2e; border: 1px solid rgba(255,255,255,0.04); border-radius: 8px; padding: 0.85rem; cursor: pointer; transition: all 0.2s;"
+                            onmouseover="this.style.borderColor='rgba(255, 46, 184,0.15)';"
                             onmouseout="this.style.borderColor='rgba(255,255,255,0.04)';">
-                            <div style="width: 32px; height: 32px; background: rgba(189, 0, 255, 0.08); border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem;">
-                                <i class="fas fa-cog" style="font-size: 0.9rem; color: #bd00ff;"></i>
+                            <div style="width: 32px; height: 32px; background: rgba(168, 85, 247, 0.08); border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem;">
+                                <i class="fas fa-cog" style="font-size: 0.9rem; color: #a855f7;"></i>
                             </div>
                             <h4 style="font-weight: 700; margin-bottom: 0.2rem; font-size: 0.82rem;">Ayarlar</h4>
-                            <p style="color: #8b8b9a; font-size: 0.7rem;">Uygulama tercihleri</p>
+                            <p style="color: #9d8bbf; font-size: 0.7rem;">Uygulama tercihleri</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Recent Activity -->
-                <div style="background: #13131a; border: 1px solid rgba(255,255,255,0.04); border-radius: 8px; padding: 1rem;">
-                    <h3 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 0.75rem; color: #00ff9d; display: flex; align-items: center; gap: 0.5rem;">
+                <div style="background: #160a2e; border: 1px solid rgba(255,255,255,0.04); border-radius: 8px; padding: 1rem;">
+                    <h3 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 0.75rem; color: #ff2eb8; display: flex; align-items: center; gap: 0.5rem;">
                         <i class="fas fa-clock"></i> Son Aktiviteler
                     </h3>
-                    <div id="recent-activity" style="color: #8b8b9a; text-align: center; padding: 1.25rem;">
+                    <div id="recent-activity" style="color: #9d8bbf; text-align: center; padding: 1.25rem;">
                         <i class="fas fa-inbox" style="font-size: 1.8rem; opacity: 0.3; margin-bottom: 0.5rem;"></i>
                         <p style="font-size: 0.78rem;">Henüz aktivite yok. Bir mod yükleyerek başlayın!</p>
                     </div>
@@ -3485,7 +3619,7 @@
                 <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap;">
                     <div>
                         <div class="page-title">🎮 Oyun Modları</div>
-                        <div class="page-subtitle">TikTok canlı yayınında izleyicilerinin hediyeleriyle oyunları kontrol et. <span id="mods-total-count" style="color:#00ff9d;font-weight:700;">—</span> mod mevcut.</div>
+                        <div class="page-subtitle">TikTok canlı yayınında izleyicilerinin hediyeleriyle oyunları kontrol et. <span id="mods-total-count" style="color:#ff2eb8;font-weight:700;">—</span> mod mevcut.</div>
                     </div>
                     <button class="btn-new-draft" onclick="openAddGameModal()" style="margin-top:0.25rem;">
                         <i class="fas fa-plus-circle"></i> Oyun Ekle
@@ -3495,10 +3629,10 @@
                 <!-- Filter/search bar -->
                 <div style="display:flex;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap;align-items:center;">
                     <input type="text" id="mod-search" placeholder="🔍 Oyun ara..."
-                        style="flex:1;min-width:220px;padding:0.6rem 0.85rem;background:#0a0a0f;border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#fff;font-size:0.85rem;"
+                        style="flex:1;min-width:220px;padding:0.6rem 0.85rem;background:#07030f;border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#fff;font-size:0.85rem;"
                         oninput="filterMods()">
                     <select id="mod-category" onchange="filterMods()"
-                        style="padding:0.6rem 0.85rem;background:#0a0a0f;border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#fff;font-size:0.82rem;">
+                        style="padding:0.6rem 0.85rem;background:#07030f;border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#fff;font-size:0.82rem;">
                         <option value="all">Tüm Kategoriler</option>
                         <option value="open-world">Açık Dünya</option>
                         <option value="fps">FPS</option>
@@ -3509,21 +3643,21 @@
                         <option value="party">Parti</option>
                     </select>
                     <select id="mod-filter" onchange="filterMods()"
-                        style="padding:0.6rem 0.85rem;background:#0a0a0f;border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#fff;font-size:0.82rem;">
+                        style="padding:0.6rem 0.85rem;background:#07030f;border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#fff;font-size:0.82rem;">
                         <option value="all">Hepsi</option>
                         <option value="installed">Yüklü</option>
                         <option value="not-installed">Yüklü Değil</option>
                     </select>
-                    <span id="mod-result-count" style="color:#8b8b9a;font-size:0.78rem;margin-left:auto;"></span>
+                    <span id="mod-result-count" style="color:#9d8bbf;font-size:0.78rem;margin-left:auto;"></span>
                 </div>
 
                 <div class="mods-grid" id="mods-grid">
-                    <div style="grid-column:1/-1;text-align:center;color:#8b8b9a;padding:3rem;">
+                    <div style="grid-column:1/-1;text-align:center;color:#9d8bbf;padding:3rem;">
                         <i class="fas fa-spinner fa-spin" style="font-size:2rem;opacity:0.5;"></i>
                         <p style="margin-top:0.75rem;">Yükleniyor...</p>
                     </div>
                 </div>
-                <div id="no-mods" style="display:none;text-align:center;color:#8b8b9a;padding:3rem;">
+                <div id="no-mods" style="display:none;text-align:center;color:#9d8bbf;padding:3rem;">
                     <i class="fas fa-gamepad" style="font-size:2.5rem;opacity:0.3;display:block;margin-bottom:1rem;"></i>
                     <p>Eşleşen mod bulunamadı</p>
                 </div>
@@ -3538,20 +3672,20 @@
                     </div>
                     <form id="add-game-form" onsubmit="event.preventDefault();submitAddGame();" style="display:grid;gap:0.75rem;">
                         <div>
-                            <label style="display:block;margin-bottom:0.25rem;color:#8b8b9a;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;">Mod Başlığı</label>
+                            <label style="display:block;margin-bottom:0.25rem;color:#9d8bbf;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;">Mod Başlığı</label>
                             <input type="text" id="ag-title" class="profile-input" placeholder="Örn: GTA V Kaos Modu" required>
                         </div>
                         <div>
-                            <label style="display:block;margin-bottom:0.25rem;color:#8b8b9a;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;">Oyun Adı</label>
+                            <label style="display:block;margin-bottom:0.25rem;color:#9d8bbf;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;">Oyun Adı</label>
                             <input type="text" id="ag-game" class="profile-input" placeholder="Örn: Grand Theft Auto V" required>
                         </div>
                         <div>
-                            <label style="display:block;margin-bottom:0.25rem;color:#8b8b9a;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;">Açıklama</label>
+                            <label style="display:block;margin-bottom:0.25rem;color:#9d8bbf;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;">Açıklama</label>
                             <textarea id="ag-description" class="profile-input" rows="3" placeholder="Kısa açıklama..." style="resize:vertical;font-family:inherit;"></textarea>
                         </div>
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;">
                             <div>
-                                <label style="display:block;margin-bottom:0.25rem;color:#8b8b9a;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;">Kategori</label>
+                                <label style="display:block;margin-bottom:0.25rem;color:#9d8bbf;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;">Kategori</label>
                                 <select id="ag-category" class="profile-input">
                                     <option value="open-world">Açık Dünya</option>
                                     <option value="fps">FPS</option>
@@ -3564,16 +3698,16 @@
                                 </select>
                             </div>
                             <div>
-                                <label style="display:block;margin-bottom:0.25rem;color:#8b8b9a;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;">Versiyon</label>
+                                <label style="display:block;margin-bottom:0.25rem;color:#9d8bbf;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;">Versiyon</label>
                                 <input type="text" id="ag-version" class="profile-input" value="1.0.0">
                             </div>
                         </div>
                         <div>
-                            <label style="display:block;margin-bottom:0.25rem;color:#8b8b9a;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;">Kapak Görseli URL'si</label>
+                            <label style="display:block;margin-bottom:0.25rem;color:#9d8bbf;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;">Kapak Görseli URL'si</label>
                             <input type="url" id="ag-image" class="profile-input" placeholder="https://...">
                         </div>
                         <div>
-                            <label style="display:block;margin-bottom:0.25rem;color:#8b8b9a;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;">İndirme URL'si (VPS)</label>
+                            <label style="display:block;margin-bottom:0.25rem;color:#9d8bbf;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;">İndirme URL'si (VPS)</label>
                             <input type="url" id="ag-download" class="profile-input" placeholder="https://vps.seligames.com/mods/xxx.zip" required>
                         </div>
                         <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
@@ -3591,7 +3725,7 @@
             <!-- TikTok Page - COMPACT & FIXED -->
             <div class="page" id="tiktok-page">
                 <div class="page-header">
-                    <div class="page-title"><i class="fab fa-tiktok" style="background: linear-gradient(135deg, #ff0050, #00f2ea); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;"></i> TikTok Canlı Yayın</div>
+                    <div class="page-title"><i class="fab fa-tiktok" style="background: linear-gradient(135deg, #ff2eb8, #a855f7); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;"></i> TikTok Canlı Yayın</div>
                     <div class="page-subtitle">Canlı yayınınızı izleyin ve etkileşimleri takip edin</div>
                 </div>
 
@@ -3602,8 +3736,8 @@
                         <span id="connection-status-text" class="status-text">Bağlı Değil</span>
                     </div>
                     <div class="tiktok-username-display">
-                        <i class="fab fa-tiktok" style="color: #ff0050; font-size: 1.2rem;"></i>
-                        <span id="tiktok-username-text" style="color: #00d9ff; font-weight: 700; font-size: 1rem;">Kullanıcı adı yükleniyor...</span>
+                        <i class="fab fa-tiktok" style="color: #ff2eb8; font-size: 1.2rem;"></i>
+                        <span id="tiktok-username-text" style="color: #a855f7; font-weight: 700; font-size: 1rem;">Kullanıcı adı yükleniyor...</span>
                     </div>
                     <button onclick="startLiveStream()" class="btn-start-live">
                         <i class="fas fa-play-circle"></i> Canlı Yayına Başla
@@ -3612,19 +3746,19 @@
 
                 <!-- Compact Stats -->
                 <div class="tiktok-compact-stats">
-                    <div class="compact-stat" style="background: linear-gradient(135deg, #00ff9d, #00d9ff);">
+                    <div class="compact-stat" style="background: linear-gradient(135deg, #ff2eb8, #a855f7);">
                         <span class="stat-emoji">💬</span>
                         <span class="stat-num" id="total-comments">0</span>
                     </div>
-                    <div class="compact-stat" style="background: linear-gradient(135deg, #ff006e, #ff5722);">
+                    <div class="compact-stat" style="background: linear-gradient(135deg, #ff2eb8, #ff5722);">
                         <span class="stat-emoji">🎁</span>
                         <span class="stat-num" id="total-gifts">0</span>
                     </div>
-                    <div class="compact-stat" style="background: linear-gradient(135deg, #00d9ff, #0099ff);">
+                    <div class="compact-stat" style="background: linear-gradient(135deg, #a855f7, #0099ff);">
                         <span class="stat-emoji">❤️</span>
                         <span class="stat-num" id="total-likes">0</span>
                     </div>
-                    <div class="compact-stat" style="background: linear-gradient(135deg, #bd00ff, #8b00ff);">
+                    <div class="compact-stat" style="background: linear-gradient(135deg, #a855f7, #8b00ff);">
                         <span class="stat-emoji">👋</span>
                         <span class="stat-num" id="total-members">0</span>
                     </div>
@@ -3635,33 +3769,33 @@
                 </div>
 
                 <!-- Mod Action Dispatcher -->
-                <div style="background:#13131a;border:1px solid rgba(255,255,255,0.05);border-radius:12px;padding:1rem;margin-bottom:1rem;">
+                <div style="background:#160a2e;border:1px solid rgba(255,255,255,0.05);border-radius:12px;padding:1rem;margin-bottom:1rem;">
                     <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;">
                         <div>
-                            <h3 style="color:#00ff9d;margin:0 0 0.2rem 0;font-size:0.9rem;font-weight:700;display:flex;align-items:center;gap:0.4rem;">
+                            <h3 style="color:#ff2eb8;margin:0 0 0.2rem 0;font-size:0.9rem;font-weight:700;display:flex;align-items:center;gap:0.4rem;">
                                 <i class="fas fa-gamepad"></i> Aktif Mod Aksiyonları
-                                <span id="mod-armed-status" style="font-size:0.72rem;font-weight:700;margin-left:0.35rem;"><span style="color:#8b8b9a;">● Hiçbiri</span></span>
+                                <span id="mod-armed-status" style="font-size:0.72rem;font-weight:700;margin-left:0.35rem;"><span style="color:#9d8bbf;">● Hiçbiri</span></span>
                             </h3>
-                            <div style="color:#8b8b9a;font-size:0.72rem;">
+                            <div style="color:#9d8bbf;font-size:0.72rem;">
                                 Modları tek tek <b>Modlar → mod detay → "Bu Modu Başlat"</b> ile aç. Aşağıdaki tuş, kestirme yol — <b>tüm yüklü modları</b> aynı anda açıp kapatır.
-                                <span id="mod-armed-count" style="color:#00ff9d;font-weight:700;margin-left:0.35rem;"></span>
+                                <span id="mod-armed-count" style="color:#ff2eb8;font-weight:700;margin-left:0.35rem;"></span>
                             </div>
                         </div>
-                        <button id="mod-armed-toggle" onclick="toggleModActions()" style="padding:0.65rem 1.1rem;border:none;border-radius:8px;color:#0a0a0f;font-weight:800;font-size:0.82rem;cursor:pointer;background:linear-gradient(135deg,#00ff9d,#00f0ff);display:inline-flex;align-items:center;gap:0.4rem;">
+                        <button id="mod-armed-toggle" onclick="toggleModActions()" style="padding:0.65rem 1.1rem;border:none;border-radius:8px;color:#07030f;font-weight:800;font-size:0.82rem;cursor:pointer;background:linear-gradient(135deg,#ff2eb8,#a855f7);display:inline-flex;align-items:center;gap:0.4rem;">
                             <i class="fas fa-play-circle"></i> Tümünü Başlat
                         </button>
                     </div>
                     <!-- Global hotkey row -->
-                    <div style="margin-top:0.75rem;padding:0.6rem 0.85rem;background:rgba(189,0,255,0.05);border:1px solid rgba(189,0,255,0.18);border-radius:8px;display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
-                        <span style="color:#bd00ff;font-size:0.78rem;font-weight:700;display:flex;align-items:center;gap:0.4rem;">
+                    <div style="margin-top:0.75rem;padding:0.6rem 0.85rem;background:rgba(168, 85, 247,0.05);border:1px solid rgba(168, 85, 247,0.18);border-radius:8px;display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+                        <span style="color:#a855f7;font-size:0.78rem;font-weight:700;display:flex;align-items:center;gap:0.4rem;">
                             <i class="fas fa-keyboard"></i> Global Hotkey
                         </span>
                         <input type="text" id="mod-hotkey-input" value="F8" readonly
                             onkeydown="captureModHotkey(event)" onclick="this.select()"
-                            style="background:#0a0a0f;border:1px solid rgba(189,0,255,0.3);color:#fff;padding:0.4rem 0.7rem;border-radius:6px;font-size:0.82rem;font-weight:700;width:140px;text-align:center;cursor:pointer;"
+                            style="background:#07030f;border:1px solid rgba(168, 85, 247,0.3);color:#fff;padding:0.4rem 0.7rem;border-radius:6px;font-size:0.82rem;font-weight:700;width:140px;text-align:center;cursor:pointer;"
                             title="Tuşa odaklan ve istediğin tuş kombinasyonuna bas">
-                        <button onclick="saveModHotkey()" style="background:rgba(189,0,255,0.15);color:#bd00ff;border:1px solid rgba(189,0,255,0.3);padding:0.4rem 0.85rem;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;">Kaydet</button>
-                        <span style="color:#8b8b9a;font-size:0.7rem;flex:1;min-width:200px;">
+                        <button onclick="saveModHotkey()" style="background:rgba(168, 85, 247,0.15);color:#a855f7;border:1px solid rgba(168, 85, 247,0.3);padding:0.4rem 0.85rem;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;">Kaydet</button>
+                        <span style="color:#9d8bbf;font-size:0.7rem;flex:1;min-width:200px;">
                             Uygulama arka planda olsa bile bu tuş mod aksiyonlarını <b>başlat/durdur</b> eder.
                         </span>
                     </div>
@@ -3670,11 +3804,11 @@
                         <i class="fas fa-exclamation-triangle"></i> <b>Önemli:</b> Tuşlar yalnızca <u>o anda odakta olan pencereye</u> gönderilir. Yayın boyunca oyun penceresi önde olmalı — Alt+Tab ile arkaya alırsan tuşlar başka uygulamaya iletilir.
                     </div>
                     <div style="margin-top:0.75rem;">
-                        <div style="color:#8b8b9a;font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:0.35rem;">
+                        <div style="color:#9d8bbf;font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:0.35rem;">
                             <i class="fas fa-bolt"></i> Son Fire Edilen Aksiyonlar
                         </div>
                         <div id="mod-action-log" style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:8px;max-height:180px;overflow-y:auto;">
-                            <div style="color:#8b8b9a;text-align:center;padding:1rem;font-size:0.75rem;font-style:italic;">Henüz fire edilen aksiyon yok</div>
+                            <div style="color:#9d8bbf;text-align:center;padding:1rem;font-size:0.75rem;font-style:italic;">Henüz fire edilen aksiyon yok</div>
                         </div>
                     </div>
                 </div>
@@ -3742,15 +3876,15 @@
             <h3 class="card-header-title">📊 Kullanım İstatistikleri</h3>
             <div class="info-grid-3">
                 <div class="stat-mini">
-                    <div class="stat-mini-value" style="color: #00ff9d;">2</div>
+                    <div class="stat-mini-value" style="color: #ff2eb8;">2</div>
                     <div class="stat-mini-label">Yüklü Modlar</div>
                 </div>
                 <div class="stat-mini">
-                    <div class="stat-mini-value" style="color: #00f0ff;">0</div>
+                    <div class="stat-mini-value" style="color: #a855f7;">0</div>
                     <div class="stat-mini-label">Toplam Bağlantı</div>
                 </div>
                 <div class="stat-mini">
-                    <div class="stat-mini-value" style="color: #bd00ff;">0</div>
+                    <div class="stat-mini-value" style="color: #a855f7;">0</div>
                     <div class="stat-mini-label">Toplam Etkileşim</div>
                 </div>
             </div>
@@ -3762,7 +3896,7 @@
             <form id="profile-form" style="display: grid; gap: 0.6rem;">
                 <!-- Username -->
                 <div class="form-group">
-                    <label style="display: block; margin-bottom: 0.25rem; color: #8b8b9a; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Kullanıcı Adı</label>
+                    <label style="display: block; margin-bottom: 0.25rem; color: #9d8bbf; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Kullanıcı Adı</label>
                     <div style="display: flex; gap: 0.5rem;">
                         <input type="text" id="profile-username-edit" class="profile-input" placeholder="Kullanıcı adınız" />
                         <button type="button" onclick="updateProfileField('username')" class="btn-update-field">
@@ -3773,7 +3907,7 @@
 
                 <!-- Full Name -->
                 <div class="form-group">
-                    <label style="display: block; margin-bottom: 0.25rem; color: #8b8b9a; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Tam Ad</label>
+                    <label style="display: block; margin-bottom: 0.25rem; color: #9d8bbf; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Tam Ad</label>
                     <div style="display: flex; gap: 0.5rem;">
                         <input type="text" id="profile-fullname-edit" class="profile-input" placeholder="Ad Soyad" />
                         <button type="button" onclick="updateProfileField('fullName')" class="btn-update-field">
@@ -3784,8 +3918,8 @@
 
                 <!-- TikTok Username -->
                 <div class="form-group">
-                    <label style="display: block; margin-bottom: 0.25rem; color: #8b8b9a; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">
-                        <i class="fab fa-tiktok" style="color: #ff0050;"></i> TikTok Kullanıcı Adı
+                    <label style="display: block; margin-bottom: 0.25rem; color: #9d8bbf; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                        <i class="fab fa-tiktok" style="color: #ff2eb8;"></i> TikTok Kullanıcı Adı
                     </label>
                     <div style="display: flex; gap: 0.5rem;">
                         <input type="text" id="profile-tiktok-edit" class="profile-input" placeholder="@username" />
@@ -3797,7 +3931,7 @@
 
                 <!-- Phone Number -->
                 <div class="form-group">
-                    <label style="display: block; margin-bottom: 0.25rem; color: #8b8b9a; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Telefon</label>
+                    <label style="display: block; margin-bottom: 0.25rem; color: #9d8bbf; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Telefon</label>
                     <div style="display: flex; gap: 0.5rem;">
                         <input type="tel" id="profile-phone-edit" class="profile-input" placeholder="+90 5XX XXX XX XX" />
                         <button type="button" onclick="updateProfileField('phoneNumber')" class="btn-update-field">
@@ -3808,7 +3942,7 @@
 
                 <!-- Email (Read Only) -->
                 <div class="form-group">
-                    <label style="display: block; margin-bottom: 0.25rem; color: #8b8b9a; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">E-posta (Değiştirilemez)</label>
+                    <label style="display: block; margin-bottom: 0.25rem; color: #9d8bbf; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">E-posta (Değiştirilemez)</label>
                     <input type="email" id="profile-email-detail" class="profile-input" readonly style="opacity: 0.6; cursor: not-allowed;" />
                 </div>
             </form>
@@ -3819,15 +3953,15 @@
             <h3 class="card-header-title">🔑 Şifre Değiştir</h3>
             <form id="password-form" style="display: grid; gap: 0.6rem;">
                 <div class="form-group">
-                    <label style="display: block; margin-bottom: 0.25rem; color: #8b8b9a; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Mevcut Şifre</label>
+                    <label style="display: block; margin-bottom: 0.25rem; color: #9d8bbf; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Mevcut Şifre</label>
                     <input type="password" id="current-password" class="profile-input" placeholder="••••••••" />
                 </div>
                 <div class="form-group">
-                    <label style="display: block; margin-bottom: 0.25rem; color: #8b8b9a; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Yeni Şifre</label>
+                    <label style="display: block; margin-bottom: 0.25rem; color: #9d8bbf; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Yeni Şifre</label>
                     <input type="password" id="new-password" class="profile-input" placeholder="••••••••" />
                 </div>
                 <div class="form-group">
-                    <label style="display: block; margin-bottom: 0.25rem; color: #8b8b9a; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Yeni Şifre (Tekrar)</label>
+                    <label style="display: block; margin-bottom: 0.25rem; color: #9d8bbf; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Yeni Şifre (Tekrar)</label>
                     <input type="password" id="new-password-confirm" class="profile-input" placeholder="••••••••" />
                 </div>
                 <button type="button" onclick="changePassword()" class="btn-success" style="width: 100%;">
@@ -3837,7 +3971,7 @@
         </div>
 
         <!-- Subscription Details -->
-        <div class="card" style="background: linear-gradient(135deg, rgba(255, 215, 0, 0.08), rgba(189, 0, 255, 0.08)); border-color: rgba(255, 215, 0, 0.3);">
+        <div class="card" style="background: linear-gradient(135deg, rgba(255, 215, 0, 0.08), rgba(168, 85, 247, 0.08)); border-color: rgba(255, 215, 0, 0.3);">
             <h3 class="card-header-title" style="color: #FFD700;">
                 <i class="fas fa-crown"></i> Premium Abonelik
             </h3>
@@ -3855,7 +3989,7 @@
                     <div class="stat-mini-label">Aylık Ücret</div>
                 </div>
                 <div class="stat-mini">
-                    <div class="stat-mini-value" style="color: #00ff9d;">Açık</div>
+                    <div class="stat-mini-value" style="color: #ff2eb8;">Açık</div>
                     <div class="stat-mini-label">Otomatik Yenileme</div>
                 </div>
             </div>
@@ -3879,7 +4013,7 @@
 
         <!-- 6 stat cards -->
         <div class="stats-overview" id="stats-overview">
-            <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#ff006e,#ff5722);"><i class="fas fa-gift"></i></div>
+            <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#ff2eb8,#ff5722);"><i class="fas fa-gift"></i></div>
                 <div class="stat-box-value" id="stat-gifts">—</div><div class="stat-box-label">HEDİYE</div>
                 <div class="stat-box-sub" id="stat-gifts-sub">—</div>
             </div>
@@ -3887,15 +4021,15 @@
                 <div class="stat-box-value" id="stat-diamonds">—</div><div class="stat-box-label">ELMAS</div>
                 <div class="stat-box-sub" id="stat-diamonds-sub">Toplam değer</div>
             </div>
-            <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#00d9ff,#0099ff);"><i class="fas fa-heart"></i></div>
+            <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#a855f7,#0099ff);"><i class="fas fa-heart"></i></div>
                 <div class="stat-box-value" id="stat-likes">—</div><div class="stat-box-label">BEĞENİ</div>
                 <div class="stat-box-sub" id="stat-likes-sub">—</div>
             </div>
-            <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#00ff9d,#00d9ff);"><i class="fas fa-user-plus"></i></div>
+            <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#ff2eb8,#a855f7);"><i class="fas fa-user-plus"></i></div>
                 <div class="stat-box-value" id="stat-follows">—</div><div class="stat-box-label">TAKİPÇİ</div>
                 <div class="stat-box-sub" id="stat-follows-sub">Yeni takipçi</div>
             </div>
-            <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#bd00ff,#ff006e);"><i class="fas fa-comment"></i></div>
+            <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#a855f7,#ff2eb8);"><i class="fas fa-comment"></i></div>
                 <div class="stat-box-value" id="stat-chat">—</div><div class="stat-box-label">YORUM</div>
                 <div class="stat-box-sub" id="stat-chat-sub">—</div>
             </div>
@@ -3966,21 +4100,21 @@
 
         <style>
             .guide-doc { display: flex; flex-direction: column; gap: 1.25rem; max-width: 1100px; }
-            .guide-section { background: #13131a; border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 1.25rem 1.5rem; }
-            .guide-section h2 { color: #bd00ff; font-size: 1rem; margin: 0 0 0.25rem; display: flex; align-items: center; gap: 0.5rem; letter-spacing: 0.5px; text-transform: uppercase; }
-            .guide-section .guide-section-sub { color: #8b8b9a; font-size: 0.78rem; margin-bottom: 1rem; }
+            .guide-section { background: #160a2e; border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 1.25rem 1.5rem; }
+            .guide-section h2 { color: #a855f7; font-size: 1rem; margin: 0 0 0.25rem; display: flex; align-items: center; gap: 0.5rem; letter-spacing: 0.5px; text-transform: uppercase; }
+            .guide-section .guide-section-sub { color: #9d8bbf; font-size: 0.78rem; margin-bottom: 1rem; }
             .guide-row { display: grid; grid-template-columns: 220px 1fr; gap: 1rem; padding: 0.85rem 0; border-top: 1px solid rgba(255,255,255,0.05); }
             .guide-row:first-of-type { border-top: 0; padding-top: 0.5rem; }
             .guide-row .gr-name { display: flex; align-items: center; gap: 0.55rem; font-weight: 700; color: #fff; font-size: 0.92rem; }
-            .guide-row .gr-name .gr-ic { width: 28px; height: 28px; border-radius: 7px; background: rgba(189,0,255,0.12); color: #bd00ff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+            .guide-row .gr-name .gr-ic { width: 28px; height: 28px; border-radius: 7px; background: rgba(168, 85, 247,0.12); color: #a855f7; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
             .guide-row .gr-desc { color: #c8c8d4; font-size: 0.85rem; line-height: 1.55; }
-            .guide-row .gr-desc b { color: #00ff9d; font-weight: 600; }
+            .guide-row .gr-desc b { color: #ff2eb8; font-weight: 600; }
             .guide-quick { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem; }
-            .guide-quick .gq-card { background: rgba(189,0,255,0.05); border: 1px solid rgba(189,0,255,0.15); border-radius: 8px; padding: 0.85rem 1rem; }
-            .guide-quick .gq-card .gq-num { color: #bd00ff; font-weight: 800; font-size: 0.7rem; letter-spacing: 1px; }
+            .guide-quick .gq-card { background: rgba(168, 85, 247,0.05); border: 1px solid rgba(168, 85, 247,0.15); border-radius: 8px; padding: 0.85rem 1rem; }
+            .guide-quick .gq-card .gq-num { color: #a855f7; font-weight: 800; font-size: 0.7rem; letter-spacing: 1px; }
             .guide-quick .gq-card .gq-title { color: #fff; font-weight: 700; margin: 0.2rem 0 0.35rem; font-size: 0.92rem; }
             .guide-quick .gq-card .gq-text { color: #b9b9c5; font-size: 0.78rem; line-height: 1.45; }
-            .guide-pill { display: inline-block; background: rgba(0,255,157,0.1); color: #00ff9d; padding: 2px 8px; border-radius: 999px; font-size: 0.68rem; font-weight: 700; margin-left: 0.4rem; vertical-align: middle; }
+            .guide-pill { display: inline-block; background: rgba(255, 46, 184,0.1); color: #ff2eb8; padding: 2px 8px; border-radius: 999px; font-size: 0.68rem; font-weight: 700; margin-left: 0.4rem; vertical-align: middle; }
             @media (max-width: 760px) { .guide-row { grid-template-columns: 1fr; } }
         </style>
 
@@ -4159,11 +4293,11 @@
             <div class="guide-section">
                 <h2><i class="fas fa-tools"></i> Hızlı Sorun Giderme</h2>
                 <div style="display: flex; flex-direction: column; gap: 0.65rem;">
-                    <div style="font-size: 0.85rem; color: #c8c8d4;"><b style="color:#ff006e;">Eventler gelmiyor:</b> Profilde TikTok kullanıcı adı doğru mu? Yayın gerçekten başladı mı? "Bağlan" tuşunu tekrar dene.</div>
-                    <div style="font-size: 0.85rem; color: #c8c8d4;"><b style="color:#ff006e;">Kısayol oyuna gitmiyor:</b> Oyun penceresi önde mi? macOS'te Erişilebilirlik izni verildi mi? Modun "Ayarlar"da hediye-aksiyon eşlemesi kaydedildi mi?</div>
-                    <div style="font-size: 0.85rem; color: #c8c8d4;"><b style="color:#ff006e;">Overlay OBS'de boş görünüyor:</b> URL'yi yeni tarayıcıya yapıştırıp test et. Görünüyorsa OBS'de "Refresh" tuşuna bas.</div>
-                    <div style="font-size: 0.85rem; color: #c8c8d4;"><b style="color:#ff006e;">Top Likers / Top Gifters dolmuyor:</b> Aktif yayında olmalısın + leaderboard "Aktif" durumda olmalı (Kaplamalarım sayfası).</div>
-                    <div style="font-size: 0.85rem; color: #c8c8d4;"><b style="color:#ff006e;">Mod kurulamıyor:</b> Doğru oyun klasörünü mü gösterdin? Disk dolu mu? Bağlantı kararlı mı?</div>
+                    <div style="font-size: 0.85rem; color: #c8c8d4;"><b style="color:#ff2eb8;">Eventler gelmiyor:</b> Profilde TikTok kullanıcı adı doğru mu? Yayın gerçekten başladı mı? "Bağlan" tuşunu tekrar dene.</div>
+                    <div style="font-size: 0.85rem; color: #c8c8d4;"><b style="color:#ff2eb8;">Kısayol oyuna gitmiyor:</b> Oyun penceresi önde mi? macOS'te Erişilebilirlik izni verildi mi? Modun "Ayarlar"da hediye-aksiyon eşlemesi kaydedildi mi?</div>
+                    <div style="font-size: 0.85rem; color: #c8c8d4;"><b style="color:#ff2eb8;">Overlay OBS'de boş görünüyor:</b> URL'yi yeni tarayıcıya yapıştırıp test et. Görünüyorsa OBS'de "Refresh" tuşuna bas.</div>
+                    <div style="font-size: 0.85rem; color: #c8c8d4;"><b style="color:#ff2eb8;">Top Likers / Top Gifters dolmuyor:</b> Aktif yayında olmalısın + leaderboard "Aktif" durumda olmalı (Kaplamalarım sayfası).</div>
+                    <div style="font-size: 0.85rem; color: #c8c8d4;"><b style="color:#ff2eb8;">Mod kurulamıyor:</b> Doğru oyun klasörünü mü gösterdin? Disk dolu mu? Bağlantı kararlı mı?</div>
                 </div>
             </div>
 
@@ -4315,11 +4449,11 @@
         <!-- Hediye Ses Ayarları -->
         <div class="settings-section">
             <h3>🎁 Hediye Ses Ayarları</h3>
-            <p style="color: #8b8b9a; margin-bottom: 0.75rem; font-size: 0.78rem;">Her hediye türü için farklı bildirim sesi seçin</p>
+            <p style="color: #9d8bbf; margin-bottom: 0.75rem; font-size: 0.78rem;">Her hediye türü için farklı bildirim sesi seçin</p>
 
             <!-- Small Gifts -->
             <div style="margin-bottom: 1rem;">
-                <h4 style="color: #00ff9d; margin-bottom: 0.5rem; font-size: 0.85rem;">💚 Küçük Hediyeler (1-10 coin)</h4>
+                <h4 style="color: #ff2eb8; margin-bottom: 0.5rem; font-size: 0.85rem;">💚 Küçük Hediyeler (1-10 coin)</h4>
                 <div class="sound-selector">
                     <div class="sound-option active" onclick="selectSound('small', 'bell')" data-category="small" data-sound="bell">
                         <button class="sound-play-btn" onclick="event.stopPropagation(); playSound('bell')"><i class="fas fa-play"></i></button>
@@ -4347,7 +4481,7 @@
 
             <!-- Medium Gifts -->
             <div style="margin-bottom: 2rem;">
-                <h4 style="color: #00d9ff; margin-bottom: 0.5rem; font-size: 0.85rem;">💙 Orta Hediyeler (10-100 coin)</h4>
+                <h4 style="color: #a855f7; margin-bottom: 0.5rem; font-size: 0.85rem;">💙 Orta Hediyeler (10-100 coin)</h4>
                 <div class="sound-selector">
                     <div class="sound-option active" onclick="selectSound('medium', 'chime')" data-category="medium" data-sound="chime">
                         <button class="sound-play-btn" onclick="event.stopPropagation(); playSound('chime')"><i class="fas fa-play"></i></button>
@@ -4375,7 +4509,7 @@
 
             <!-- Large Gifts -->
             <div style="margin-bottom: 2rem;">
-                <h4 style="color: #ff006e; margin-bottom: 0.5rem; font-size: 0.85rem;">❤️ Büyük Hediyeler (100-1000 coin)</h4>
+                <h4 style="color: #ff2eb8; margin-bottom: 0.5rem; font-size: 0.85rem;">❤️ Büyük Hediyeler (100-1000 coin)</h4>
                 <div class="sound-selector">
                     <div class="sound-option active" onclick="selectSound('large', 'fanfare')" data-category="large" data-sound="fanfare">
                         <button class="sound-play-btn" onclick="event.stopPropagation(); playSound('fanfare')"><i class="fas fa-play"></i></button>
@@ -4446,43 +4580,43 @@
         </div>
 
         <!-- Global notification volume -->
-        <div style="background:#13131a;border:1px solid rgba(189,0,255,0.15);border-radius:10px;padding:0.85rem 1rem;margin-bottom:0.75rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
-            <div style="display:flex;align-items:center;gap:0.5rem;color:#bd00ff;font-weight:700;font-size:0.85rem;min-width:170px;">
+        <div style="background:#160a2e;border:1px solid rgba(168, 85, 247,0.15);border-radius:10px;padding:0.85rem 1rem;margin-bottom:0.75rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:0.5rem;color:#a855f7;font-weight:700;font-size:0.85rem;min-width:170px;">
                 <i class="fas fa-volume-up"></i> Genel Bildirim Sesi
             </div>
             <input type="range" id="notif-volume" min="0" max="100" value="80" step="1"
                 oninput="setNotificationVolume(this.value)"
-                style="flex:1;min-width:200px;accent-color:#bd00ff;">
+                style="flex:1;min-width:200px;accent-color:#a855f7;">
             <span id="notif-volume-label" style="color:#fff;font-weight:700;min-width:48px;text-align:right;">80%</span>
-            <button onclick="testNotificationVolume()" class="btn-icon" style="background:rgba(189,0,255,0.12);color:#bd00ff;border:1px solid rgba(189,0,255,0.3);font-size:0.78rem;padding:0.4rem 0.85rem;">
+            <button onclick="testNotificationVolume()" class="btn-icon" style="background:rgba(168, 85, 247,0.12);color:#a855f7;border:1px solid rgba(168, 85, 247,0.3);font-size:0.78rem;padding:0.4rem 0.85rem;">
                 <i class="fas fa-play"></i> Test
             </button>
         </div>
 
         <!-- Quick tier defaults reminder -->
-        <div style="background:#13131a;border:1px solid rgba(255,255,255,0.04);border-radius:10px;padding:0.75rem 1rem;margin-bottom:1rem;">
-            <div style="color:#00ff9d;font-size:0.78rem;font-weight:700;margin-bottom:0.35rem;">
+        <div style="background:#160a2e;border:1px solid rgba(255,255,255,0.04);border-radius:10px;padding:0.75rem 1rem;margin-bottom:1rem;">
+            <div style="color:#ff2eb8;font-size:0.78rem;font-weight:700;margin-bottom:0.35rem;">
                 <i class="fas fa-info-circle"></i> Önce Tier Varsayılanları
             </div>
-            <p style="color:#8b8b9a;font-size:0.72rem;line-height:1.55;margin:0;">
+            <p style="color:#9d8bbf;font-size:0.72rem;line-height:1.55;margin:0;">
                 Küçük / Orta / Büyük / Epic coin aralıkları için genel sesleri
-                <a href="#" onclick="event.preventDefault();navigateTo('settings');setTimeout(()=>document.querySelector('.settings-section:nth-child(3)')?.scrollIntoView({behavior:'smooth'}),100);" style="color:#00ff9d;font-weight:700;">Ayarlar → 🎁 Hediye Ses Ayarları</a>'ndan seçebilirsin.
+                <a href="#" onclick="event.preventDefault();navigateTo('settings');setTimeout(()=>document.querySelector('.settings-section:nth-child(3)')?.scrollIntoView({behavior:'smooth'}),100);" style="color:#ff2eb8;font-weight:700;">Ayarlar → 🎁 Hediye Ses Ayarları</a>'ndan seçebilirsin.
                 Aşağıda tek tek hediye bazında bunları override edebilirsin.
             </p>
         </div>
 
         <!-- Stat badges -->
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0.6rem;margin-bottom:1rem;">
-            <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#00ff9d,#00d9ff);"><i class="fas fa-list"></i></div>
+            <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#ff2eb8,#a855f7);"><i class="fas fa-list"></i></div>
                 <div class="stat-box-value" id="gift-total">—</div><div class="stat-box-label">Toplam Hediye</div>
             </div>
             <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#ffd700,#ff9800);"><i class="fas fa-music"></i></div>
                 <div class="stat-box-value" id="gift-mapped-count">—</div><div class="stat-box-label">Atanmış Ses</div>
             </div>
-            <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#bd00ff,#ff006e);"><i class="fas fa-file-audio"></i></div>
+            <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#a855f7,#ff2eb8);"><i class="fas fa-file-audio"></i></div>
                 <div class="stat-box-value" id="gift-mp3-count">—</div><div class="stat-box-label">Özel MP3</div>
             </div>
-            <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#ff006e,#ff5722);"><i class="fas fa-ban"></i></div>
+            <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#ff2eb8,#ff5722);"><i class="fas fa-ban"></i></div>
                 <div class="stat-box-value" id="gift-unmapped-count">—</div><div class="stat-box-label">Atanmayan</div>
             </div>
         </div>
@@ -4490,10 +4624,10 @@
         <!-- Filters -->
         <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem;flex-wrap:wrap;align-items:center;">
             <input type="text" id="gift-map-search" placeholder="🔍 Hediye ara (ad veya coin)..."
-                style="flex:1;min-width:220px;padding:0.6rem 0.85rem;background:#0a0a0f;border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#fff;font-size:0.85rem;"
+                style="flex:1;min-width:220px;padding:0.6rem 0.85rem;background:#07030f;border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#fff;font-size:0.85rem;"
                 oninput="filterGiftSoundMap()">
             <select id="gift-map-filter" onchange="filterGiftSoundMap()"
-                style="padding:0.6rem 0.85rem;background:#0a0a0f;border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#fff;font-size:0.82rem;">
+                style="padding:0.6rem 0.85rem;background:#07030f;border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#fff;font-size:0.82rem;">
                 <option value="all">Tümü</option>
                 <option value="mapped">Sadece atananlar</option>
                 <option value="unmapped">Sadece atanmayanlar</option>
@@ -4505,11 +4639,11 @@
             <button class="gift-map-btn btn-clear" onclick="clearAllGiftMappings()" style="padding:0.55rem 0.85rem;font-size:0.75rem;">
                 <i class="fas fa-trash-alt"></i> Tümünü Temizle
             </button>
-            <span id="gift-map-count" style="color:#8b8b9a;font-size:0.78rem;margin-left:auto;"></span>
+            <span id="gift-map-count" style="color:#9d8bbf;font-size:0.78rem;margin-left:auto;"></span>
         </div>
 
         <div id="gift-map-list" class="gift-map-grid" style="max-height:none;">
-            <div style="grid-column:1/-1;text-align:center;color:#8b8b9a;padding:2rem;">Yükleniyor...</div>
+            <div style="grid-column:1/-1;text-align:center;color:#9d8bbf;padding:2rem;">Yükleniyor...</div>
         </div>
     </div>
     <!-- End Gift Sounds Page -->
@@ -4520,7 +4654,7 @@
             <button onclick="navigateTo('mods')" class="btn-secondary" style="padding:0.4rem 0.75rem;font-size:0.75rem;">
                 <i class="fas fa-arrow-left"></i> Modlara Dön
             </button>
-            <span id="md-breadcrumb" style="color:#8b8b9a;font-size:0.75rem;"></span>
+            <span id="md-breadcrumb" style="color:#9d8bbf;font-size:0.75rem;"></span>
         </div>
 
         <!-- Hero -->
@@ -4552,42 +4686,42 @@
                 </div>
 
                 <!-- ─── Per-mod arm/disarm (prominent, right under Kur) ─── -->
-                <div id="md-arm-card" style="display:none;margin-top:1rem;padding:1rem 1.15rem;background:linear-gradient(135deg,rgba(0,255,157,0.08),rgba(0,217,255,0.04));border:1px solid rgba(0,255,157,0.25);border-radius:12px;">
+                <div id="md-arm-card" style="display:none;margin-top:1rem;padding:1rem 1.15rem;background:linear-gradient(135deg,rgba(255, 46, 184,0.08),rgba(168, 85, 247,0.04));border:1px solid rgba(255, 46, 184,0.25);border-radius:12px;">
                     <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
                         <div>
-                            <div style="color:#00ff9d;font-weight:800;font-size:0.95rem;display:flex;align-items:center;gap:0.5rem;">
+                            <div style="color:#ff2eb8;font-weight:800;font-size:0.95rem;display:flex;align-items:center;gap:0.5rem;">
                                 <i class="fas fa-gamepad"></i> Mod Aksiyonları
-                                <span id="md-arm-status" style="font-size:0.72rem;font-weight:700;margin-left:0.35rem;color:#8b8b9a;">● Pasif</span>
+                                <span id="md-arm-status" style="font-size:0.72rem;font-weight:700;margin-left:0.35rem;color:#9d8bbf;">● Pasif</span>
                             </div>
                             <div style="color:#c8c8d4;font-size:0.78rem;margin-top:0.35rem;line-height:1.5;">
                                 Başlattığında <b>bu modun</b> hediye-tuş eşleştirmeleri gelen TikTok hediyelerine göre oyuna tuş basar. Diğer modları etkilemez.
                             </div>
                         </div>
-                        <button id="md-arm-btn" onclick="toggleCurrentModArm()" style="min-width:200px;padding:0.7rem 1.2rem;border:none;border-radius:10px;color:#0a0a0f;font-weight:900;font-size:0.9rem;cursor:pointer;background:linear-gradient(135deg,#00ff9d,#00d9ff);display:inline-flex;align-items:center;justify-content:center;gap:0.5rem;box-shadow:0 4px 12px rgba(0,255,157,0.25);transition:transform 0.15s;">
+                        <button id="md-arm-btn" onclick="toggleCurrentModArm()" style="min-width:200px;padding:0.7rem 1.2rem;border:none;border-radius:10px;color:#07030f;font-weight:900;font-size:0.9rem;cursor:pointer;background:linear-gradient(135deg,#ff2eb8,#a855f7);display:inline-flex;align-items:center;justify-content:center;gap:0.5rem;box-shadow:0 4px 12px rgba(255, 46, 184,0.25);transition:transform 0.15s;">
                             <i class="fas fa-play-circle"></i> <span id="md-arm-btn-label">Bu Modu Başlat</span>
                         </button>
                     </div>
                 </div>
 
                 <!-- ─── Game Launcher ─── -->
-                <div style="margin-top:1rem;padding:0.85rem 1rem;background:rgba(0,0,0,0.4);border:1px solid rgba(0,255,157,0.18);border-radius:10px;backdrop-filter:blur(8px);">
+                <div style="margin-top:1rem;padding:0.85rem 1rem;background:rgba(0,0,0,0.4);border:1px solid rgba(255, 46, 184,0.18);border-radius:10px;backdrop-filter:blur(8px);">
                     <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.55rem;">
-                        <i class="fas fa-rocket" style="color:#00ff9d;"></i>
-                        <span style="color:#00ff9d;font-weight:700;font-size:0.85rem;">Oyun Başlatıcı</span>
-                        <span style="color:#8b8b9a;font-size:0.7rem;margin-left:0.4rem;">cmd / exe yolu / steam URI</span>
+                        <i class="fas fa-rocket" style="color:#ff2eb8;"></i>
+                        <span style="color:#ff2eb8;font-weight:700;font-size:0.85rem;">Oyun Başlatıcı</span>
+                        <span style="color:#9d8bbf;font-size:0.7rem;margin-left:0.4rem;">cmd / exe yolu / steam URI</span>
                     </div>
                     <div style="display:flex;gap:0.45rem;align-items:center;flex-wrap:wrap;">
                         <input type="text" id="md-launch-cmd" placeholder='Örn: C:\Games\GTA5\GTA5.exe  •  steam://run/271590  •  /Applications/Game.app  •  python /path/server.py'
-                            style="flex:1;min-width:280px;background:#0a0a0f;border:1px solid rgba(255,255,255,0.1);color:#fff;padding:0.55rem 0.85rem;border-radius:8px;font-size:0.82rem;font-family:'SF Mono','Consolas',monospace;"
+                            style="flex:1;min-width:280px;background:#07030f;border:1px solid rgba(255,255,255,0.1);color:#fff;padding:0.55rem 0.85rem;border-radius:8px;font-size:0.82rem;font-family:'JetBrains Mono', ui-monospace, monospace;"
                             onchange="saveLaunchCmd()">
                         <button class="btn-icon" onclick="pickLaunchFile()" title="Dosya seç" style="background:rgba(255,255,255,0.06);color:#fff;border:1px solid rgba(255,255,255,0.1);padding:0.55rem 0.8rem;font-size:0.78rem;">
                             <i class="fas fa-folder-open"></i> Gözat
                         </button>
-                        <button onclick="launchGame()" style="background:linear-gradient(135deg,#00ff9d,#00d9ff);color:#0a0a0f;border:none;padding:0.6rem 1.2rem;border-radius:8px;font-weight:800;font-size:0.85rem;cursor:pointer;display:inline-flex;align-items:center;gap:0.4rem;">
+                        <button onclick="launchGame()" style="background:linear-gradient(135deg,#ff2eb8,#a855f7);color:#07030f;border:none;padding:0.6rem 1.2rem;border-radius:8px;font-weight:800;font-size:0.85rem;cursor:pointer;display:inline-flex;align-items:center;gap:0.4rem;">
                             <i class="fas fa-play"></i> Oyunu Başlat
                         </button>
                     </div>
-                    <div style="margin-top:0.5rem;display:flex;align-items:center;gap:0.5rem;color:#8b8b9a;font-size:0.7rem;">
+                    <div style="margin-top:0.5rem;display:flex;align-items:center;gap:0.5rem;color:#9d8bbf;font-size:0.7rem;">
                         <label style="display:flex;align-items:center;gap:0.35rem;cursor:pointer;">
                             <input type="checkbox" id="md-launch-on-arm" style="cursor:pointer;">
                             Mod aksiyonlarını başlattığımda oyunu da otomatik aç
@@ -4599,16 +4733,16 @@
 
         <!-- Stats badges -->
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0.6rem;margin-top:1rem;">
-            <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#00ff9d,#00d9ff);"><i class="fas fa-list"></i></div>
+            <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#ff2eb8,#a855f7);"><i class="fas fa-list"></i></div>
                 <div class="stat-box-value" id="md-gifts-total">—</div><div class="stat-box-label">Toplam Hediye</div>
             </div>
             <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#ffd700,#ff9800);"><i class="fas fa-bolt"></i></div>
                 <div class="stat-box-value" id="md-actions-count">—</div><div class="stat-box-label">Atanmış Aksiyon</div>
             </div>
-            <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#bd00ff,#ff006e);"><i class="fas fa-keyboard"></i></div>
+            <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#a855f7,#ff2eb8);"><i class="fas fa-keyboard"></i></div>
                 <div class="stat-box-value" id="md-kb-count">—</div><div class="stat-box-label">Klavye Kısayolu</div>
             </div>
-            <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#ff006e,#ff5722);"><i class="fas fa-ban"></i></div>
+            <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#ff2eb8,#ff5722);"><i class="fas fa-ban"></i></div>
                 <div class="stat-box-value" id="md-unmapped-count">—</div><div class="stat-box-label">Atanmayan</div>
             </div>
         </div>
@@ -4616,15 +4750,15 @@
         <!-- Gift → action grid -->
         <div style="margin-top:1rem;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;gap:0.5rem;flex-wrap:wrap;">
-                <h3 style="color:#00ff9d;margin:0;font-size:0.95rem;font-weight:700;">
+                <h3 style="color:#ff2eb8;margin:0;font-size:0.95rem;font-weight:700;">
                     <i class="fas fa-gamepad"></i> Hediye → Aksiyon Eşleştirmesi
                 </h3>
                 <div style="display:flex;gap:0.35rem;flex-wrap:wrap;align-items:center;">
                     <input type="text" id="md-search" placeholder="🔍 Hediye ara..."
-                        style="padding:0.45rem 0.7rem;background:#0a0a0f;border:1px solid rgba(255,255,255,0.08);border-radius:6px;color:#fff;font-size:0.78rem;min-width:180px;"
+                        style="padding:0.45rem 0.7rem;background:#07030f;border:1px solid rgba(255,255,255,0.08);border-radius:6px;color:#fff;font-size:0.78rem;min-width:180px;"
                         oninput="renderModGiftActions()">
                     <select id="md-filter"
-                        style="padding:0.45rem 0.7rem;background:#0a0a0f;border:1px solid rgba(255,255,255,0.08);border-radius:6px;color:#fff;font-size:0.78rem;"
+                        style="padding:0.45rem 0.7rem;background:#07030f;border:1px solid rgba(255,255,255,0.08);border-radius:6px;color:#fff;font-size:0.78rem;"
                         onchange="renderModGiftActions()">
                         <option value="all">Tümü</option>
                         <option value="mapped">Atanmış</option>
@@ -4640,16 +4774,16 @@
                 </div>
             </div>
 
-            <div style="background:#13131a;border:1px solid rgba(255,255,255,0.04);border-radius:10px;padding:0.65rem 0.85rem;margin-bottom:0.6rem;">
-                <p style="color:#8b8b9a;font-size:0.72rem;margin:0;line-height:1.55;">
-                    <strong style="color:#00ff9d;">💡 İpucu:</strong>
-                    Kısayol kutusuna tıkla ve istediğin tuş kombinasyonunu bas (örn. <code style="background:rgba(255,255,255,0.05);padding:2px 6px;border-radius:4px;color:#00ff9d;">Ctrl+1</code>, <code style="background:rgba(255,255,255,0.05);padding:2px 6px;border-radius:4px;color:#00ff9d;">Shift+F</code>). Otomatik yakalanacak.
+            <div style="background:#160a2e;border:1px solid rgba(255,255,255,0.04);border-radius:10px;padding:0.65rem 0.85rem;margin-bottom:0.6rem;">
+                <p style="color:#9d8bbf;font-size:0.72rem;margin:0;line-height:1.55;">
+                    <strong style="color:#ff2eb8;">💡 İpucu:</strong>
+                    Kısayol kutusuna tıkla ve istediğin tuş kombinasyonunu bas (örn. <code style="background:rgba(255,255,255,0.05);padding:2px 6px;border-radius:4px;color:#ff2eb8;">Ctrl+1</code>, <code style="background:rgba(255,255,255,0.05);padding:2px 6px;border-radius:4px;color:#ff2eb8;">Shift+F</code>). Otomatik yakalanacak.
                     Aksiyon tipini değiştirip metin komut yazabilir veya fare tıklamaları ekleyebilirsin.
                 </p>
             </div>
 
             <div id="md-gift-grid" class="md-gift-grid">
-                <div style="grid-column:1/-1;text-align:center;color:#8b8b9a;padding:2rem;">Yükleniyor...</div>
+                <div style="grid-column:1/-1;text-align:center;color:#9d8bbf;padding:2rem;">Yükleniyor...</div>
             </div>
         </div>
     </div>
@@ -4664,7 +4798,7 @@
 
         <div class="overlay-panel">
             <div class="overlay-settings">
-                <h3 style="color:#00ff9d;margin-bottom:0.75rem;display:flex;align-items:center;gap:0.4rem;font-size:0.9rem;">
+                <h3 style="color:#ff2eb8;margin-bottom:0.75rem;display:flex;align-items:center;gap:0.4rem;font-size:0.9rem;">
                     <i class="fas fa-sliders-h"></i> Ayarlar
                 </h3>
 
@@ -4700,25 +4834,25 @@
                 <div class="setting-group" id="ov-wheel-group" style="display:none;">
                     <label style="display:flex;align-items:center;gap:0.5rem;">🎡 Tetikleyici Hediye</label>
                     <input type="text" class="ov-input" id="ov-wheel-trigger" value="Roket" placeholder="Hediye adı (örn. Roket) ya da * = her hediye" oninput="updateOverlayPreview()">
-                    <div style="font-size:0.7rem;color:#8b8b9a;margin-top:0.3rem;">Bu hediye geldiğinde çark döner. <b>*</b> yazarsan her hediyede döner.</div>
+                    <div style="font-size:0.7rem;color:#9d8bbf;margin-top:0.3rem;">Bu hediye geldiğinde çark döner. <b>*</b> yazarsan her hediyede döner.</div>
 
                     <div style="margin-top:1rem;">
                         <label style="display:flex;align-items:center;justify-content:space-between;">
                             <span>🍰 Dilimler</span>
-                            <button class="btn-icon" onclick="addWheelSlice()" title="Dilim ekle" style="background:rgba(0,255,157,0.1);color:#00ff9d;border:1px solid rgba(0,255,157,0.2);"><i class="fas fa-plus"></i></button>
+                            <button class="btn-icon" onclick="addWheelSlice()" title="Dilim ekle" style="background:rgba(255, 46, 184,0.1);color:#ff2eb8;border:1px solid rgba(255, 46, 184,0.2);"><i class="fas fa-plus"></i></button>
                         </label>
                         <div id="ov-wheel-slices" style="display:flex;flex-direction:column;gap:0.4rem;margin-top:0.5rem;"></div>
                         <div style="display:flex;gap:0.4rem;margin-top:0.6rem;flex-wrap:wrap;">
                             <button class="btn-icon" onclick="loadWheelPreset('classic')" style="font-size:0.72rem;padding:0.35rem 0.7rem;background:rgba(255,255,255,0.04);">⚡ Klasik (6 dilim)</button>
                             <button class="btn-icon" onclick="loadWheelPreset('rewards')" style="font-size:0.72rem;padding:0.35rem 0.7rem;background:rgba(255,255,255,0.04);">🎁 Ödüller (8 dilim)</button>
-                            <button class="btn-icon" onclick="clearWheelSlices()" style="font-size:0.72rem;padding:0.35rem 0.7rem;background:rgba(255,0,110,0.08);color:#ff006e;">🗑️ Sil</button>
+                            <button class="btn-icon" onclick="clearWheelSlices()" style="font-size:0.72rem;padding:0.35rem 0.7rem;background:rgba(255, 46, 184,0.08);color:#ff2eb8;">🗑️ Sil</button>
                         </div>
                     </div>
 
-                    <div style="margin-top:1rem;padding:0.75rem;background:rgba(189,0,255,0.04);border:1px solid rgba(189,0,255,0.15);border-radius:8px;">
-                        <div style="font-size:0.78rem;color:#bd00ff;font-weight:700;margin-bottom:0.4rem;">▶️ Manuel Test</div>
-                        <button class="btn-icon" onclick="wheelTestSpin()" style="background:rgba(189,0,255,0.15);color:#bd00ff;border:1px solid rgba(189,0,255,0.3);font-weight:700;"><i class="fas fa-redo"></i> Çevir</button>
-                        <div style="font-size:0.7rem;color:#8b8b9a;margin-top:0.5rem;">Önce kaydet, sonra test et. Sunucu rastgele dilim seçer ve canlı overlay döner.</div>
+                    <div style="margin-top:1rem;padding:0.75rem;background:rgba(168, 85, 247,0.04);border:1px solid rgba(168, 85, 247,0.15);border-radius:8px;">
+                        <div style="font-size:0.78rem;color:#a855f7;font-weight:700;margin-bottom:0.4rem;">▶️ Manuel Test</div>
+                        <button class="btn-icon" onclick="wheelTestSpin()" style="background:rgba(168, 85, 247,0.15);color:#a855f7;border:1px solid rgba(168, 85, 247,0.3);font-weight:700;"><i class="fas fa-redo"></i> Çevir</button>
+                        <div style="font-size:0.7rem;color:#9d8bbf;margin-top:0.5rem;">Önce kaydet, sonra test et. Sunucu rastgele dilim seçer ve canlı overlay döner.</div>
                     </div>
                 </div>
 
@@ -4727,36 +4861,36 @@
                     <label style="display:flex;align-items:center;gap:0.5rem;">⏱️ Başlangıç Süresi (HH:MM:SS)</label>
                     <div style="display:flex;gap:0.4rem;align-items:center;margin-top:0.4rem;">
                         <input type="number" class="ov-input" id="ov-sub-hh" value="1" min="0" max="48" style="width:80px;" oninput="updateOverlayPreview()">
-                        <span style="color:#8b8b9a;">:</span>
+                        <span style="color:#9d8bbf;">:</span>
                         <input type="number" class="ov-input" id="ov-sub-mm" value="0" min="0" max="59" style="width:80px;" oninput="updateOverlayPreview()">
-                        <span style="color:#8b8b9a;">:</span>
+                        <span style="color:#9d8bbf;">:</span>
                         <input type="number" class="ov-input" id="ov-sub-ss" value="0" min="0" max="59" style="width:80px;" oninput="updateOverlayPreview()">
                     </div>
                     <div style="margin-top:0.85rem;">
                         <label style="display:flex;align-items:center;gap:0.5rem;">💎 Saniye / Coin (yedek kural)</label>
                         <input type="number" class="ov-input" id="ov-sub-perCoin" value="0" min="0" max="60" step="0.1" placeholder="örn. 1 = her coin için 1 saniye" oninput="updateOverlayPreview()">
-                        <div style="font-size:0.7rem;color:#8b8b9a;margin-top:0.3rem;">Aşağıdaki listede eşleşmeyen hediyeler için kullanılır. 0 ise yok sayılır.</div>
+                        <div style="font-size:0.7rem;color:#9d8bbf;margin-top:0.3rem;">Aşağıdaki listede eşleşmeyen hediyeler için kullanılır. 0 ise yok sayılır.</div>
                     </div>
                     <div style="margin-top:1rem;">
                         <label style="display:flex;align-items:center;justify-content:space-between;">
                             <span>🎁 Hediye → Saniye Eşlemesi</span>
-                            <button class="btn-icon" onclick="addSubathonGiftRow()" title="Hediye ekle" style="background:rgba(0,255,157,0.1);color:#00ff9d;border:1px solid rgba(0,255,157,0.2);"><i class="fas fa-plus"></i></button>
+                            <button class="btn-icon" onclick="addSubathonGiftRow()" title="Hediye ekle" style="background:rgba(255, 46, 184,0.1);color:#ff2eb8;border:1px solid rgba(255, 46, 184,0.2);"><i class="fas fa-plus"></i></button>
                         </label>
                         <div id="ov-sub-gift-rows" style="display:flex;flex-direction:column;gap:0.4rem;margin-top:0.5rem;"></div>
                         <div style="display:flex;gap:0.4rem;margin-top:0.6rem;flex-wrap:wrap;">
                             <button class="btn-icon" onclick="loadSubathonPreset('basic')" style="font-size:0.72rem;padding:0.35rem 0.7rem;background:rgba(255,255,255,0.04);">⚡ Temel preset</button>
                             <button class="btn-icon" onclick="loadSubathonPreset('full')" style="font-size:0.72rem;padding:0.35rem 0.7rem;background:rgba(255,255,255,0.04);">🎯 Detaylı preset</button>
-                            <button class="btn-icon" onclick="clearSubathonGifts()" style="font-size:0.72rem;padding:0.35rem 0.7rem;background:rgba(255,0,110,0.08);color:#ff006e;">🗑️ Hepsini sil</button>
+                            <button class="btn-icon" onclick="clearSubathonGifts()" style="font-size:0.72rem;padding:0.35rem 0.7rem;background:rgba(255, 46, 184,0.08);color:#ff2eb8;">🗑️ Hepsini sil</button>
                         </div>
                     </div>
-                    <div style="margin-top:1rem;padding:0.75rem;background:rgba(0,255,157,0.04);border:1px solid rgba(0,255,157,0.15);border-radius:8px;">
-                        <div style="font-size:0.78rem;color:#00ff9d;font-weight:700;margin-bottom:0.4rem;">▶️ Zamanlayıcı Kontrolü</div>
+                    <div style="margin-top:1rem;padding:0.75rem;background:rgba(255, 46, 184,0.04);border:1px solid rgba(255, 46, 184,0.15);border-radius:8px;">
+                        <div style="font-size:0.78rem;color:#ff2eb8;font-weight:700;margin-bottom:0.4rem;">▶️ Zamanlayıcı Kontrolü</div>
                         <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
-                            <button class="btn-icon" onclick="subathonControl('start')" style="background:rgba(0,255,157,0.15);color:#00ff9d;border:1px solid rgba(0,255,157,0.3);font-weight:700;"><i class="fas fa-play"></i> Başlat</button>
+                            <button class="btn-icon" onclick="subathonControl('start')" style="background:rgba(255, 46, 184,0.15);color:#ff2eb8;border:1px solid rgba(255, 46, 184,0.3);font-weight:700;"><i class="fas fa-play"></i> Başlat</button>
                             <button class="btn-icon" onclick="subathonControl('pause')" style="background:rgba(255,200,0,0.1);color:#ffd000;border:1px solid rgba(255,200,0,0.2);"><i class="fas fa-pause"></i> Duraklat</button>
-                            <button class="btn-icon" onclick="subathonControl('reset')" style="background:rgba(255,0,110,0.08);color:#ff006e;border:1px solid rgba(255,0,110,0.2);"><i class="fas fa-redo"></i> Sıfırla</button>
+                            <button class="btn-icon" onclick="subathonControl('reset')" style="background:rgba(255, 46, 184,0.08);color:#ff2eb8;border:1px solid rgba(255, 46, 184,0.2);"><i class="fas fa-redo"></i> Sıfırla</button>
                         </div>
-                        <div style="font-size:0.7rem;color:#8b8b9a;margin-top:0.5rem;">Önce kaydet, sonra başlat. Yayında durdurmadan canlı geri sayım akışına devam eder.</div>
+                        <div style="font-size:0.7rem;color:#9d8bbf;margin-top:0.5rem;">Önce kaydet, sonra başlat. Yayında durdurmadan canlı geri sayım akışına devam eder.</div>
                     </div>
                 </div>
 
@@ -4764,20 +4898,20 @@
 
                 <div class="setting-row">
                     <label>Bar Rengi</label>
-                    <input type="color" class="ov-color" id="ov-barColor" value="#00ff9d" oninput="updateOverlayPreview()">
-                    <span style="color:#8b8b9a;font-size:0.82rem;" id="ov-barColor-hex">#00ff9d</span>
+                    <input type="color" class="ov-color" id="ov-barColor" value="#ff2eb8" oninput="updateOverlayPreview()">
+                    <span style="color:#9d8bbf;font-size:0.82rem;" id="ov-barColor-hex">#ff2eb8</span>
                 </div>
 
                 <div class="setting-row">
                     <label>Yazı Rengi</label>
                     <input type="color" class="ov-color" id="ov-textColor" value="#ffffff" oninput="updateOverlayPreview()">
-                    <span style="color:#8b8b9a;font-size:0.82rem;" id="ov-textColor-hex">#ffffff</span>
+                    <span style="color:#9d8bbf;font-size:0.82rem;" id="ov-textColor-hex">#ffffff</span>
                 </div>
 
                 <div class="setting-row">
                     <label>Arka Plan</label>
                     <input type="color" class="ov-color" id="ov-bgColor" value="#000000" oninput="updateOverlayPreview()">
-                    <span style="color:#8b8b9a;font-size:0.82rem;" id="ov-bgColor-hex">#000000</span>
+                    <span style="color:#9d8bbf;font-size:0.82rem;" id="ov-bgColor-hex">#000000</span>
                 </div>
 
                 <div class="setting-row">
@@ -4840,7 +4974,7 @@
             </div>
 
             <div class="overlay-preview-card">
-                <h3 style="color:#00ff9d;margin-bottom:0.75rem;display:flex;align-items:center;gap:0.4rem;font-size:0.9rem;">
+                <h3 style="color:#ff2eb8;margin-bottom:0.75rem;display:flex;align-items:center;gap:0.4rem;font-size:0.9rem;">
                     <i class="fas fa-eye"></i> Canlı Önizleme
                 </h3>
                 <div class="overlay-preview-frame" id="ov-preview"></div>
@@ -4871,8 +5005,8 @@
                 </div>
 
                 <div style="margin-top:0.65rem;padding:0.65rem;background:rgba(255,255,255,0.02);border-radius:6px;border:1px solid rgba(255,255,255,0.04);">
-                    <p style="color:#8b8b9a;font-size:0.68rem;line-height:1.5;">
-                        <strong style="color:#00ff9d;">Nasıl Kullanılır:</strong>
+                    <p style="color:#9d8bbf;font-size:0.68rem;line-height:1.5;">
+                        <strong style="color:#ff2eb8;">Nasıl Kullanılır:</strong>
                         Ayarları yapılandırın → Kaydet → URL'yi kopyalayın → OBS'de "Browser Source" ekleyin → URL'yi yapıştırın (400x200)
                     </p>
                 </div>
@@ -4900,7 +5034,7 @@
     <!-- Overlay Gallery Page -->
     <div class="page" id="overlay-gallery-page">
         <div class="page-header">
-            <div class="page-title"><i class="fas fa-images" style="color:#00ff9d;"></i> Kaplama Galerisi</div>
+            <div class="page-title"><i class="fas fa-images" style="color:#ff2eb8;"></i> Kaplama Galerisi</div>
             <div class="page-subtitle">Hazır overlay şablonlarını tek tıkla uygulayın</div>
         </div>
 
@@ -4911,7 +5045,7 @@
     <!-- Gift Scanner Page -->
     <div class="page" id="gift-scanner-page">
         <div class="page-header">
-            <div class="page-title"><i class="fas fa-search" style="color:#00ff9d;"></i> Hediye Tarayıcı</div>
+            <div class="page-title"><i class="fas fa-search" style="color:#ff2eb8;"></i> Hediye Tarayıcı</div>
             <div class="page-subtitle">Gelen hediyeleri gerçek zamanlı takip edin</div>
         </div>
 
@@ -4926,28 +5060,28 @@
                 <i class="fas fa-trash"></i> Temizle
             </button>
             <div style="margin-left:auto;display:flex;align-items:center;gap:0.35rem;">
-                <div id="scanner-status-dot" style="width:8px;height:8px;border-radius:50%;background:#ff006e;"></div>
-                <span id="scanner-status-text" style="color:#8b8b9a;font-size:0.72rem;">Bekleniyor...</span>
+                <div id="scanner-status-dot" style="width:8px;height:8px;border-radius:50%;background:#ff2eb8;"></div>
+                <span id="scanner-status-text" style="color:#9d8bbf;font-size:0.72rem;">Bekleniyor...</span>
             </div>
         </div>
 
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:0.5rem;margin-bottom:0.75rem;">
-            <div style="background:#13131a;border:1px solid rgba(255,255,255,0.04);border-radius:8px;padding:0.65rem;text-align:center;">
-                <div style="font-size:1.3rem;font-weight:700;color:#00ff9d;" id="scanner-total">0</div>
-                <div style="color:#8b8b9a;font-size:0.65rem;text-transform:uppercase;">Toplam Hediye</div>
+            <div style="background:#160a2e;border:1px solid rgba(255,255,255,0.04);border-radius:8px;padding:0.65rem;text-align:center;">
+                <div style="font-size:1.3rem;font-weight:700;color:#ff2eb8;" id="scanner-total">0</div>
+                <div style="color:#9d8bbf;font-size:0.65rem;text-transform:uppercase;">Toplam Hediye</div>
             </div>
-            <div style="background:#13131a;border:1px solid rgba(255,255,255,0.04);border-radius:8px;padding:0.65rem;text-align:center;">
+            <div style="background:#160a2e;border:1px solid rgba(255,255,255,0.04);border-radius:8px;padding:0.65rem;text-align:center;">
                 <div style="font-size:1.3rem;font-weight:700;color:#ffd700;" id="scanner-coins">0</div>
-                <div style="color:#8b8b9a;font-size:0.65rem;text-transform:uppercase;">Toplam Coin</div>
+                <div style="color:#9d8bbf;font-size:0.65rem;text-transform:uppercase;">Toplam Coin</div>
             </div>
-            <div style="background:#13131a;border:1px solid rgba(255,255,255,0.04);border-radius:8px;padding:0.65rem;text-align:center;">
-                <div style="font-size:1.3rem;font-weight:700;color:#ff006e;" id="scanner-top-gifter">-</div>
-                <div style="color:#8b8b9a;font-size:0.65rem;text-transform:uppercase;">Top Gifter</div>
+            <div style="background:#160a2e;border:1px solid rgba(255,255,255,0.04);border-radius:8px;padding:0.65rem;text-align:center;">
+                <div style="font-size:1.3rem;font-weight:700;color:#ff2eb8;" id="scanner-top-gifter">-</div>
+                <div style="color:#9d8bbf;font-size:0.65rem;text-transform:uppercase;">Top Gifter</div>
             </div>
         </div>
 
         <div class="scanner-log" id="scanner-log">
-            <div style="text-align:center;color:#8b8b9a;padding:3rem;">
+            <div style="text-align:center;color:#9d8bbf;padding:3rem;">
                 <i class="fas fa-gift" style="font-size:2.5rem;opacity:0.3;margin-bottom:1rem;display:block;"></i>
                 <p>TikTok Live'a bağlandığınızda hediyeler burada görünecek</p>
             </div>
@@ -4985,12 +5119,12 @@
             <section class="gd-right-col">
                 <!-- Temel -->
                 <div class="settings-section gd-settings">
-                    <h3><i class="fas fa-magic" style="color:#bd00ff;"></i> Temel</h3>
+                    <h3><i class="fas fa-magic" style="color:#a855f7;"></i> Temel</h3>
                     <div class="gd-grid-3">
-                        <label>Tasarım Adı <span style="color:#ff006e">*</span>
+                        <label>Tasarım Adı <span style="color:#ff2eb8">*</span>
                             <input type="text" id="gd-name" placeholder="Örn: Minecraft Hediyeleri" oninput="updateGiftDesign()">
                         </label>
-                        <label>Tasarım Tipi <span style="color:#ff006e">*</span>
+                        <label>Tasarım Tipi <span style="color:#ff2eb8">*</span>
                             <select id="gd-type" onchange="updateGiftDesign(true)">
                                 <option value="classic">Klasik (Üst+Sol+Sağ)</option>
                                 <option value="top-only">Sadece Üst</option>
@@ -5001,7 +5135,7 @@
                                 <option value="four-corners">Dört Köşe</option>
                             </select>
                         </label>
-                        <label>Font <span style="color:#ff006e">*</span>
+                        <label>Font <span style="color:#ff2eb8">*</span>
                             <select id="gd-font" onchange="updateGiftDesign()">
                                 <option value="Luckiest Guy">Luckiest Guy</option>
                                 <option value="Bangers">Bangers</option>
@@ -5022,16 +5156,16 @@
                 <div class="settings-section gd-settings">
                     <h3>📏 Boyutlar</h3>
                     <div class="gd-grid-4">
-                        <label>Hediye Boyutu <span style="color:#ff006e">*</span>
+                        <label>Hediye Boyutu <span style="color:#ff2eb8">*</span>
                             <input type="number" id="gd-giftSize" value="75" min="20" max="300" step="5" oninput="updateGiftDesign()">
                         </label>
-                        <label>Hediye Mesafesi <span style="color:#ff006e">*</span>
+                        <label>Hediye Mesafesi <span style="color:#ff2eb8">*</span>
                             <input type="number" id="gd-giftGap" value="40" min="0" max="200" step="5" oninput="updateGiftDesign()">
                         </label>
-                        <label>Yazı Mesafesi <span style="color:#ff006e">*</span>
+                        <label>Yazı Mesafesi <span style="color:#ff2eb8">*</span>
                             <input type="number" id="gd-textGap" value="-10" min="-50" max="100" step="1" oninput="updateGiftDesign()">
                         </label>
-                        <label>Satır Arası <span style="color:#ff006e">*</span>
+                        <label>Satır Arası <span style="color:#ff2eb8">*</span>
                             <input type="number" id="gd-lineHeight" value="-5" min="-30" max="100" step="1" oninput="updateGiftDesign()">
                         </label>
                     </div>
@@ -5039,18 +5173,18 @@
 
                 <!-- Stil -->
                 <div class="settings-section gd-settings">
-                    <h3><i class="fas fa-palette" style="color:#bd00ff;"></i> Stil</h3>
+                    <h3><i class="fas fa-palette" style="color:#a855f7;"></i> Stil</h3>
                     <div class="gd-grid-6">
-                        <label>Yazı Boyutu <span style="color:#ff006e">*</span>
+                        <label>Yazı Boyutu <span style="color:#ff2eb8">*</span>
                             <input type="number" id="gd-fontSize" value="24" min="8" max="96" step="1" oninput="updateGiftDesign()">
                         </label>
-                        <label>Yazı Rengi <span style="color:#ff006e">*</span>
+                        <label>Yazı Rengi <span style="color:#ff2eb8">*</span>
                             <input type="color" id="gd-textColor" value="#FFFFFF" oninput="updateGiftDesign()">
                         </label>
-                        <label>Border Rengi <span style="color:#ff006e">*</span>
+                        <label>Border Rengi <span style="color:#ff2eb8">*</span>
                             <input type="color" id="gd-borderColor" value="#000000" oninput="updateGiftDesign()">
                         </label>
-                        <label>Border Kalınlığı <span style="color:#ff006e">*</span>
+                        <label>Border Kalınlığı <span style="color:#ff2eb8">*</span>
                             <input type="number" id="gd-borderWidth" value="5" min="0" max="20" step="1" oninput="updateGiftDesign()">
                         </label>
                         <label>Oto Blur
@@ -5068,7 +5202,7 @@
                     <div class="gd-preview-wrap">
                         <div id="gd-preview" class="gd-preview"></div>
                     </div>
-                    <p style="text-align:center;color:#8b8b9a;font-size:0.7rem;margin-top:0.6rem;">
+                    <p style="text-align:center;color:#9d8bbf;font-size:0.7rem;margin-top:0.6rem;">
                         Yaptığınız değişiklikler otomatik olarak güncellenir
                     </p>
                 </div>
@@ -5083,12 +5217,12 @@
                     <button class="modal-close" onclick="closeGiftPicker()"><i class="fas fa-times"></i></button>
                 </div>
                 <input type="text" id="gd-picker-search" placeholder="🔍 Hediye ara..."
-                    style="width:100%;padding:0.6rem 0.85rem;background:#0a0a0f;border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#fff;font-size:0.85rem;margin-bottom:0.75rem;"
+                    style="width:100%;padding:0.6rem 0.85rem;background:#07030f;border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#fff;font-size:0.85rem;margin-bottom:0.75rem;"
                     oninput="renderGiftPickerList()">
                 <div id="gd-picker-list" class="gd-picker-grid">
-                    <div style="grid-column:1/-1;text-align:center;color:#8b8b9a;padding:2rem;">Yükleniyor...</div>
+                    <div style="grid-column:1/-1;text-align:center;color:#9d8bbf;padding:2rem;">Yükleniyor...</div>
                 </div>
-                <div id="gd-picker-count" style="text-align:center;color:#8b8b9a;font-size:0.7rem;margin-top:0.5rem;"></div>
+                <div id="gd-picker-count" style="text-align:center;color:#9d8bbf;font-size:0.7rem;margin-top:0.5rem;"></div>
             </div>
         </div>
     </div>
