@@ -3615,6 +3615,9 @@ const overlayTypeMap = {
     'wheel-actions':    { overlayType: 'wheel', subType: 'actions', title: 'Şans Çarkı', icon: '🎡' },
     'my-actions':       { overlayType: 'actions-feed', subType: 'actions', title: 'MyActions (Aksiyon Ekranı)', icon: '⚡' },
     'interaction-slider': { overlayType: 'interaction-slider', subType: 'slider', title: 'Etkileşim Şeridi', icon: '🎞️' },
+    'gift-cannon':      { overlayType: 'gift-cannon', subType: 'particles', title: 'Hediye Topu', icon: '💥' },
+    'like-fountain':    { overlayType: 'like-fountain', subType: 'particles', title: 'Kalp Çeşmesi', icon: '💗' },
+    'emoji-rain':       { overlayType: 'emoji-rain', subType: 'particles', title: 'Emoji Yağmuru', icon: '🌧️' },
 };
 
 // Navigate to overlay settings page
@@ -4224,6 +4227,64 @@ function updateOverlayPreview() {
         preview.innerHTML = `
             <div style="padding:12px;border-radius:${s.borderRadius}px;min-width:280px;max-width:100%;${themeStyles.container};border:1px solid rgba(255,255,255,0.08);">
                 ${html}
+            </div>`;
+    } else if (type === 'subathon') {
+        preview.innerHTML = `
+            <div style="padding:20px 32px;border-radius:${s.borderRadius}px;text-align:center;${themeStyles.container};">
+                <div style="color:${s.barColor};font-size:13px;text-transform:uppercase;letter-spacing:3px;font-weight:800;margin-bottom:8px;">⏱️ ${title}</div>
+                <div style="color:${s.textColor};font-size:${Math.max(40, s.fontSize*2.2)}px;font-weight:900;letter-spacing:2px;font-variant-numeric:tabular-nums;text-shadow:0 0 14px ${s.barColor}88;">01:00:00</div>
+                <div style="color:${s.textColor};opacity:0.6;font-size:12px;margin-top:8px;">+5 dk eklendi</div>
+            </div>`;
+    } else if (type === 'wheel') {
+        preview.innerHTML = `
+            <div style="position:relative;width:200px;height:200px;margin:0 auto;">
+                <div style="position:absolute;top:-2px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-top:18px solid #ffd000;z-index:2;"></div>
+                <svg width="200" height="200" viewBox="0 0 200 200" style="filter:drop-shadow(0 6px 16px rgba(0,0,0,0.5));">
+                    ${[0,1,2,3,4,5].map(i=>{const a0=i*60,a1=(i+1)*60;const r=96,cx=100,cy=100;const p=(d)=>[cx+r*Math.cos((d-90)*Math.PI/180),cy+r*Math.sin((d-90)*Math.PI/180)];const[x0,y0]=p(a0),[x1,y1]=p(a1);const colors=['#ff006e','#bd00ff','#00d9ff','#00ff9d','#ffd000','#ff7800'].map(c=>c.replace('#ff006e','#ff2eb8').replace('#bd00ff','#a855f7').replace('#00d9ff','#22d3ee').replace('#00ff9d','#a855f7').replace('#ff7800','#ff5fc4'));return `<path d="M100 100 L${x0} ${y0} A96 96 0 0 1 ${x1} ${y1} Z" fill="${colors[i]}" stroke="#0a0a0f" stroke-width="2"/>`}).join('')}
+                    <circle cx="100" cy="100" r="16" fill="#0a0a0f" stroke="#ffd000" stroke-width="3"/>
+                </svg>
+            </div>`;
+    } else if (type === 'actions-feed') {
+        preview.innerHTML = `
+            <div style="display:flex;flex-direction:column;align-items:center;gap:14px;">
+                <div style="padding:18px 30px;border-radius:16px;background:linear-gradient(135deg,${s.barColor}33,rgba(15,7,32,0.92));border:1px solid ${s.barColor}66;box-shadow:0 12px 40px rgba(0,0,0,0.4),0 0 40px ${s.barColor}33;text-align:center;">
+                    <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:26px;color:#fff;text-shadow:0 0 18px ${s.barColor}aa;">tester Gül gönderdi!</div>
+                    <div style="margin-top:6px;font-size:14px;color:#fff;opacity:0.8;">Teşekkürler! 🎉</div>
+                </div>
+                <div style="font-size:11px;color:#9d8bbf;text-align:center;max-width:300px;line-height:1.5;">Bu overlay aksiyon ateşlendiğinde uyarı/ses/TTS/konfeti gösterir. Yayında <b>şeffaftır</b> — sadece aksiyon olunca görünür.</div>
+            </div>`;
+    } else if (type === 'interaction-slider') {
+        const demo = [['🎁 Gül','Blok at'],['🚀 Roket','Çark çevir'],['🦁 Aslan','+60sn']];
+        preview.innerHTML = `
+            <div style="width:100%;max-width:420px;padding:12px 0;border-radius:${s.borderRadius}px;${themeStyles.container};overflow:hidden;">
+                <div style="display:flex;gap:10px;padding:0 14px;">
+                    ${demo.map(([g,a])=>`<div style="display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:999px;background:${s.barColor}1a;border:1px solid ${s.barColor}44;white-space:nowrap;"><span style="color:${s.barColor};font-weight:800;font-size:13px;">${g}</span><span style="color:${s.textColor};opacity:0.5;">→</span><span style="color:${s.textColor};font-weight:600;font-size:13px;">${a}</span></div>`).join('')}
+                </div>
+                <div style="font-size:11px;color:#9d8bbf;text-align:center;margin-top:10px;padding:0 14px;">Hediye kurallarından otomatik dolar, yayının altında kayar.</div>
+            </div>`;
+    } else if (type === 'gift-cannon') {
+        preview.innerHTML = `
+            <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#ff2eb8,#a855f7);border:3px solid #ff2eb8;box-shadow:0 0 18px #ff2eb8aa;"></div>
+                    <div style="font-size:42px;">🎁</div>
+                    <div style="display:flex;flex-direction:column;"><span style="color:#fff;font-weight:800;font-size:15px;">tester</span><span style="color:#ff9fdc;font-weight:700;font-size:13px;">Gül ×5</span></div>
+                </div>
+                <div style="font-size:11px;color:#9d8bbf;text-align:center;max-width:300px;line-height:1.5;">Hediye gelince gönderenin profil fotosu + hediye ikonu ekranı boydan boya uçar.</div>
+            </div>`;
+    } else if (type === 'like-fountain') {
+        preview.innerHTML = `
+            <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
+                <div style="display:flex;gap:6px;font-size:32px;">
+                    <span style="color:#ff2eb8;">❤</span><span style="color:#ff5fc4;font-size:26px;">❤</span><span style="color:#a855f7;font-size:38px;">❤</span><span style="color:#ff9fdc;font-size:28px;">❤</span><span style="color:#ff2eb8;font-size:34px;">❤</span>
+                </div>
+                <div style="font-size:11px;color:#9d8bbf;text-align:center;max-width:300px;line-height:1.5;">Beğeni geldikçe ekranın altından kalpler yükselir. Beğeni sayısına göre yoğunlaşır.</div>
+            </div>`;
+    } else if (type === 'emoji-rain') {
+        preview.innerHTML = `
+            <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
+                <div style="display:flex;gap:8px;font-size:30px;">🎉 🔥 😍 👏 ✨ 💯</div>
+                <div style="font-size:11px;color:#9d8bbf;text-align:center;max-width:300px;line-height:1.5;">Sohbetteki emojiler ekranın üstünden yağar. İzleyici emoji yazdıkça tetiklenir.</div>
             </div>`;
     }
 

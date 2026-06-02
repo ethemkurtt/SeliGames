@@ -183,6 +183,9 @@ function renderByType(ov: OverlayData, liveEvents: TikTokLiveEvent[], valueDelta
         case 'wheel': return <WheelView ov={ov} />
         case 'actions-feed': return <MyActionsView fires={actionFires} />
         case 'interaction-slider': return <InteractionSliderView ov={ov} />
+        case 'gift-cannon': return <GiftCannonView ov={ov} liveEvents={liveEvents} />
+        case 'like-fountain': return <LikeFountainView ov={ov} liveEvents={liveEvents} />
+        case 'emoji-rain': return <EmojiRainView ov={ov} liveEvents={liveEvents} />
         default: return <StatusScreen title={`Desteklenmeyen tip: ${ov.overlayType}`} color="#ffa500" />
     }
 }
@@ -926,6 +929,153 @@ function SubathonView({ ov }: { ov: OverlayData }) {
 }
 
 // ============================================================================
+// Particle overlays — Gift Cannon / Like Fountain / Emoji Rain
+// All three consume the raw liveEvents stream and spawn DOM particles.
+// ============================================================================
+
+// Shared hook: returns only the events newer than the last seen one.
+function useNewEvents(liveEvents: TikTokLiveEvent[], onNew: (ev: TikTokLiveEvent) => void) {
+    const seen = useRef<Set<string>>(new Set())
+    useEffect(() => {
+        for (const ev of liveEvents) {
+            const id = ev._id || ''
+            if (!id || seen.current.has(id)) continue
+            seen.current.add(id)
+            onNew(ev)
+        }
+        if (seen.current.size > 400) seen.current = new Set([...seen.current].slice(-200))
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [liveEvents])
+}
+
+interface FlyingGift { id: string; avatar: string; giftIcon: string; user: string; giftName: string; count: number; top: number; dur: number }
+
+function GiftCannonView({ ov, liveEvents }: { ov: OverlayData; liveEvents: TikTokLiveEvent[] }) {
+    const c = ov.config || {}
+    const [flying, setFlying] = useState<FlyingGift[]>([])
+    const fromRight = (c as any).direction !== 'leftToRight'
+
+    useNewEvents(liveEvents, (ev) => {
+        if (ev.eventType !== 'gift') return
+        const giftMeta = ev.giftName ? findGiftByName(ev.giftName) : null
+        const g: FlyingGift = {
+            id: ev._id || `${Date.now()}-${Math.random()}`,
+            avatar: ev.profilePicture || '',
+            giftIcon: giftMeta?.icon || '',
+            user: ev.user || '',
+            giftName: ev.giftName || '',
+            count: ev.count || 1,
+            top: 15 + Math.random() * 55,
+            dur: 4 + Math.random() * 1.5,
+        }
+        setFlying((list) => [...list, g])
+        window.setTimeout(() => setFlying((list) => list.filter((x) => x.id !== g.id)), (g.dur + 0.3) * 1000)
+    })
+
+    return (
+        <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+            {flying.map((g) => (
+                <div key={g.id} style={{
+                    position: 'absolute', top: `${g.top}%`,
+                    [fromRight ? 'right' : 'left']: 0,
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    animation: `${fromRight ? 'ov-cannon-l' : 'ov-cannon-r'} ${g.dur}s linear forwards`,
+                } as any}>
+                    {g.avatar && <img src={g.avatar} alt="" style={{ width: 52, height: 52, borderRadius: '50%', border: '3px solid #ff2eb8', boxShadow: '0 0 20px #ff2eb8aa' }} />}
+                    {g.giftIcon && <img src={g.giftIcon} alt="" style={{ width: 64, height: 64, filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.5))' }} />}
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ color: '#fff', fontWeight: 800, fontSize: 16, textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>{g.user}</span>
+                        <span style={{ color: '#ff9fdc', fontWeight: 700, fontSize: 14, textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>{g.giftName} ×{g.count}</span>
+                    </div>
+                </div>
+            ))}
+        </div>
+    )
+}
+
+interface FloatHeart { id: string; left: number; size: number; dur: number; color: string; drift: number }
+
+function LikeFountainView({ ov, liveEvents }: { ov: OverlayData; liveEvents: TikTokLiveEvent[] }) {
+    const s = ov.style || {}
+    const baseColor = s.barColor || '#ff2eb8'
+    const [hearts, setHearts] = useState<FloatHeart[]>([])
+    const palette = [baseColor, '#ff5fc4', '#a855f7', '#ff9fdc']
+
+    useNewEvents(liveEvents, (ev) => {
+        if (ev.eventType !== 'like') return
+        // Spawn a few hearts proportional to like count (capped).
+        const n = Math.min(8, Math.max(2, Math.ceil((ev.count || 1) / 3)))
+        const batch: FloatHeart[] = Array.from({ length: n }).map((_, i) => ({
+            id: `${ev._id}-${i}`,
+            left: 10 + Math.random() * 80,
+            size: 22 + Math.random() * 22,
+            dur: 2.5 + Math.random() * 1.5,
+            color: palette[Math.floor(Math.random() * palette.length)],
+            drift: (Math.random() - 0.5) * 120,
+        }))
+        setHearts((list) => [...list, ...batch].slice(-80))
+        batch.forEach((h) => window.setTimeout(() => setHearts((list) => list.filter((x) => x.id !== h.id)), (h.dur + 0.2) * 1000))
+    })
+
+    return (
+        <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+            {hearts.map((h) => (
+                <div key={h.id} style={{
+                    position: 'absolute', bottom: -40, left: `${h.left}%`,
+                    fontSize: h.size, color: h.color,
+                    ['--drift' as any]: `${h.drift}px`,
+                    animation: `ov-heart-rise ${h.dur}s ease-out forwards`,
+                    filter: `drop-shadow(0 0 8px ${h.color}88)`,
+                }}>❤</div>
+            ))}
+        </div>
+    )
+}
+
+interface RainItem { id: string; left: number; size: number; dur: number; emoji: string; delay: number }
+const DEFAULT_EMOJIS = ['🎉', '🔥', '😍', '👏', '💖', '✨', '😂', '🤩', '💯', '🚀']
+function extractEmojis(text: string): string[] {
+    const m = (text || '').match(/\p{Emoji_Presentation}|\p{Extended_Pictographic}/gu)
+    return m ? m.slice(0, 6) : []
+}
+
+function EmojiRainView({ ov, liveEvents }: { ov: OverlayData; liveEvents: TikTokLiveEvent[] }) {
+    const c = ov.config || {}
+    const useChatEmojis = (c as any).source !== 'random'
+    const [items, setItems] = useState<RainItem[]>([])
+
+    useNewEvents(liveEvents, (ev) => {
+        if (ev.eventType !== 'chat' && ev.eventType !== 'comment') return
+        let emojis = useChatEmojis ? extractEmojis(ev.text || '') : []
+        if (!emojis.length) {
+            // fall back to a couple of random ones so the overlay always reacts
+            emojis = [DEFAULT_EMOJIS[Math.floor(Math.random() * DEFAULT_EMOJIS.length)]]
+        }
+        const batch: RainItem[] = emojis.map((e, i) => ({
+            id: `${ev._id}-${i}`,
+            left: Math.random() * 95,
+            size: 26 + Math.random() * 24,
+            dur: 3 + Math.random() * 2,
+            delay: Math.random() * 0.3,
+            emoji: e,
+        }))
+        setItems((list) => [...list, ...batch].slice(-100))
+        batch.forEach((it) => window.setTimeout(() => setItems((list) => list.filter((x) => x.id !== it.id)), (it.dur + it.delay + 0.3) * 1000))
+    })
+
+    return (
+        <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+            {items.map((it) => (
+                <div key={it.id} style={{
+                    position: 'absolute', top: -50, left: `${it.left}%`, fontSize: it.size,
+                    animation: `ov-emoji-fall ${it.dur}s ${it.delay}s linear forwards`,
+                }}>{it.emoji}</div>
+            ))}
+        </div>
+    )
+}
+
+// ============================================================================
 // View: MyActions — renders/plays the Actions & Events engine fires
 // (overlay-alert, sound, tts, confetti, media). The single browser source
 // that everything visual/audible runs through, à la TikFinity's MyActions.
@@ -1296,4 +1446,33 @@ const GLOBAL_CSS = `
         to { transform: translateX(-50%); }
     }
     .ov-slider-track { animation: ov-slider-marquee 30s linear infinite; }
+
+    /* Gift cannon — fly across the screen */
+    @keyframes ov-cannon-l {
+        0% { transform: translateX(120%); opacity: 0; }
+        10% { opacity: 1; }
+        90% { opacity: 1; }
+        100% { transform: translateX(-100vw); opacity: 0; }
+    }
+    @keyframes ov-cannon-r {
+        0% { transform: translateX(-120%); opacity: 0; }
+        10% { opacity: 1; }
+        90% { opacity: 1; }
+        100% { transform: translateX(100vw); opacity: 0; }
+    }
+
+    /* Like fountain — hearts rise + drift + fade */
+    @keyframes ov-heart-rise {
+        0% { transform: translateY(0) translateX(0) scale(0.6); opacity: 0; }
+        15% { opacity: 1; transform: translateY(-8vh) scale(1); }
+        100% { transform: translateY(-100vh) translateX(var(--drift)) scale(0.9); opacity: 0; }
+    }
+
+    /* Emoji rain — fall from top */
+    @keyframes ov-emoji-fall {
+        0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+        10% { opacity: 1; }
+        90% { opacity: 1; }
+        100% { transform: translateY(110vh) rotate(40deg); opacity: 0; }
+    }
 `

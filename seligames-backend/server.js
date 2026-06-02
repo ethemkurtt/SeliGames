@@ -301,7 +301,9 @@ io.on('connection', (socket) => {
                     });
                 }
 
-                if (ot === 'chat' || ot === 'event-feed') {
+                // Raw event stream — consumed by chat/event-feed feeds AND
+                // the particle overlays (gift-cannon / like-fountain / emoji-rain).
+                if (ot === 'chat' || ot === 'event-feed' || ot === 'gift-cannon' || ot === 'like-fountain' || ot === 'emoji-rain') {
                     const eventIcons = { like: '❤️', follow: '➕', share: '🔁', gift: '🎁', comment: '💬', chat: '💬', viewer: '👁️', member: '👋' };
                     io.to(`overlay:${overlay.overlayId}`).emit('tiktok-live-event', {
                         type: eventType === 'chat' || eventType === 'comment' ? 'chat' : 'event',
@@ -310,8 +312,10 @@ io.on('connection', (socket) => {
                         icon: eventIcons[eventType] || '📌',
                         eventType,
                         giftName,
+                        giftId,
                         count,
                         diamondCount,
+                        likeCount,
                         profilePicture
                     });
                 }
