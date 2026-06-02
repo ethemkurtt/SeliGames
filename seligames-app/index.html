@@ -3934,8 +3934,11 @@
                         <i class="fab fa-tiktok" style="color: #ff2eb8; font-size: 1.2rem;"></i>
                         <span id="tiktok-username-text" style="color: #a855f7; font-weight: 700; font-size: 1rem;">Kullanıcı adı yükleniyor...</span>
                     </div>
-                    <button onclick="startLiveStream()" class="btn-start-live">
+                    <button id="btn-start-live" onclick="startLiveStream()" class="btn-start-live">
                         <i class="fas fa-play-circle"></i> Canlı Yayına Başla
+                    </button>
+                    <button id="btn-stop-live" onclick="disconnectTikTokLive()" class="btn-start-live" style="display:none;background:linear-gradient(135deg,#ef4444,#b91c1c);">
+                        <i class="fas fa-stop-circle"></i> Bağlantıyı Kes
                     </button>
                 </div>
 

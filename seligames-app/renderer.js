@@ -47,8 +47,8 @@ function loadUserInfo(user) {
     const profileUsernameDetail = document.getElementById('profile-username-detail');
     const profileEmailDetail = document.getElementById('profile-email-detail');
 
-    const username = user.username || user.email.split('@')[0];
-    const email = user.email;
+    const email = user.email || '';
+    const username = user.username || (email ? email.split('@')[0] : 'Kullanıcı');
 
     if (userNameEl) userNameEl.textContent = username;
     if (userEmailEl) userEmailEl.textContent = email;
@@ -1292,13 +1292,17 @@ function previewGiftSound(giftName) {
 const _origLoadSettings = typeof loadSettings === 'function' ? loadSettings : null;
 
 // Load all settings from backend
+// Runtime settings cache — read by other parts of the app so toggles
+// actually take effect (not just persist).
+let appSettings = {};
+
 async function loadSettings() {
     try {
         const result = await window.api.getSettings();
         if (result.success && result.data.settings) {
             const settings = result.data.settings;
-            
-            // Update checkboxes based on settings
+            appSettings = settings;
+
             const checkboxes = {
                 'auto-update-mods': settings.autoUpdateMods,
                 'notifications': settings.notifications,
@@ -1309,34 +1313,44 @@ async function loadSettings() {
                 'gift-sounds-toggle': settings.tiktokSoundEffects,
                 'tiktok-screen-notifications': settings.tiktokScreenNotifications
             };
-            
             Object.entries(checkboxes).forEach(([id, value]) => {
                 const checkbox = document.getElementById(id);
-                if (checkbox) {
-                    checkbox.checked = value !== false; // default to true if undefined
-                }
+                if (checkbox) checkbox.checked = value !== false;
             });
-            
-            console.log('✅ Settings loaded from backend');
+
+            // Apply runtime effects of the loaded settings
+            applySettingEffects(settings);
+            console.log('✅ Settings loaded + applied');
         }
     } catch (error) {
         console.error('Failed to load settings:', error);
     }
-    // Load gift sound map grid (catalog + user's mapping)
-    renderGiftSoundMap().catch(err => console.warn('renderGiftSoundMap failed', err));
 }
 
-// Update setting in backend
+// Apply the side-effects of settings (called on load + each change).
+function applySettingEffects(s) {
+    // Verbose TikTok event console logging
+    window.DEBUG_TIKTOK_EVENTS = (s.tiktokEventLogging === true);
+    // OS launch-on-startup — sync the native login item with the saved flag
+    if (window.api?.setLaunchOnStartup) {
+        window.api.setLaunchOnStartup(s.launchOnStartup === true).catch(() => {});
+    }
+}
+
+// Update a single setting in the backend + apply its runtime effect now.
 async function updateSetting(settingName, value) {
+    appSettings[settingName] = value;
     try {
-        const settings = {};
-        settings[settingName] = value;
-        const result = await window.api.updateSettings(settings);
-        if (result.success) {
-            console.log('✅ Setting updated:', settingName, value);
-        }
+        const result = await window.api.updateSettings({ [settingName]: value });
+        if (result.success) console.log('✅ Setting updated:', settingName, value);
     } catch (error) {
         console.error('Failed to update setting:', error);
+    }
+    // Immediate runtime effects
+    if (settingName === 'tiktokEventLogging') window.DEBUG_TIKTOK_EVENTS = (value === true);
+    if (settingName === 'launchOnStartup' && window.api?.setLaunchOnStartup) {
+        const r = await window.api.setLaunchOnStartup(value === true).catch(() => null);
+        if (r?.success) showToast(value ? 'Başlangıçta otomatik açılacak' : 'Otomatik açılma kapatıldı');
     }
 }
 
@@ -1763,7 +1777,7 @@ function renderActionLog() {
     }
     el.innerHTML = lastActionLog.slice(0, 15).map(l => `
         <div style="display:flex;gap:0.5rem;align-items:center;padding:0.35rem 0.6rem;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.72rem;">
-            <span style="color:${l.ok ? '#ff2eb8' : '#ff2eb8'};font-size:0.8rem;">${l.ok ? '✓' : '✗'}</span>
+            <span style="color:${l.ok ? '#ff2eb8' : '#ef4444'};font-size:0.8rem;">${l.ok ? '✓' : '✗'}</span>
             <span style="color:#fff;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(l.giftName)} → <span style="color:#ffd700;">${escapeHtml(l.action.value)}</span></span>
             <span style="color:#9d8bbf;font-size:0.65rem;">${l.modTitle}</span>
             <span style="color:#9d8bbf;font-size:0.65rem;">${l.time.toLocaleTimeString('tr-TR')}</span>
@@ -1922,7 +1936,7 @@ async function openModDetail(modId) {
     // Fetch mod + config in parallel
     try {
         const mod = allMods.find(m => m._id === modId)
-            || (await fetch(`http://localhost:3000/api/mods/${modId}`).then(r => r.json()).catch(() => null));
+            || (await fetch(`${BACKEND_URL}/api/mods/${modId}`).then(r => r.json()).catch(() => null));
         if (!mod || !mod._id) { showToast('Mod bulunamadı', true); return; }
 
         const cfgRes = await window.api.getModConfig(modId);
@@ -2570,12 +2584,12 @@ function startPerformanceMonitor() {
 
         if (cpuElem) {
             cpuElem.textContent = `${cpu}%`;
-            cpuElem.style.color = cpu > 80 ? '#ff2eb8' : '#ff2eb8';
+            cpuElem.style.color = cpu > 80 ? '#ef4444' : '#ff2eb8';
         }
         if (ramElem) ramElem.textContent = `${ram}GB`;
         if (fpsElem) {
             fpsElem.textContent = fps;
-            fpsElem.style.color = fps < 30 ? '#ff2eb8' : '#ff2eb8';
+            fpsElem.style.color = fps < 30 ? '#ef4444' : '#ff2eb8';
         }
     }, 2000);
 }
@@ -2609,11 +2623,14 @@ let userTikTokUsername = ''; // Kullanıcının TikTok kullanıcı adı
 
 // Update live stats in UI
 function updateLiveStats() {
-    document.getElementById('total-comments').textContent = liveStats.comments;
-    document.getElementById('total-gifts').textContent = liveStats.gifts;
-    document.getElementById('total-likes').textContent = liveStats.likes;
-    document.getElementById('total-members').textContent = liveStats.members;
-    document.getElementById('live-viewers').textContent = liveStats.viewers;
+    // Guarded — these elements only exist on the TikTok Live page, but this
+    // runs on every incoming event regardless of the active page.
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    set('total-comments', liveStats.comments);
+    set('total-gifts', liveStats.gifts);
+    set('total-likes', liveStats.likes);
+    set('total-members', liveStats.members);
+    set('live-viewers', liveStats.viewers);
 }
 
 // Load TikTok username from backend (auto-display only)
@@ -2629,6 +2646,13 @@ async function loadTikTokUsername() {
                 usernameDisplay.style.color = '#a855f7';
             }
             console.log('✅ TikTok username loaded from backend:', result.data.tiktokUsername);
+
+            // Auto-connect if the setting is on and we're not already live.
+            const autoConnect = result.data.settings?.tiktokAutoConnect === true;
+            if (autoConnect && !ws) {
+                console.log('⚡ Auto-connect enabled — connecting to TikTok Live');
+                setTimeout(() => { if (!ws) startLiveStream(); }, 600);
+            }
         } else {
             if (usernameDisplay) {
                 usernameDisplay.textContent = 'Profil sayfasından TikTok kullanıcı adınızı ekleyin';
@@ -2811,20 +2835,11 @@ function connectToTikTokLive() {
                 statusText.textContent = 'Bağlı ✓';
             }
 
-            const container = document.getElementById('live-stream-container');
-            const placeholder = document.getElementById('stream-placeholder');
-            if (placeholder) placeholder.style.display = 'none';
-
-            if (container) {
-                container.innerHTML = `
-                    <div style="text-align: center; color: #ff2eb8; padding: 2rem;">
-                        <i class="fas fa-check-circle" style="font-size: 4rem; margin-bottom: 1rem;"></i>
-                        <p style="font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem;">✅ Canlı Bağlantı Aktif!</p>
-                        <p style="color: #9d8bbf;">@${username} kullanıcısının canlı yayınına bağlandınız</p>
-                        <p style="color: #ff2eb8; font-size: 0.85rem; margin-top: 1rem;">🔴 CANLI - Event'ler gerçek zamanlı alınıyor</p>
-                    </div>
-                `;
-            }
+            // Toggle Start ↔ Stop buttons
+            const startBtn = document.getElementById('btn-start-live');
+            const stopBtn = document.getElementById('btn-stop-live');
+            if (startBtn) startBtn.style.display = 'none';
+            if (stopBtn) stopBtn.style.display = '';
 
             addEventToFeed({
                 type: 'system',
@@ -3172,17 +3187,11 @@ function disconnectTikTokLive() {
         statusText.textContent = 'Bağlı Değil';
     }
 
-    // Reset stream container
-    const container = document.getElementById('live-stream-container');
-    if (container) {
-        container.innerHTML = `
-            <div id="stream-placeholder" style="text-align: center; color: #9d8bbf;">
-                <i class="fab fa-tiktok" style="font-size: 4rem; opacity: 0.3; margin-bottom: 1rem;"></i>
-                <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">Canlı Yayın Bağlı Değil</p>
-                <p style="font-size: 0.9rem;">Kullanıcı adı girerek bağlanın</p>
-            </div>
-        `;
-    }
+    // Toggle Stop → Start buttons
+    const startBtn = document.getElementById('btn-start-live');
+    const stopBtn = document.getElementById('btn-stop-live');
+    if (startBtn) startBtn.style.display = '';
+    if (stopBtn) stopBtn.style.display = 'none';
 
     // Reset stats
     liveStats = { comments: 0, gifts: 0, likes: 0, members: 0, actions: 0, viewers: 0 };
@@ -3219,8 +3228,9 @@ function addEventToFeed(event) {
         if (!userText || userText === 'Unknown User') return;
     }
 
-    // Remove placeholder if exists
-    const placeholder = feed.querySelector('[style*="padding: 4rem"]');
+    // Remove placeholder if exists (covers both the CSS-class placeholder
+    // from index.html and the inline-styled one written by clearEventFeed)
+    const placeholder = feed.querySelector('.event-placeholder, [style*="padding: 4rem"]');
     if (placeholder) placeholder.remove();
 
     const eventEl = document.createElement('div');
@@ -3735,7 +3745,7 @@ async function loadOverlayDrafts() {
                     </div>
                     <div class="draft-meta"><span>İlerleme</span><span><b>${current.toLocaleString()}</b> / ${target.toLocaleString()}</span></div>
                 ` : `
-                    <div class="draft-meta"><span>${ov.overlayType} / ${ov.subType || ''}</span><span style="color:${ov.isActive ? '#ff2eb8' : '#ff2eb8'}">${ov.isActive ? '● AKTİF' : '● PASİF'}</span></div>
+                    <div class="draft-meta"><span>${ov.overlayType} / ${ov.subType || ''}</span><span style="color:${ov.isActive ? '#ff2eb8' : '#7a6e94'}">${ov.isActive ? '● AKTİF' : '● PASİF'}</span></div>
                 `}
                 <div class="draft-actions">
                     <button class="btn-draft btn-resume" data-id="${ov._id}" data-action="resume">
@@ -4569,15 +4579,28 @@ handleTikTokEvent = function(msg) {
 
     if (eventType === 'WebcastGiftMessage') {
         const user = eventData?.user?.nickname || eventData?.user?.uniqueId || 'Unknown';
-        const giftName = eventData?.gift?.name || 'Hediye';
-        const giftCount = eventData?.repeatCount || 1;
-        const diamonds = (eventData?.gift?.diamond_count || 0) * giftCount;
+        // Robust gift-name resolution (same cascade the main feed uses) so
+        // the scanner doesn't show "Hediye"/0 on stripped payloads.
+        const giftId = eventData?.giftId ?? eventData?.gift?.id ?? null;
+        let giftName = eventData?.giftName || eventData?.gift?.name || eventData?.gift?.gift_name || '';
+        if ((!giftName || /^Hediye/i.test(giftName)) && giftId != null) {
+            giftName = resolveGiftNameFromId(giftId) || giftName;
+        }
+        if (!giftName && giftId != null && Array.isArray(giftCatalogCache)) {
+            const hit = giftCatalogCache.find(g => String(g.id) === String(giftId));
+            if (hit) giftName = hit.name;
+        }
+        if (!giftName) giftName = giftId ? `Hediye #${giftId}` : 'Hediye';
+        const giftCount = eventData?.repeatCount || eventData?.count || 1;
+        const diamonds = (eventData?.gift?.diamond_count || eventData?.diamondCount || 0) * giftCount;
 
         addToScanner({ user, giftName, coins: diamonds, count: giftCount });
 
-        // Update scanner status
-        document.getElementById('scanner-status-dot').style.background = '#ff2eb8';
-        document.getElementById('scanner-status-text').textContent = 'Aktif';
+        // Update scanner status (guarded — element only exists on scanner page)
+        const dot = document.getElementById('scanner-status-dot');
+        const txt = document.getElementById('scanner-status-text');
+        if (dot) dot.style.background = '#ff2eb8';
+        if (txt) txt.textContent = 'Aktif';
     }
 };
 

@@ -6,7 +6,7 @@ export const Route = createFileRoute('/overlay/goal/$overlayId')({
     component: GoalOverlay,
 })
 
-const API_URL = 'http://localhost:3000'
+const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000'
 
 interface GoalData {
     title: string

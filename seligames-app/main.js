@@ -1304,6 +1304,20 @@ ipcMain.handle('get-installed-mods', async () => {
 
 ipcMain.handle('get-app-config', () => APP_CONFIG);
 
+// Launch-on-startup toggle (Settings page). macOS/Windows native.
+ipcMain.handle('set-launch-on-startup', (event, enabled) => {
+    try {
+        app.setLoginItemSettings({ openAtLogin: !!enabled, openAsHidden: false });
+        return { success: true, enabled: !!enabled };
+    } catch (e) {
+        return { success: false, error: e.message };
+    }
+});
+ipcMain.handle('get-launch-on-startup', () => {
+    try { return { enabled: app.getLoginItemSettings().openAtLogin }; }
+    catch { return { enabled: false }; }
+});
+
 // Save a data: URL (e.g. exported PNG) to disk via native save dialog
 ipcMain.handle('save-data-url', async (event, { dataUrl, suggestedName }) => {
     try {
