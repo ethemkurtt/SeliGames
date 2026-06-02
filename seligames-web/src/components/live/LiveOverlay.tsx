@@ -29,8 +29,9 @@ export interface GiftAlertData { user: string; name: string; count: number; icon
 
 export interface OverlayData {
     _id: string
+    userId?: string
     overlayId: string
-    overlayType: 'goal' | 'gift-alert' | 'last-x' | 'leaderboard' | 'chart' | 'chat' | 'event-feed' | 'subathon' | 'wheel'
+    overlayType: 'goal' | 'gift-alert' | 'last-x' | 'leaderboard' | 'chart' | 'chat' | 'event-feed' | 'subathon' | 'wheel' | 'actions-feed' | 'interaction-slider'
     subType: string
     title: string
     currentValue: number
@@ -39,6 +40,17 @@ export interface OverlayData {
     style: OverlayStyle
     config?: OverlayConfig
     data?: { items?: any[]; lastGift?: GiftAlertData; [k: string]: any }
+}
+
+// Fired by the Actions & Events engine on the user room.
+interface ActionFire {
+    actionId?: string
+    actionType: string
+    name?: string
+    config: any
+    context?: { user?: string; nickname?: string; giftName?: string; repeatCount?: number; coins?: number; profilePicture?: string }
+    fireId?: string
+    _t?: number
 }
 
 interface TikTokLiveEvent {
@@ -64,6 +76,7 @@ export function LiveOverlay({ overlayId }: { overlayId: string }) {
     const [status, setStatus] = useState<'loading' | 'ready' | 'not-found' | 'error'>('loading')
     const [liveEvents, setLiveEvents] = useState<TikTokLiveEvent[]>([])
     const [valueDelta, setValueDelta] = useState<number | null>(null)
+    const [actionFires, setActionFires] = useState<ActionFire[]>([])
     const prevValueRef = useRef(0)
     const deltaTimerRef = useRef<number | null>(null)
     const socketRef = useRef<Socket | null>(null)
@@ -122,6 +135,16 @@ export function LiveOverlay({ overlayId }: { overlayId: string }) {
             })
         })
 
+        // Actions & Events engine fires these on the user room. The MyActions
+        // (actions-feed) overlay renders/plays them.
+        socket.on('action-fire', (a: ActionFire) => {
+            setActionFires((list) => {
+                const withT = { ...a, _t: Date.now(), fireId: a.fireId || `${Date.now()}-${Math.random().toString(36).slice(2, 7)}` }
+                const next = [...list, withT]
+                return next.length > 30 ? next.slice(-30) : next
+            })
+        })
+
         return () => {
             if (deltaTimerRef.current) window.clearTimeout(deltaTimerRef.current)
             socket.disconnect()
@@ -142,12 +165,12 @@ export function LiveOverlay({ overlayId }: { overlayId: string }) {
         }}>
             <style>{GLOBAL_CSS}</style>
             {style.customCSS && <style>{style.customCSS}</style>}
-            {renderByType(ov, liveEvents, valueDelta)}
+            {renderByType(ov, liveEvents, valueDelta, actionFires)}
         </div>
     )
 }
 
-function renderByType(ov: OverlayData, liveEvents: TikTokLiveEvent[], valueDelta: number | null) {
+function renderByType(ov: OverlayData, liveEvents: TikTokLiveEvent[], valueDelta: number | null, actionFires: ActionFire[]) {
     switch (ov.overlayType) {
         case 'goal': return <GoalView ov={ov} valueDelta={valueDelta} />
         case 'gift-alert': return <GiftAlertView ov={ov} />
@@ -158,6 +181,8 @@ function renderByType(ov: OverlayData, liveEvents: TikTokLiveEvent[], valueDelta
         case 'event-feed': return <EventFeedView ov={ov} liveEvents={liveEvents} />
         case 'subathon': return <SubathonView ov={ov} />
         case 'wheel': return <WheelView ov={ov} />
+        case 'actions-feed': return <MyActionsView fires={actionFires} />
+        case 'interaction-slider': return <InteractionSliderView ov={ov} />
         default: return <StatusScreen title={`Desteklenmeyen tip: ${ov.overlayType}`} color="#ffa500" />
     }
 }
@@ -901,6 +926,256 @@ function SubathonView({ ov }: { ov: OverlayData }) {
 }
 
 // ============================================================================
+// View: MyActions — renders/plays the Actions & Events engine fires
+// (overlay-alert, sound, tts, confetti, media). The single browser source
+// that everything visual/audible runs through, à la TikFinity's MyActions.
+// ============================================================================
+
+function MyActionsView({ fires }: { fires: ActionFire[] }) {
+    const processed = useRef<Set<string>>(new Set())
+    const [visual, setVisual] = useState<ActionFire | null>(null)
+    const queue = useRef<ActionFire[]>([])
+    const showingRef = useRef(false)
+    const [confetti, setConfetti] = useState<{ id: string; colors: string[]; intensity: number } | null>(null)
+
+    // Process new fires as they arrive.
+    useEffect(() => {
+        for (const f of fires) {
+            const id = f.fireId || ''
+            if (!id || processed.current.has(id)) continue
+            processed.current.add(id)
+            dispatchFire(f)
+        }
+        // keep the processed set from growing forever
+        if (processed.current.size > 200) {
+            processed.current = new Set([...processed.current].slice(-100))
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [fires])
+
+    function dispatchFire(f: ActionFire) {
+        switch (f.actionType) {
+            case 'sound': playSound(f.config); break
+            case 'tts': speak(f.config); break
+            case 'confetti':
+                setConfetti({ id: f.fireId || String(Date.now()), colors: f.config?.colors?.length ? f.config.colors : ['#ff2eb8', '#a855f7', '#22d3ee'], intensity: f.config?.intensity || 5 })
+                window.setTimeout(() => setConfetti(null), 3000)
+                break
+            case 'overlay-alert':
+            case 'media':
+                queue.current.push(f)
+                pump()
+                break
+            default: break // keyboard/launch/points/wheel handled elsewhere
+        }
+    }
+
+    function pump() {
+        if (showingRef.current) return
+        const next = queue.current.shift()
+        if (!next) return
+        showingRef.current = true
+        setVisual(next)
+        // Play attached sound for overlay-alert
+        if (next.actionType === 'overlay-alert' && next.config?.sound) playSound({ preset: next.config.sound })
+        const dur = Number(next.config?.durationMs) || 4000
+        window.setTimeout(() => {
+            setVisual(null)
+            window.setTimeout(() => { showingRef.current = false; pump() }, 350)
+        }, dur)
+    }
+
+    return (
+        <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none' }}>
+            {confetti && <Confetti key={confetti.id} colors={confetti.colors} intensity={confetti.intensity} />}
+            {visual && <ActionAlertCard fire={visual} />}
+        </div>
+    )
+}
+
+function ActionAlertCard({ fire }: { fire: ActionFire }) {
+    const c = fire.config || {}
+    const ctx = fire.context || {}
+    const accent = c.accentColor || '#ff2eb8'
+    const textColor = c.textColor || '#ffffff'
+    const anim = c.animation || 'pop'
+    const animClass = anim === 'slide' ? 'ov-actalert-slide' : anim === 'bounce' ? 'ov-actalert-bounce' : 'ov-actalert-pop'
+    const isMedia = fire.actionType === 'media'
+    const mediaUrl = c.mediaUrl
+    const mediaType = c.mediaType || (/\.(mp4|webm)$/i.test(mediaUrl || '') ? 'video' : 'image')
+
+    return (
+        <div style={{
+            position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14,
+        }} className={animClass}>
+            {mediaUrl && mediaType === 'video' && (
+                <video src={mediaUrl} autoPlay muted={false} playsInline
+                    style={{ maxWidth: 520, maxHeight: 360, borderRadius: 18, boxShadow: `0 0 60px ${accent}66` }} />
+            )}
+            {mediaUrl && mediaType !== 'video' && (
+                <img src={mediaUrl} alt=""
+                    style={{ maxWidth: 420, maxHeight: 320, borderRadius: 18, boxShadow: `0 0 60px ${accent}66` }} />
+            )}
+            {!isMedia && (c.title || c.message) && (
+                <div style={{
+                    padding: '20px 34px', borderRadius: 18,
+                    background: `linear-gradient(135deg, ${accent}33, rgba(15,7,32,0.92))`,
+                    border: `1px solid ${accent}66`,
+                    boxShadow: `0 12px 48px rgba(0,0,0,0.5), 0 0 50px ${accent}44`,
+                    backdropFilter: 'blur(14px)', textAlign: 'center', maxWidth: 560,
+                }}>
+                    {c.title && (
+                        <div style={{
+                            fontFamily: '"Bricolage Grotesque", sans-serif', fontWeight: 800,
+                            fontSize: 34, lineHeight: 1.1, color: textColor,
+                            textShadow: `0 0 22px ${accent}aa`,
+                        }}>{c.title}</div>
+                    )}
+                    {c.message && (
+                        <div style={{ marginTop: 8, fontSize: 18, color: textColor, opacity: 0.85 }}>{c.message}</div>
+                    )}
+                    {ctx.profilePicture && (
+                        <img src={ctx.profilePicture} alt="" style={{ width: 46, height: 46, borderRadius: '50%', marginTop: 12, border: `2px solid ${accent}` }} />
+                    )}
+                </div>
+            )}
+        </div>
+    )
+}
+
+// Lightweight DOM confetti — no library, ~60 absolutely-positioned shards.
+function Confetti({ colors, intensity }: { colors: string[]; intensity: number }) {
+    const shards = Math.min(160, 20 * intensity)
+    const pieces = Array.from({ length: shards }).map((_, i) => {
+        const left = Math.random() * 100
+        const delay = Math.random() * 0.4
+        const dur = 1.6 + Math.random() * 1.4
+        const size = 6 + Math.random() * 8
+        const color = colors[i % colors.length]
+        const rot = Math.random() * 360
+        const drift = (Math.random() - 0.5) * 200
+        return (
+            <div key={i} style={{
+                position: 'absolute', top: -20, left: `${left}%`, width: size, height: size * 0.5,
+                background: color, borderRadius: 2,
+                ['--drift' as any]: `${drift}px`, ['--rot' as any]: `${rot}deg`,
+                animation: `ov-confetti ${dur}s ${delay}s ease-in forwards`,
+            }} />
+        )
+    })
+    return <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>{pieces}</div>
+}
+
+// ── Audio helpers (synth presets + mp3) ─────────────────────────────────
+let _audioCtx: AudioContext | null = null
+function getAudioCtx() {
+    if (!_audioCtx) { try { _audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)() } catch { /* */ } }
+    return _audioCtx
+}
+const SOUND_PRESETS: Record<string, { freqs: number[]; dur: number }> = {
+    coin: { freqs: [988, 1319], dur: 0.18 },
+    ding: { freqs: [1568], dur: 0.4 },
+    bell: { freqs: [880, 1108, 1318], dur: 0.6 },
+    airhorn: { freqs: [220, 233, 220], dur: 0.7 },
+    applause: { freqs: [400, 600, 800, 1000], dur: 0.5 },
+}
+function playSound(config: any) {
+    if (!config) return
+    const vol = typeof config.volume === 'number' ? config.volume : 0.8
+    if (config.mp3Url) {
+        try { const a = new Audio(config.mp3Url); a.volume = Math.max(0, Math.min(1, vol)); a.play().catch(() => {}) } catch { /* */ }
+        return
+    }
+    const preset = SOUND_PRESETS[config.preset]
+    if (!preset) return
+    const ctx = getAudioCtx()
+    if (!ctx) return
+    preset.freqs.forEach((f, i) => {
+        const o = ctx.createOscillator(); const g = ctx.createGain()
+        o.frequency.value = f; o.type = 'triangle'
+        const start = ctx.currentTime + i * (preset.dur * 0.5)
+        g.gain.setValueAtTime(0.0001, start)
+        g.gain.exponentialRampToValueAtTime(Math.max(0.001, 0.25 * vol), start + 0.02)
+        g.gain.exponentialRampToValueAtTime(0.0001, start + preset.dur)
+        o.connect(g); g.connect(ctx.destination)
+        o.start(start); o.stop(start + preset.dur + 0.05)
+    })
+}
+function speak(config: any) {
+    if (!config?.text || !('speechSynthesis' in window)) return
+    try {
+        const u = new SpeechSynthesisUtterance(config.text)
+        u.rate = config.rate || 1; u.pitch = config.pitch || 1
+        u.volume = typeof config.volume === 'number' ? config.volume : 1
+        if (config.voice) {
+            const v = window.speechSynthesis.getVoices().find((x) => x.lang.startsWith(config.voice) || x.name === config.voice)
+            if (v) u.voice = v
+        }
+        window.speechSynthesis.speak(u)
+    } catch { /* */ }
+}
+
+// ============================================================================
+// View: Interaction Slider — auto-fed "this gift → does X" rotating menu
+// ============================================================================
+
+function InteractionSliderView({ ov }: { ov: OverlayData }) {
+    const s = ov.style || {}
+    const barColor = s.barColor || '#ff2eb8'
+    const textColor = s.textColor || '#ffffff'
+    const bgColor = s.backgroundColor || 'rgba(15,7,32,0.82)'
+    const [items, setItems] = useState<any[]>([])
+
+    useEffect(() => {
+        if (!ov.userId) return
+        let alive = true
+        const load = () => {
+            fetch(`${API_URL}/api/automation/slider/${ov.userId}`)
+                .then((r) => r.json())
+                .then((d) => { if (alive) setItems(d.items || []) })
+                .catch(() => {})
+        }
+        load()
+        const t = window.setInterval(load, 20000) // refresh in case rules change
+        return () => { alive = false; window.clearInterval(t) }
+    }, [ov.userId])
+
+    if (!items.length) {
+        return <div style={{ color: textColor, opacity: 0.5, fontStyle: 'italic', padding: 16 }}>Etkileşim eşlemesi bekleniyor…</div>
+    }
+
+    // Continuous marquee of gift→action chips.
+    const doubled = [...items, ...items]
+    return (
+        <div style={{
+            ...themeContainer(s.theme || 'glass', barColor, bgColor, s.borderRadius ?? 16),
+            padding: '12px 0', width: '100%', maxWidth: 1280, overflow: 'hidden', position: 'relative',
+        }}>
+            <div style={{
+                position: 'absolute', top: 0, left: 0, zIndex: 2, height: '100%',
+                display: 'flex', alignItems: 'center', padding: '0 14px',
+                background: `linear-gradient(90deg, ${bgColor}, transparent)`,
+                color: barColor, fontWeight: 800, fontSize: 13, letterSpacing: 2, textTransform: 'uppercase',
+            }}>🎁 HEDİYE → AKSİYON</div>
+            <div className="ov-slider-track" style={{ display: 'flex', gap: 12, paddingLeft: 220, whiteSpace: 'nowrap' }}>
+                {doubled.map((it, i) => (
+                    <div key={i} style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 10, padding: '8px 16px',
+                        borderRadius: 999, background: `${barColor}1a`, border: `1px solid ${barColor}44`,
+                        flexShrink: 0,
+                    }}>
+                        <span style={{ color: barColor, fontWeight: 800, fontSize: 15 }}>🎁 {it.giftName || it.giftId}</span>
+                        <span style={{ color: textColor, opacity: 0.5 }}>→</span>
+                        <span style={{ color: textColor, fontWeight: 600, fontSize: 15 }}>{it.label}</span>
+                    </div>
+                ))}
+            </div>
+        </div>
+    )
+}
+
+// ============================================================================
 // Shared: theme-aware container style + status screen
 // ============================================================================
 
@@ -987,4 +1262,38 @@ const GLOBAL_CSS = `
         to { opacity: 1; transform: translateY(0); }
     }
     .ov-chatrow, .ov-feedrow { animation: ov-chatrow-kf 0.25s ease-out; }
+
+    /* MyActions alert animations */
+    @keyframes ov-actalert-pop-kf {
+        0% { opacity: 0; transform: translate(-50%,-50%) scale(0.7); }
+        55% { opacity: 1; transform: translate(-50%,-50%) scale(1.06); }
+        100% { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+    }
+    .ov-actalert-pop { animation: ov-actalert-pop-kf 0.5s cubic-bezier(0.34,1.56,0.64,1); }
+    @keyframes ov-actalert-slide-kf {
+        0% { opacity: 0; transform: translate(-50%,-50%) translateY(60px); }
+        100% { opacity: 1; transform: translate(-50%,-50%) translateY(0); }
+    }
+    .ov-actalert-slide { animation: ov-actalert-slide-kf 0.45s ease-out; }
+    @keyframes ov-actalert-bounce-kf {
+        0% { opacity: 0; transform: translate(-50%,-50%) scale(0.5); }
+        40% { opacity: 1; transform: translate(-50%,-50%) scale(1.15); }
+        60% { transform: translate(-50%,-50%) scale(0.92); }
+        80% { transform: translate(-50%,-50%) scale(1.04); }
+        100% { transform: translate(-50%,-50%) scale(1); }
+    }
+    .ov-actalert-bounce { animation: ov-actalert-bounce-kf 0.7s ease-out; }
+
+    /* Confetti shard fall */
+    @keyframes ov-confetti {
+        0% { opacity: 1; transform: translateY(0) translateX(0) rotate(0deg); }
+        100% { opacity: 0; transform: translateY(105vh) translateX(var(--drift)) rotate(var(--rot)); }
+    }
+
+    /* Interaction slider marquee */
+    @keyframes ov-slider-marquee {
+        from { transform: translateX(0); }
+        to { transform: translateX(-50%); }
+    }
+    .ov-slider-track { animation: ov-slider-marquee 30s linear infinite; }
 `

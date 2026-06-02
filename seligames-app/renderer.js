@@ -3613,6 +3613,8 @@ const overlayTypeMap = {
     'dock-events':      { overlayType: 'event-feed', subType: 'events', title: 'Event Feed Dock', icon: '📋' },
     'subathon-timer':   { overlayType: 'subathon', subType: 'timer', title: 'Subathon Timer', icon: '⏱️' },
     'wheel-actions':    { overlayType: 'wheel', subType: 'actions', title: 'Şans Çarkı', icon: '🎡' },
+    'my-actions':       { overlayType: 'actions-feed', subType: 'actions', title: 'MyActions (Aksiyon Ekranı)', icon: '⚡' },
+    'interaction-slider': { overlayType: 'interaction-slider', subType: 'slider', title: 'Etkileşim Şeridi', icon: '🎞️' },
 };
 
 // Navigate to overlay settings page
