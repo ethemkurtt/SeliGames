@@ -102,6 +102,10 @@ function navigateTo(page) {
         document.getElementById('gift-designer-page')?.classList.add('active');
         initGiftDesigner();
     }
+    else if (page === 'automation') {
+        document.getElementById('automation-page')?.classList.add('active');
+        initAutomation();
+    }
 }
 
 // ═══════════════════ DASHBOARD ═══════════════════
@@ -421,7 +425,26 @@ function renderGiftPickerList() {
     `).join('');
 }
 
+// When set, the gift picker hands the selection to this callback instead
+// of the gift-designer slot logic. Used by the rule editor.
+let _giftPickCallback = null;
+function openGiftPickerFor(callback) {
+    _giftPickCallback = callback;
+    _gdPickerCtx = { slot: '__cb__', itemId: null };
+    document.getElementById('gd-picker-modal').classList.add('active');
+    document.getElementById('gd-picker-search').value = '';
+    renderGiftPickerList();
+    setTimeout(() => document.getElementById('gd-picker-search')?.focus(), 50);
+}
+
 function pickGiftForSlot(giftName, iconUrlEncoded) {
+    if (_giftPickCallback) {
+        const cb = _giftPickCallback;
+        _giftPickCallback = null;
+        closeGiftPicker();
+        cb(giftName, decodeURIComponent(iconUrlEncoded));
+        return;
+    }
     if (!_gdPickerCtx) return;
     const { slot, itemId } = _gdPickerCtx;
     const arr = giftDesign.slots[slot] || [];
@@ -4741,3 +4764,497 @@ async function toggleCurrentModArm() {
     await toggleSingleMod(currentModDetail._id);
 }
 // ==================== END PER-MOD ARM/DISARM UI ====================
+
+// ════════════════════════════════════════════════════════════════════════
+//  AUTOMATION — Actions & Events UI (talks to /api/automation)
+// ════════════════════════════════════════════════════════════════════════
+let _autoActions = [];
+let _autoRules = [];
+let _autoEditingRule = null;   // rule being edited (or null = new)
+let _autoEditingAction = null; // action being edited (or null = new)
+let _autoRuleGift = { name: '', icon: '' };
+
+async function autoApi(path, opts = {}) {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${BACKEND_URL}/api/automation${path}`, {
+        method: opts.method || 'GET',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: opts.body ? JSON.stringify(opts.body) : undefined,
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+    return data;
+}
+
+async function initAutomation() {
+    if (!giftCatalogCache.length) { try { await loadGiftCatalog(); } catch {} }
+    await reloadAutomation();
+}
+
+async function reloadAutomation() {
+    try {
+        const [actions, rules] = await Promise.all([
+            autoApi('/actions'),
+            autoApi('/rules'),
+        ]);
+        _autoActions = actions || [];
+        _autoRules = rules || [];
+        renderAutoStats();
+        renderRulesList();
+        renderActionsList();
+    } catch (e) {
+        const list = document.getElementById('auto-rules-list');
+        if (list) list.innerHTML = `<div class="auto-empty">Yüklenemedi: ${escapeHtml(e.message)}<br><span style="font-size:0.75rem;">Giriş yaptığından ve backend'in açık olduğundan emin ol.</span></div>`;
+    }
+}
+
+function renderAutoStats() {
+    const fireTotal = _autoRules.reduce((n, r) => n + (r.stats?.fireCount || 0), 0);
+    const active = _autoRules.filter(r => r.enabled).length;
+    setText('auto-rule-count', _autoRules.length);
+    setText('auto-action-count', _autoActions.length);
+    setText('auto-fire-count', fireTotal.toLocaleString('tr-TR'));
+    setText('auto-active-count', active);
+}
+
+function switchAutoTab(tab) {
+    document.querySelectorAll('.auto-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    document.querySelectorAll('.auto-tab-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById(`auto-panel-${tab}`)?.classList.add('active');
+    if (tab === 'migrate') renderMigratePreview();
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────
+const TRIGGER_META = {
+    gift: { icon: '🎁', label: 'Hediye' }, like: { icon: '❤️', label: 'Beğeni' },
+    follow: { icon: '➕', label: 'Takip' }, share: { icon: '🔁', label: 'Paylaşım' },
+    subscribe: { icon: '⭐', label: 'Abone' }, chat: { icon: '💬', label: 'Sohbet' },
+    command: { icon: '⌨️', label: 'Komut' }, member: { icon: '👋', label: 'Katılma' },
+    any: { icon: '✨', label: 'Herhangi' },
+};
+const ACTION_META = {
+    'overlay-alert': { icon: '🔔', label: 'Ekran Uyarısı' }, sound: { icon: '🔊', label: 'Ses' },
+    tts: { icon: '🗣️', label: 'TTS' }, confetti: { icon: '🎉', label: 'Konfeti' },
+    media: { icon: '🎬', label: 'Medya' }, 'wheel-spin': { icon: '🎡', label: 'Çark' },
+    keyboard: { icon: '⌨️', label: 'Tuş' }, mouse: { icon: '🖱️', label: 'Fare' },
+    text: { icon: '📝', label: 'Metin' }, launch: { icon: '🚀', label: 'Çalıştır' },
+    points: { icon: '💎', label: 'Puan' },
+};
+function actionById(id) { return _autoActions.find(a => String(a._id) === String(id)); }
+
+// ─── RULES list ──────────────────────────────────────────────────────────
+function renderRulesList() {
+    const el = document.getElementById('auto-rules-list');
+    if (!el) return;
+    if (!_autoRules.length) {
+        el.innerHTML = `<div class="auto-empty"><i class="fas fa-bolt"></i>Henüz kural yok.<br><span style="font-size:0.8rem;">"Yeni Kural" ile ilk otomasyonunu kur — örn. <b>Gül gelince F2 bas</b>.</span></div>`;
+        return;
+    }
+    el.innerHTML = _autoRules.map(r => {
+        const tm = TRIGGER_META[r.trigger?.type] || { icon: '⚡', label: r.trigger?.type };
+        let triggerLabel = `${tm.icon} ${tm.label}`;
+        if (r.trigger?.type === 'gift' && r.trigger.giftName) triggerLabel += `: ${escapeHtml(r.trigger.giftName)}`;
+        if (r.trigger?.type === 'command') triggerLabel += `: ${escapeHtml(r.trigger.commandPrefix || '!')}${escapeHtml(r.trigger.command || '')}`;
+        const actionPills = (r.actionIds || []).map(a => {
+            const ao = (typeof a === 'object') ? a : actionById(a);
+            const am = ACTION_META[ao?.type] || { icon: '•', label: ao?.type || '?' };
+            return `<span class="auto-flow-pill auto-flow-action">${am.icon} ${escapeHtml(ao?.name || am.label)}</span>`;
+        }).join('<span class="auto-flow-arrow">+</span>');
+        const cdBits = [];
+        if (r.cooldown?.globalMs) cdBits.push(`⏱ ${r.cooldown.globalMs / 1000}sn`);
+        if (r.cooldown?.perUserMs) cdBits.push(`👤 ${r.cooldown.perUserMs / 1000}sn`);
+        if (r.combo === 'perGift') cdBits.push('🔁 her hediye');
+        if (r.roles && r.roles.length && !r.roles.includes('everyone')) cdBits.push('🔒 ' + r.roles.join(','));
+        return `
+        <div class="auto-card ${r.enabled ? '' : 'disabled'}">
+            <div class="auto-card-head">
+                <label class="auto-toggle"><input type="checkbox" ${r.enabled ? 'checked' : ''} onchange="toggleRule('${r._id}', this.checked)"><span class="slider"></span></label>
+                <div class="auto-card-title">${escapeHtml(r.name)}</div>
+                <div class="auto-card-actions">
+                    <button class="auto-icon-btn test" onclick="testRuleById('${r._id}')" title="Test et"><i class="fas fa-vial"></i></button>
+                    <button class="auto-icon-btn" onclick="editRuleById('${r._id}')" title="Düzenle"><i class="fas fa-pen"></i></button>
+                    <button class="auto-icon-btn danger" onclick="deleteRuleById('${r._id}')" title="Sil"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+            <div class="auto-card-flow">
+                <span class="auto-flow-pill auto-flow-trigger">${triggerLabel}</span>
+                <span class="auto-flow-arrow"><i class="fas fa-arrow-right"></i></span>
+                ${actionPills || '<span style="color:#7a6e94;font-size:0.78rem;">aksiyon yok</span>'}
+            </div>
+            ${cdBits.length ? `<div style="margin-top:0.5rem;font-size:0.72rem;color:#7a6e94;display:flex;gap:0.6rem;flex-wrap:wrap;">${cdBits.map(b => `<span>${b}</span>`).join('')}${r.stats?.fireCount ? `<span style="margin-left:auto;color:#a855f7;">🔥 ${r.stats.fireCount} kez</span>` : ''}</div>` : (r.stats?.fireCount ? `<div style="margin-top:0.4rem;font-size:0.72rem;color:#a855f7;text-align:right;">🔥 ${r.stats.fireCount} kez</div>` : '')}
+        </div>`;
+    }).join('');
+}
+
+// ─── ACTIONS list ────────────────────────────────────────────────────────
+function renderActionsList() {
+    const el = document.getElementById('auto-actions-list');
+    if (!el) return;
+    if (!_autoActions.length) {
+        el.innerHTML = `<div class="auto-empty"><i class="fas fa-cubes"></i>Henüz aksiyon yok.<br><span style="font-size:0.8rem;">"Yeni Aksiyon" ile bir tane oluştur — kurallar bunları çalıştırır.</span></div>`;
+        return;
+    }
+    el.innerHTML = _autoActions.map(a => {
+        const am = ACTION_META[a.type] || { icon: '•', label: a.type };
+        const usedBy = _autoRules.filter(r => (r.actionIds || []).some(x => String((typeof x === 'object') ? x._id : x) === String(a._id))).length;
+        let detail = '';
+        if (a.type === 'keyboard') detail = a.config?.value || '';
+        else if (a.type === 'overlay-alert') detail = a.config?.title || a.config?.message || '';
+        else if (a.type === 'sound') detail = a.config?.preset || (a.config?.mp3Url ? 'MP3' : '');
+        else if (a.type === 'tts') detail = a.config?.text || '';
+        else if (a.type === 'launch') detail = a.config?.command || '';
+        else if (a.type === 'points') detail = `+${a.config?.amount || 0}`;
+        return `
+        <div class="auto-card">
+            <div class="auto-card-head">
+                <div style="width:36px;height:36px;border-radius:9px;background:rgba(168,85,247,0.12);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;">${am.icon}</div>
+                <div style="flex:1;min-width:0;">
+                    <div class="auto-card-title">${escapeHtml(a.name)}</div>
+                    <div style="font-size:0.74rem;color:#9d8bbf;margin-top:0.1rem;">${am.label}${detail ? ' · ' + escapeHtml(String(detail).slice(0, 40)) : ''}</div>
+                </div>
+                <div class="auto-card-actions">
+                    <span style="font-size:0.68rem;color:#7a6e94;align-self:center;margin-right:0.3rem;">${usedBy} kural</span>
+                    <button class="auto-icon-btn test" onclick="testActionById('${a._id}')" title="Test et"><i class="fas fa-vial"></i></button>
+                    <button class="auto-icon-btn" onclick="editActionById('${a._id}')" title="Düzenle"><i class="fas fa-pen"></i></button>
+                    <button class="auto-icon-btn danger" onclick="deleteActionById('${a._id}')" title="Sil"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+// ─── RULE editor ─────────────────────────────────────────────────────────
+function openRuleEditor(rule) {
+    _autoEditingRule = rule ? JSON.parse(JSON.stringify(rule)) : null;
+    document.getElementById('rule-modal-title').innerHTML = rule
+        ? '<i class="fas fa-bolt" style="color:#ff2eb8;"></i> Kuralı Düzenle'
+        : '<i class="fas fa-bolt" style="color:#ff2eb8;"></i> Yeni Kural';
+    document.getElementById('rule-modal-alert').style.display = 'none';
+    document.getElementById('rule-name').value = rule?.name || '';
+    document.getElementById('rule-trigger-type').value = rule?.trigger?.type || 'gift';
+    _autoRuleGift = { name: rule?.trigger?.giftName || '', icon: '' };
+    document.getElementById('rule-gift-name').value = _autoRuleGift.name;
+    document.getElementById('rule-command-prefix').value = rule?.trigger?.commandPrefix || '!';
+    document.getElementById('rule-command').value = rule?.trigger?.command || '';
+    document.getElementById('rule-cd-global').value = (rule?.cooldown?.globalMs || 0) / 1000;
+    document.getElementById('rule-cd-user').value = (rule?.cooldown?.perUserMs || 0) / 1000;
+    document.getElementById('rule-combo').value = rule?.combo || 'once';
+    // roles
+    const roles = rule?.roles && rule.roles.length ? rule.roles : ['everyone'];
+    document.querySelectorAll('#rule-roles input').forEach(cb => { cb.checked = roles.includes(cb.value); });
+    // conditions
+    renderRuleConditions(rule?.conditions || []);
+    // actions picker
+    renderRuleActionPicker(rule?.actionIds || []);
+    onRuleTriggerTypeChange();
+    document.getElementById('rule-test-btn').style.display = rule ? '' : 'none';
+    document.getElementById('rule-modal').classList.add('active');
+}
+function closeRuleEditor() { document.getElementById('rule-modal').classList.remove('active'); _autoEditingRule = null; }
+
+function onRuleTriggerTypeChange() {
+    const t = document.getElementById('rule-trigger-type').value;
+    document.getElementById('rule-gift-row').style.display = t === 'gift' ? '' : 'none';
+    document.getElementById('rule-command-row').style.display = t === 'command' ? '' : 'none';
+    document.getElementById('rule-combo-row').style.display = t === 'gift' ? '' : 'none';
+}
+function pickRuleGift() {
+    openGiftPickerFor((name, icon) => {
+        _autoRuleGift = { name, icon };
+        document.getElementById('rule-gift-name').value = name;
+    });
+}
+function clearRuleGift() { _autoRuleGift = { name: '', icon: '' }; document.getElementById('rule-gift-name').value = ''; }
+
+const COND_FIELDS = [['coins', 'Coin değeri'], ['repeatCount', 'Tekrar sayısı'], ['giftName', 'Hediye adı'], ['likeCount', 'Beğeni sayısı'], ['comment', 'Mesaj']];
+const COND_OPS = [['>=', '≥'], ['<=', '≤'], ['>', '>'], ['<', '<'], ['==', '='], ['!=', '≠'], ['includes', 'içerir'], ['startsWith', 'başlar'], ['regex', 'regex']];
+function renderRuleConditions(conds) {
+    const wrap = document.getElementById('rule-conditions');
+    wrap.innerHTML = '';
+    (conds || []).forEach(c => addRuleCondition(c));
+}
+function addRuleCondition(c) {
+    const wrap = document.getElementById('rule-conditions');
+    const row = document.createElement('div');
+    row.className = 'auto-cond-row';
+    row.innerHTML = `
+        <select class="cond-field">${COND_FIELDS.map(([v, l]) => `<option value="${v}" ${c?.field === v ? 'selected' : ''}>${l}</option>`).join('')}</select>
+        <select class="cond-op">${COND_OPS.map(([v, l]) => `<option value="${v}" ${c?.op === v ? 'selected' : ''}>${l}</option>`).join('')}</select>
+        <input class="cond-val" placeholder="değer" value="${c ? escapeHtml(String(c.value ?? '')) : ''}">
+        <button class="auto-icon-btn danger" onclick="this.parentElement.remove()" title="Kaldır">✕</button>`;
+    wrap.appendChild(row);
+}
+function collectRuleConditions() {
+    return [...document.querySelectorAll('#rule-conditions .auto-cond-row')].map(row => ({
+        field: row.querySelector('.cond-field').value,
+        op: row.querySelector('.cond-op').value,
+        value: row.querySelector('.cond-val').value,
+    })).filter(c => c.value !== '' || c.op === 'regex');
+}
+
+function renderRuleActionPicker(selectedIds) {
+    const wrap = document.getElementById('rule-action-picker');
+    const sel = (selectedIds || []).map(x => String((typeof x === 'object') ? x._id : x));
+    if (!_autoActions.length) {
+        wrap.innerHTML = `<div style="color:#7a6e94;font-size:0.8rem;text-align:center;padding:0.6rem;">Henüz aksiyon yok. Önce "Yeni Aksiyon" oluştur.</div>`;
+        return;
+    }
+    wrap.innerHTML = _autoActions.map(a => {
+        const am = ACTION_META[a.type] || { icon: '•', label: a.type };
+        return `<label class="auto-action-opt">
+            <input type="checkbox" value="${a._id}" ${sel.includes(String(a._id)) ? 'checked' : ''}>
+            <span>${am.icon}</span><span>${escapeHtml(a.name)}</span>
+            <span class="aopt-type">${am.label}</span>
+        </label>`;
+    }).join('');
+}
+function collectRuleActionIds() {
+    return [...document.querySelectorAll('#rule-action-picker input:checked')].map(i => i.value);
+}
+
+function ruleAlert(msg, ok) {
+    const el = document.getElementById('rule-modal-alert');
+    el.textContent = msg; el.className = 'auto-alert' + (ok ? ' ok' : ''); el.style.display = 'block';
+    if (ok) setTimeout(() => { if (el.textContent === msg) el.style.display = 'none'; }, 2500);
+}
+function buildRulePayload() {
+    const type = document.getElementById('rule-trigger-type').value;
+    const roles = [...document.querySelectorAll('#rule-roles input:checked')].map(i => i.value);
+    const trigger = { type };
+    if (type === 'gift') trigger.giftName = _autoRuleGift.name || '';
+    if (type === 'command') { trigger.command = document.getElementById('rule-command').value.trim(); trigger.commandPrefix = document.getElementById('rule-command-prefix').value.trim() || '!'; }
+    return {
+        name: document.getElementById('rule-name').value.trim(),
+        trigger,
+        conditions: collectRuleConditions(),
+        roles: roles.length ? roles : ['everyone'],
+        cooldown: {
+            globalMs: Math.round((parseFloat(document.getElementById('rule-cd-global').value) || 0) * 1000),
+            perUserMs: Math.round((parseFloat(document.getElementById('rule-cd-user').value) || 0) * 1000),
+        },
+        combo: document.getElementById('rule-combo').value,
+        actionIds: collectRuleActionIds(),
+    };
+}
+async function saveRule() {
+    const payload = buildRulePayload();
+    if (!payload.name) return ruleAlert('Kural adı gerekli.');
+    if (!payload.actionIds.length) return ruleAlert('En az bir aksiyon seç.');
+    try {
+        if (_autoEditingRule?._id) {
+            await autoApi(`/rules/${_autoEditingRule._id}`, { method: 'PUT', body: payload });
+        } else {
+            const created = await autoApi('/rules', { method: 'POST', body: payload });
+            _autoEditingRule = created;
+            document.getElementById('rule-test-btn').style.display = '';
+        }
+        await reloadAutomation();
+        ruleAlert('Kaydedildi ✓', true);
+        showToast('Kural kaydedildi');
+    } catch (e) { ruleAlert('Hata: ' + e.message); }
+}
+async function testCurrentRule() {
+    if (!_autoEditingRule?._id) return;
+    // Build a synthetic event matching this rule's trigger.
+    const r = _autoRules.find(x => String(x._id) === String(_autoEditingRule._id)) || _autoEditingRule;
+    await fireTestEventForRule(r);
+}
+async function testRuleById(id) { const r = _autoRules.find(x => String(x._id) === String(id)); if (r) await fireTestEventForRule(r); }
+async function fireTestEventForRule(r) {
+    const t = r.trigger || {};
+    const ev = { eventType: t.type === 'command' ? 'chat' : (t.type === 'any' ? 'gift' : t.type), username: 'TestKullanıcı', nickname: 'TestKullanıcı', count: r.combo === 'perGift' ? 3 : 1 };
+    if (t.type === 'gift') { ev.giftName = t.giftName || 'Gül'; ev.diamondCount = 100; }
+    if (t.type === 'command') ev.comment = `${t.commandPrefix || '!'}${t.command || ''} test`;
+    if (t.type === 'like') ev.likeCount = 10;
+    try {
+        const res = await autoApi('/test-event', { method: 'POST', body: ev });
+        showToast(`🧪 Test: ${res.matched} kural eşleşti, ${res.fired} aksiyon ateşlendi`);
+        setTimeout(reloadAutomation, 400);
+    } catch (e) { showToast('Test hatası: ' + e.message, true); }
+}
+async function toggleRule(id, enabled) {
+    try { await autoApi(`/rules/${id}`, { method: 'PUT', body: { enabled } }); const r = _autoRules.find(x => String(x._id) === String(id)); if (r) r.enabled = enabled; renderAutoStats(); }
+    catch (e) { showToast('Hata: ' + e.message, true); }
+}
+function editRuleById(id) { const r = _autoRules.find(x => String(x._id) === String(id)); if (r) openRuleEditor(r); }
+async function deleteRuleById(id) {
+    if (!confirm('Bu kural silinsin mi?')) return;
+    try { await autoApi(`/rules/${id}`, { method: 'DELETE' }); await reloadAutomation(); showToast('Kural silindi'); }
+    catch (e) { showToast('Hata: ' + e.message, true); }
+}
+
+// ─── ACTION editor ───────────────────────────────────────────────────────
+function openActionEditor(action) {
+    _autoEditingAction = action ? JSON.parse(JSON.stringify(action)) : null;
+    document.getElementById('action-modal-title').innerHTML = action
+        ? '<i class="fas fa-cubes" style="color:#a855f7;"></i> Aksiyonu Düzenle'
+        : '<i class="fas fa-cubes" style="color:#a855f7;"></i> Yeni Aksiyon';
+    document.getElementById('action-modal-alert').style.display = 'none';
+    document.getElementById('action-name').value = action?.name || '';
+    document.getElementById('action-type').value = action?.type || 'overlay-alert';
+    renderActionConfig();
+    document.getElementById('action-test-btn').style.display = action ? '' : 'none';
+    document.getElementById('action-modal').classList.add('active');
+}
+function closeActionEditor() { document.getElementById('action-modal').classList.remove('active'); _autoEditingAction = null; }
+
+function renderActionConfig() {
+    const type = document.getElementById('action-type').value;
+    const c = _autoEditingAction?.config || {};
+    const wrap = document.getElementById('action-config');
+    const fld = (label, html, hint) => `<div class="auto-field"><label>${label}</label>${html}${hint ? `<div class="auto-hint">${hint}</div>` : ''}</div>`;
+    let html = '';
+    if (type === 'overlay-alert') {
+        html = fld('Başlık', `<input id="ac-title" class="auto-input" value="${escapeHtml(c.title || '')}" placeholder="%username% %giftName% gönderdi!">`, 'Yer tutucular: %username% %giftName% %repeatCount% %coins%')
+            + fld('Alt Yazı', `<input id="ac-message" class="auto-input" value="${escapeHtml(c.message || '')}" placeholder="Teşekkürler!">`)
+            + fld('Görsel/Video URL (ops.)', `<input id="ac-mediaUrl" class="auto-input" value="${escapeHtml(c.mediaUrl || '')}" placeholder="https://...">`)
+            + `<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;">`
+            + fld('Süre (sn)', `<input id="ac-duration" type="number" class="auto-input" value="${(c.durationMs || 4000) / 1000}" min="1" step="0.5">`)
+            + fld('Animasyon', `<select id="ac-animation" class="auto-input"><option value="pop" ${c.animation === 'pop' ? 'selected' : ''}>Pop</option><option value="slide" ${c.animation === 'slide' ? 'selected' : ''}>Kayma</option><option value="bounce" ${c.animation === 'bounce' ? 'selected' : ''}>Zıplama</option></select>`)
+            + `</div>`
+            + `<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;">`
+            + fld('Vurgu Rengi', `<input id="ac-accent" type="color" class="auto-input" value="${c.accentColor || '#ff2eb8'}" style="height:42px;padding:4px;">`)
+            + fld('Yazı Rengi', `<input id="ac-textcolor" type="color" class="auto-input" value="${c.textColor || '#ffffff'}" style="height:42px;padding:4px;">`)
+            + `</div>`;
+    } else if (type === 'sound') {
+        html = fld('Hazır Ses', `<select id="ac-preset" class="auto-input"><option value="">— yok —</option><option value="coin" ${c.preset === 'coin' ? 'selected' : ''}>Coin</option><option value="airhorn" ${c.preset === 'airhorn' ? 'selected' : ''}>Korna</option><option value="applause" ${c.preset === 'applause' ? 'selected' : ''}>Alkış</option><option value="bell" ${c.preset === 'bell' ? 'selected' : ''}>Zil</option><option value="ding" ${c.preset === 'ding' ? 'selected' : ''}>Ding</option></select>`)
+            + fld('veya MP3 URL', `<input id="ac-mp3" class="auto-input" value="${escapeHtml(c.mp3Url || '')}" placeholder="https://...mp3">`)
+            + fld('Ses Düzeyi', `<input id="ac-volume" type="range" class="auto-input" min="0" max="100" value="${(c.volume ?? 0.8) * 100}" style="padding:0;">`);
+    } else if (type === 'tts') {
+        html = fld('Okunacak Metin', `<input id="ac-text" class="auto-input" value="${escapeHtml(c.text || '')}" placeholder="%username% diyor ki: %comment%">`, 'Yer tutucular: %username% %comment% %giftName%')
+            + `<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;">`
+            + fld('Hız', `<input id="ac-rate" type="number" class="auto-input" value="${c.rate ?? 1}" min="0.5" max="2" step="0.1">`)
+            + fld('Ton (pitch)', `<input id="ac-pitch" type="number" class="auto-input" value="${c.pitch ?? 1}" min="0" max="2" step="0.1">`)
+            + `</div>`
+            + fld('Ses (dil/ses adı, ops.)', `<input id="ac-voice" class="auto-input" value="${escapeHtml(c.voice || '')}" placeholder="tr-TR">`);
+    } else if (type === 'keyboard') {
+        html = fld('Tuş', `<input id="ac-value" class="auto-input" value="${escapeHtml(c.value || '')}" placeholder="Tıkla ve tuşa bas (örn. Shift+F2)" readonly onkeydown="captureActionKey(event)" onclick="this.focus()">`, 'Kutuya tıkla ve istediğin tuş kombinasyonuna bas.')
+            + fld('Tekrar Sayısı', `<input id="ac-repeat" type="number" class="auto-input" value="${c.repeatCount || 1}" min="1" max="20">`);
+    } else if (type === 'mouse') {
+        html = fld('Tıklama', `<select id="ac-value" class="auto-input"><option value="leftclick" ${c.value === 'leftclick' ? 'selected' : ''}>Sol Tık</option><option value="rightclick" ${c.value === 'rightclick' ? 'selected' : ''}>Sağ Tık</option><option value="middleclick" ${c.value === 'middleclick' ? 'selected' : ''}>Orta Tık</option></select>`);
+    } else if (type === 'text') {
+        html = fld('Yazılacak Metin', `<input id="ac-value" class="auto-input" value="${escapeHtml(c.value || '')}" placeholder="merhaba">`);
+    } else if (type === 'launch') {
+        html = fld('Komut / Yol', `<input id="ac-command" class="auto-input" value="${escapeHtml(c.command || '')}" placeholder="steam://run/271590 ya da C:\\Game\\game.exe">`, 'Steam URI, .exe, .bat ya da düz komut.');
+    } else if (type === 'points') {
+        html = fld('Verilecek Puan', `<input id="ac-amount" type="number" class="auto-input" value="${c.amount || 10}" min="1">`, 'Tetikleyen izleyiciye eklenir.');
+    } else if (type === 'confetti') {
+        html = fld('Yoğunluk', `<input id="ac-intensity" type="range" class="auto-input" min="1" max="10" value="${c.intensity || 5}" style="padding:0;">`)
+            + fld('Renkler (virgülle)', `<input id="ac-colors" class="auto-input" value="${escapeHtml((c.colors || ['#ff2eb8', '#a855f7', '#22d3ee']).join(','))}">`);
+    } else if (type === 'media') {
+        html = fld('Medya URL', `<input id="ac-mediaUrl" class="auto-input" value="${escapeHtml(c.mediaUrl || '')}" placeholder="https://...mp4 / .gif">`)
+            + `<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;">`
+            + fld('Tip', `<select id="ac-mediaType" class="auto-input"><option value="video" ${c.mediaType === 'video' ? 'selected' : ''}>Video</option><option value="gif" ${c.mediaType === 'gif' ? 'selected' : ''}>GIF</option><option value="image" ${c.mediaType === 'image' ? 'selected' : ''}>Resim</option></select>`)
+            + fld('Süre (sn)', `<input id="ac-duration" type="number" class="auto-input" value="${(c.durationMs || 5000) / 1000}" min="1" step="0.5">`)
+            + `</div>`;
+    } else if (type === 'wheel-spin') {
+        html = `<div class="auto-hint" style="padding:0.5rem;">Aktif Şans Çarkı overlay'ini çevirir. Çarkı "Etkileşimli Katmanlar → Şans Çarkı"ndan oluştur.</div>`;
+    }
+    wrap.innerHTML = html;
+}
+function captureActionKey(e) {
+    e.preventDefault();
+    const parts = [];
+    if (e.ctrlKey) parts.push('Ctrl');
+    if (e.altKey) parts.push('Alt');
+    if (e.shiftKey) parts.push('Shift');
+    if (e.metaKey) parts.push('Cmd');
+    const k = e.key;
+    if (['Control', 'Alt', 'Shift', 'Meta'].includes(k)) return;
+    parts.push(k.length === 1 ? k.toUpperCase() : k);
+    e.target.value = parts.join('+');
+}
+function actionAlert(msg, ok) {
+    const el = document.getElementById('action-modal-alert');
+    el.textContent = msg; el.className = 'auto-alert' + (ok ? ' ok' : ''); el.style.display = 'block';
+    if (ok) setTimeout(() => { if (el.textContent === msg) el.style.display = 'none'; }, 2500);
+}
+function collectActionConfig() {
+    const type = document.getElementById('action-type').value;
+    const v = (id) => document.getElementById(id)?.value;
+    if (type === 'overlay-alert') return { title: v('ac-title'), message: v('ac-message'), mediaUrl: v('ac-mediaUrl'), durationMs: Math.round((parseFloat(v('ac-duration')) || 4) * 1000), animation: v('ac-animation'), accentColor: v('ac-accent'), textColor: v('ac-textcolor') };
+    if (type === 'sound') return { preset: v('ac-preset'), mp3Url: v('ac-mp3'), volume: (parseInt(v('ac-volume')) || 80) / 100 };
+    if (type === 'tts') return { text: v('ac-text'), rate: parseFloat(v('ac-rate')) || 1, pitch: parseFloat(v('ac-pitch')) || 1, voice: v('ac-voice') };
+    if (type === 'keyboard') return { value: v('ac-value'), repeatCount: parseInt(v('ac-repeat')) || 1 };
+    if (type === 'mouse' || type === 'text') return { value: v('ac-value') };
+    if (type === 'launch') return { command: v('ac-command') };
+    if (type === 'points') return { amount: parseInt(v('ac-amount')) || 10 };
+    if (type === 'confetti') return { intensity: parseInt(v('ac-intensity')) || 5, colors: (v('ac-colors') || '').split(',').map(s => s.trim()).filter(Boolean) };
+    if (type === 'media') return { mediaUrl: v('ac-mediaUrl'), mediaType: v('ac-mediaType'), durationMs: Math.round((parseFloat(v('ac-duration')) || 5) * 1000) };
+    return {};
+}
+async function saveAction() {
+    const name = document.getElementById('action-name').value.trim();
+    const type = document.getElementById('action-type').value;
+    if (!name) return actionAlert('Aksiyon adı gerekli.');
+    const config = collectActionConfig();
+    try {
+        if (_autoEditingAction?._id) {
+            await autoApi(`/actions/${_autoEditingAction._id}`, { method: 'PUT', body: { name, type, config } });
+        } else {
+            const created = await autoApi('/actions', { method: 'POST', body: { name, type, config } });
+            _autoEditingAction = created;
+            document.getElementById('action-test-btn').style.display = '';
+        }
+        await reloadAutomation();
+        actionAlert('Kaydedildi ✓', true);
+        showToast('Aksiyon kaydedildi');
+        // Refresh the rule editor's action picker if it's open
+        if (document.getElementById('rule-modal').classList.contains('active')) {
+            renderRuleActionPicker(collectRuleActionIds());
+        }
+    } catch (e) { actionAlert('Hata: ' + e.message); }
+}
+async function testCurrentAction() { if (_autoEditingAction?._id) await testActionById(_autoEditingAction._id); }
+async function testActionById(id) {
+    try { const res = await autoApi(`/actions/${id}/test`, { method: 'POST' }); showToast(`🧪 ${ACTION_META[res.actionType]?.label || res.actionType} test edildi`); }
+    catch (e) { showToast('Test hatası: ' + e.message, true); }
+}
+function editActionById(id) { const a = _autoActions.find(x => String(x._id) === String(id)); if (a) openActionEditor(a); }
+async function deleteActionById(id) {
+    const usedBy = _autoRules.filter(r => (r.actionIds || []).some(x => String((typeof x === 'object') ? x._id : x) === String(id))).length;
+    if (!confirm(usedBy ? `Bu aksiyon ${usedBy} kuralda kullanılıyor. Silinsin mi? (kurallardan da çıkarılır)` : 'Bu aksiyon silinsin mi?')) return;
+    try { await autoApi(`/actions/${id}`, { method: 'DELETE' }); await reloadAutomation(); showToast('Aksiyon silindi'); }
+    catch (e) { showToast('Hata: ' + e.message, true); }
+}
+
+// ─── MOD migration ───────────────────────────────────────────────────────
+async function renderMigratePreview() {
+    const el = document.getElementById('auto-migrate-preview');
+    el.innerHTML = '<div style="color:#9d8bbf;font-size:0.8rem;"><i class="fas fa-spinner fa-spin"></i> Modlar taranıyor...</div>';
+    try {
+        const result = await window.api.getInstalledMods();
+        const mods = (result.success ? result.data : []) || [];
+        const rows = [];
+        for (const m of mods) {
+            const acts = m.config?.giftActions || {};
+            for (const [gift, action] of Object.entries(acts)) {
+                if (action && action.value) rows.push({ mod: m.title, gift, value: action.value, type: action.type || 'keyboard' });
+            }
+        }
+        if (!rows.length) { el.innerHTML = '<div style="color:#7a6e94;font-size:0.82rem;">Dönüştürülecek mod eşlemesi bulunamadı. Önce Modlar sayfasından bir mod kur ve hediye-tuş ataması yap.</div>'; return; }
+        el.innerHTML = `<div style="font-size:0.8rem;color:#c8c8d4;margin-bottom:0.5rem;">${rows.length} eşleme bulundu:</div>` +
+            `<div style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:0.3rem;">` +
+            rows.map(r => `<div style="display:flex;align-items:center;gap:0.5rem;font-size:0.78rem;padding:0.4rem 0.6rem;background:rgba(255,255,255,0.02);border-radius:7px;"><span class="auto-flow-pill auto-flow-trigger" style="font-size:0.7rem;">🎁 ${escapeHtml(r.gift)}</span><i class="fas fa-arrow-right" style="color:#7a6e94;"></i><span class="auto-flow-pill auto-flow-action" style="font-size:0.7rem;">⌨️ ${escapeHtml(r.value)}</span><span style="margin-left:auto;color:#7a6e94;font-size:0.68rem;">${escapeHtml(r.mod)}</span></div>`).join('') +
+            `</div>`;
+        el._rows = rows;
+    } catch (e) { el.innerHTML = `<div style="color:#fca5a5;font-size:0.8rem;">Hata: ${escapeHtml(e.message)}</div>`; }
+}
+async function runModMigration() {
+    const el = document.getElementById('auto-migrate-preview');
+    const rows = el._rows;
+    if (!rows || !rows.length) { showToast('Önce dönüştürülecek eşleme bulunmalı', true); return; }
+    if (!confirm(`${rows.length} eşleme, Aksiyon + Kural olarak oluşturulacak. Devam?`)) return;
+    let made = 0;
+    try {
+        for (const r of rows) {
+            const action = await autoApi('/actions', { method: 'POST', body: { name: `${r.gift} → ${r.value}`, type: r.type, config: { value: r.value, repeatCount: 1 } } });
+            await autoApi('/rules', { method: 'POST', body: { name: `${r.gift} (${r.mod})`, trigger: { type: 'gift', giftName: r.gift }, combo: 'perGift', actionIds: [action._id] } });
+            made++;
+        }
+        await reloadAutomation();
+        switchAutoTab('rules');
+        showToast(`✓ ${made} kural oluşturuldu`);
+    } catch (e) { showToast(`${made} oluşturuldu, sonra hata: ${e.message}`, true); }
+}
+// ════════════════════════ END AUTOMATION ════════════════════════

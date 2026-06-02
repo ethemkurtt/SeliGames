@@ -3212,6 +3212,154 @@
             margin-top: 0.15rem;
         }
 
+        /* ═══════════════ AUTOMATION (Actions & Events) ═══════════════ */
+        .nav-item-flagship { position: relative; }
+        .nav-badge-new {
+            margin-left: auto; font-size: 0.55rem; font-weight: 800;
+            letter-spacing: 0.1em; padding: 2px 6px; border-radius: 999px;
+            background: linear-gradient(135deg, #ff2eb8, #a855f7); color: #fff;
+        }
+        .auto-tabs { display: flex; gap: 0.4rem; margin-bottom: 1rem; flex-wrap: wrap; }
+        .auto-tab {
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+            color: #9d8bbf; padding: 0.55rem 1rem; border-radius: 10px;
+            font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.15s;
+            display: inline-flex; align-items: center; gap: 0.4rem;
+        }
+        .auto-tab:hover { background: rgba(255,255,255,0.07); color: #fff; }
+        .auto-tab.active {
+            background: linear-gradient(135deg, rgba(255,46,184,0.18), rgba(168,85,247,0.12));
+            border-color: rgba(255,46,184,0.35); color: #fff;
+        }
+        .auto-tab-panel { display: none; }
+        .auto-tab-panel.active { display: block; animation: fadeIn 0.25s ease; }
+
+        .auto-field { margin-bottom: 0.9rem; }
+        .auto-field > label {
+            display: block; font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.05em; color: #9d8bbf; margin-bottom: 0.35rem;
+        }
+        .auto-input {
+            width: 100%; padding: 0.6rem 0.8rem; background: #07030f;
+            border: 1px solid rgba(168,85,247,0.18); border-radius: 9px;
+            color: #f5edff; font-size: 0.88rem; font-family: inherit; outline: none;
+            transition: border-color 0.15s;
+        }
+        .auto-input:focus { border-color: rgba(255,46,184,0.5); }
+        select.auto-input option, select.auto-input optgroup { background: #160a2e; }
+        .auto-hint { font-size: 0.7rem; color: #7a6e94; margin-top: 0.3rem; line-height: 1.5; }
+
+        .auto-chip {
+            display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer;
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+            padding: 0.35rem 0.7rem; border-radius: 999px; font-size: 0.78rem; color: #f5edff;
+            user-select: none;
+        }
+        .auto-chip input { accent-color: #ff2eb8; }
+        .auto-chip:has(input:checked) { background: rgba(255,46,184,0.12); border-color: rgba(255,46,184,0.4); }
+
+        .auto-btn-sm {
+            background: rgba(168,85,247,0.12); border: 1px solid rgba(168,85,247,0.3);
+            color: #c4a8f0; padding: 0.45rem 0.7rem; border-radius: 8px;
+            font-size: 0.75rem; font-weight: 600; cursor: pointer; white-space: nowrap;
+        }
+        .auto-btn-sm:hover { background: rgba(168,85,247,0.22); }
+        .auto-btn-ghost {
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+            color: #f5edff; padding: 0.65rem 1rem; border-radius: 9px;
+            font-size: 0.82rem; font-weight: 600; cursor: pointer;
+        }
+        .auto-btn-ghost:hover { background: rgba(255,255,255,0.08); }
+        .auto-btn-test {
+            background: rgba(34,211,238,0.1); border: 1px solid rgba(34,211,238,0.3);
+            color: #22d3ee; padding: 0.65rem 1rem; border-radius: 9px;
+            font-size: 0.82rem; font-weight: 700; cursor: pointer;
+        }
+        .auto-btn-test:hover { background: rgba(34,211,238,0.2); }
+        .auto-alert {
+            background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
+            color: #fca5a5; padding: 0.65rem 0.85rem; border-radius: 9px;
+            font-size: 0.82rem; margin-bottom: 0.85rem;
+        }
+        .auto-alert.ok { background: rgba(255,46,184,0.1); border-color: rgba(255,46,184,0.3); color: #ff9fdc; }
+
+        /* Condition row */
+        .auto-cond-row { display: flex; gap: 0.4rem; align-items: center; margin-bottom: 0.4rem; }
+        .auto-cond-row select, .auto-cond-row input {
+            padding: 0.45rem 0.6rem; background: #07030f; border: 1px solid rgba(168,85,247,0.18);
+            border-radius: 8px; color: #f5edff; font-size: 0.8rem; outline: none;
+        }
+        .auto-cond-row .cond-field { flex: 1.2; }
+        .auto-cond-row .cond-op { width: 90px; }
+        .auto-cond-row .cond-val { flex: 1; }
+
+        /* Action picker (checkbox list inside rule editor) */
+        .auto-action-picker {
+            display: flex; flex-direction: column; gap: 0.4rem; max-height: 200px;
+            overflow-y: auto; padding: 0.5rem; background: #07030f;
+            border: 1px solid rgba(168,85,247,0.15); border-radius: 9px;
+        }
+        .auto-action-opt {
+            display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.65rem;
+            background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 8px; cursor: pointer; font-size: 0.82rem;
+        }
+        .auto-action-opt:has(input:checked) { background: rgba(168,85,247,0.1); border-color: rgba(168,85,247,0.35); }
+        .auto-action-opt input { accent-color: #a855f7; }
+        .auto-action-opt .aopt-type {
+            font-size: 0.62rem; font-family: var(--font-mono); color: #9d8bbf;
+            background: rgba(255,255,255,0.05); padding: 1px 6px; border-radius: 4px; margin-left: auto;
+        }
+
+        /* Rule / Action cards */
+        .auto-card {
+            background: #160a2e; border: 1px solid rgba(168,85,247,0.15);
+            border-radius: 12px; padding: 1rem 1.15rem; margin-bottom: 0.7rem;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .auto-card:hover { border-color: rgba(255,46,184,0.3); box-shadow: 0 8px 24px rgba(168,85,247,0.12); }
+        .auto-card.disabled { opacity: 0.55; }
+        .auto-card-head { display: flex; align-items: center; gap: 0.7rem; }
+        .auto-card-title { font-weight: 700; font-size: 0.95rem; color: #fff; flex: 1; }
+        .auto-card-flow {
+            display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+            margin-top: 0.6rem; font-size: 0.8rem; color: #c8c8d4;
+        }
+        .auto-flow-pill {
+            display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.3rem 0.65rem;
+            border-radius: 999px; font-size: 0.76rem; font-weight: 600;
+        }
+        .auto-flow-trigger { background: rgba(255,46,184,0.12); border: 1px solid rgba(255,46,184,0.3); color: #ff9fdc; }
+        .auto-flow-action { background: rgba(168,85,247,0.12); border: 1px solid rgba(168,85,247,0.3); color: #c4a8f0; }
+        .auto-flow-arrow { color: #7a6e94; }
+        .auto-card-actions { display: flex; gap: 0.35rem; }
+        .auto-icon-btn {
+            width: 30px; height: 30px; border-radius: 7px; border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.04); color: #c8c8d4; cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem;
+            transition: all 0.15s;
+        }
+        .auto-icon-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .auto-icon-btn.danger:hover { background: rgba(239,68,68,0.15); color: #fca5a5; border-color: rgba(239,68,68,0.3); }
+        .auto-icon-btn.test:hover { background: rgba(34,211,238,0.15); color: #22d3ee; }
+
+        /* Toggle switch */
+        .auto-toggle { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
+        .auto-toggle input { opacity: 0; width: 0; height: 0; }
+        .auto-toggle .slider {
+            position: absolute; inset: 0; background: rgba(255,255,255,0.12);
+            border-radius: 999px; cursor: pointer; transition: 0.2s;
+        }
+        .auto-toggle .slider::before {
+            content: ''; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px;
+            background: #fff; border-radius: 50%; transition: 0.2s;
+        }
+        .auto-toggle input:checked + .slider { background: linear-gradient(135deg, #ff2eb8, #a855f7); }
+        .auto-toggle input:checked + .slider::before { transform: translateX(18px); }
+
+        .auto-empty { text-align: center; color: #9d8bbf; padding: 3rem 1rem; }
+        .auto-empty i { font-size: 2.5rem; opacity: 0.3; margin-bottom: 0.75rem; display: block; }
+
         /* ═══════════════════════════════════════════════════════════════
            THEME POLISH — matches seligame.com vibe (magenta/purple neon)
            Purely cosmetic; appended last so it wins specificity ties.
@@ -3433,6 +3581,14 @@
             <div class="nav-accordion-body">
                 <div class="nav-sub-item" onclick="navigateOverlay('dock-chat')">💬 Chat Dock</div>
                 <div class="nav-sub-item" onclick="navigateOverlay('dock-events')">📋 Event Feed</div>
+            </div>
+
+            <div class="nav-section-label">Otomasyon</div>
+
+            <div class="nav-item nav-item-flagship" onclick="navigateTo('automation')">
+                <i class="fas fa-bolt"></i>
+                <span>Aksiyonlar &amp; Olaylar</span>
+                <span class="nav-badge-new">YENİ</span>
             </div>
 
             <div class="nav-item" onclick="navigateTo('gift-scanner')">
@@ -5228,10 +5384,227 @@
     </div>
     <!-- End Hediye Tasarımı Page -->
 
+    <!-- ═══════════ Aksiyonlar & Olaylar (Automation) ═══════════ -->
+    <div class="page" id="automation-page">
+        <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap;">
+            <div>
+                <div class="page-title"><i class="fas fa-bolt" style="color:#ff2eb8;"></i> Aksiyonlar &amp; Olaylar</div>
+                <div class="page-subtitle">Hangi olay olunca ne olacağını sen belirle. Hediye → tuş, beğeni → ses, komut → overlay… sınırsız kombinasyon.</div>
+            </div>
+            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+                <button class="btn-new-draft" onclick="openRuleEditor(null)"><i class="fas fa-plus"></i> Yeni Kural</button>
+                <button class="btn-new-draft" style="background:linear-gradient(135deg,#a855f7,#8b3fd9);" onclick="openActionEditor(null)"><i class="fas fa-plus"></i> Yeni Aksiyon</button>
+            </div>
+        </div>
+
+        <!-- Stat strip -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0.6rem;margin-bottom:1rem;">
+            <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#ff2eb8,#a855f7);"><i class="fas fa-bolt"></i></div>
+                <div class="stat-box-value" id="auto-rule-count">0</div><div class="stat-box-label">Kural</div></div>
+            <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#a855f7,#22d3ee);"><i class="fas fa-cubes"></i></div>
+                <div class="stat-box-value" id="auto-action-count">0</div><div class="stat-box-label">Aksiyon</div></div>
+            <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#22d3ee,#a855f7);"><i class="fas fa-fire"></i></div>
+                <div class="stat-box-value" id="auto-fire-count">0</div><div class="stat-box-label">Toplam Tetikleme</div></div>
+            <div class="stat-box"><div class="stat-box-icon" style="background:linear-gradient(135deg,#ffd700,#ff2eb8);"><i class="fas fa-magic"></i></div>
+                <div class="stat-box-value" id="auto-active-count">0</div><div class="stat-box-label">Aktif Kural</div></div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="auto-tabs">
+            <button class="auto-tab active" data-tab="rules" onclick="switchAutoTab('rules')"><i class="fas fa-bolt"></i> Kurallar</button>
+            <button class="auto-tab" data-tab="actions" onclick="switchAutoTab('actions')"><i class="fas fa-cubes"></i> Aksiyonlar</button>
+            <button class="auto-tab" data-tab="migrate" onclick="switchAutoTab('migrate')"><i class="fas fa-wand-magic-sparkles"></i> Mod'dan İçe Aktar</button>
+        </div>
+
+        <!-- RULES tab -->
+        <div class="auto-tab-panel active" id="auto-panel-rules">
+            <div id="auto-rules-list">
+                <div style="text-align:center;color:#9d8bbf;padding:3rem;"><i class="fas fa-spinner fa-spin"></i> Yükleniyor...</div>
+            </div>
+        </div>
+
+        <!-- ACTIONS tab -->
+        <div class="auto-tab-panel" id="auto-panel-actions">
+            <div id="auto-actions-list">
+                <div style="text-align:center;color:#9d8bbf;padding:3rem;"><i class="fas fa-spinner fa-spin"></i> Yükleniyor...</div>
+            </div>
+        </div>
+
+        <!-- MIGRATE tab -->
+        <div class="auto-tab-panel" id="auto-panel-migrate">
+            <div style="background:#160a2e;border:1px solid rgba(168,85,247,0.2);border-radius:12px;padding:1.5rem;max-width:760px;">
+                <h3 style="color:#a855f7;font-size:1rem;margin-bottom:0.5rem;"><i class="fas fa-wand-magic-sparkles"></i> Mevcut Mod Eşlemelerini Kurala Dönüştür</h3>
+                <p style="color:#c8c8d4;font-size:0.85rem;line-height:1.6;margin-bottom:1rem;">
+                    Yüklü modlarındaki hediye → tuş eşlemelerini otomatik olarak Aksiyon &amp; Kurallara dönüştürür.
+                    Her "Gül → F2" satırı, bir <b>keyboard aksiyonu</b> + onu tetikleyen bir <b>gift kuralı</b> olur.
+                    Mevcut eşlemelerin bozulmaz; sadece bu güçlü motora taşınır.
+                </p>
+                <div id="auto-migrate-preview" style="margin-bottom:1rem;"></div>
+                <button class="btn-new-draft" onclick="runModMigration()"><i class="fas fa-bolt"></i> Modları İçe Aktar</button>
+            </div>
+        </div>
+    </div>
+    <!-- End Automation Page -->
+
         </div>
         <!-- End main-content -->
     </div>
     <!-- End app-container -->
+
+    <!-- ═══════ Rule Editor Modal ═══════ -->
+    <div class="modal" id="rule-modal" onclick="if(event.target===this)closeRuleEditor()">
+        <div class="modal-content" style="max-width:680px;max-height:90vh;overflow-y:auto;">
+            <div class="modal-header">
+                <h2 class="modal-title" id="rule-modal-title"><i class="fas fa-bolt" style="color:#ff2eb8;"></i> Yeni Kural</h2>
+                <button class="modal-close" onclick="closeRuleEditor()"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="rule-modal-alert" class="auto-alert" style="display:none;"></div>
+
+            <div class="auto-field">
+                <label>Kural Adı</label>
+                <input type="text" id="rule-name" class="auto-input" placeholder="örn. Gül gelince blok at">
+            </div>
+
+            <div class="auto-field">
+                <label>Tetikleyici (Bu olunca…)</label>
+                <select id="rule-trigger-type" class="auto-input" onchange="onRuleTriggerTypeChange()">
+                    <option value="gift">🎁 Hediye</option>
+                    <option value="like">❤️ Beğeni</option>
+                    <option value="follow">➕ Takip</option>
+                    <option value="share">🔁 Paylaşım</option>
+                    <option value="subscribe">⭐ Abone (Superfan)</option>
+                    <option value="chat">💬 Sohbet mesajı</option>
+                    <option value="command">⌨️ Sohbet komutu (!komut)</option>
+                    <option value="member">👋 Yayına katılma</option>
+                    <option value="any">✨ Herhangi bir olay</option>
+                </select>
+            </div>
+
+            <!-- gift narrowing -->
+            <div class="auto-field" id="rule-gift-row" style="display:none;">
+                <label>Hangi Hediye?</label>
+                <div style="display:flex;gap:0.5rem;align-items:center;">
+                    <input type="text" id="rule-gift-name" class="auto-input" placeholder="Boş = her hediye" style="flex:1;" readonly>
+                    <button class="auto-btn-sm" onclick="pickRuleGift()"><i class="fas fa-gift"></i> Seç</button>
+                    <button class="auto-btn-sm" onclick="clearRuleGift()" title="Temizle">✕</button>
+                </div>
+            </div>
+
+            <!-- command -->
+            <div class="auto-field" id="rule-command-row" style="display:none;">
+                <label>Komut Kelimesi</label>
+                <div style="display:flex;gap:0.4rem;align-items:center;">
+                    <input type="text" id="rule-command-prefix" class="auto-input" value="!" style="width:54px;text-align:center;">
+                    <input type="text" id="rule-command" class="auto-input" placeholder="spin" style="flex:1;">
+                </div>
+                <div class="auto-hint">İzleyici <b>!spin</b> yazınca tetiklenir. Komuttan sonraki yazı %params% ile aksiyona geçer.</div>
+            </div>
+
+            <!-- conditions -->
+            <div class="auto-field">
+                <label style="display:flex;justify-content:space-between;align-items:center;">
+                    <span>Koşullar (hepsi sağlanmalı)</span>
+                    <button class="auto-btn-sm" onclick="addRuleCondition()"><i class="fas fa-plus"></i> Koşul</button>
+                </label>
+                <div id="rule-conditions"></div>
+                <div class="auto-hint">Örn: coins ≥ 100 → sadece 100+ coinlik hediyelerde çalışır.</div>
+            </div>
+
+            <!-- roles -->
+            <div class="auto-field">
+                <label>Kimler Tetikleyebilir?</label>
+                <div id="rule-roles" style="display:flex;flex-wrap:wrap;gap:0.4rem;">
+                    <label class="auto-chip"><input type="checkbox" value="everyone" checked> Herkes</label>
+                    <label class="auto-chip"><input type="checkbox" value="subscriber"> Aboneler</label>
+                    <label class="auto-chip"><input type="checkbox" value="moderator"> Moderatörler</label>
+                    <label class="auto-chip"><input type="checkbox" value="topGifter"> Top Gifter</label>
+                    <label class="auto-chip"><input type="checkbox" value="follower"> Takipçiler</label>
+                </div>
+            </div>
+
+            <!-- cooldown + combo -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+                <div class="auto-field">
+                    <label>Genel Cooldown (sn)</label>
+                    <input type="number" id="rule-cd-global" class="auto-input" value="0" min="0" step="0.5">
+                    <div class="auto-hint">0 = sınırsız</div>
+                </div>
+                <div class="auto-field">
+                    <label>Kişi Başı Cooldown (sn)</label>
+                    <input type="number" id="rule-cd-user" class="auto-input" value="0" min="0" step="0.5">
+                    <div class="auto-hint">Aynı kişi için</div>
+                </div>
+            </div>
+
+            <div class="auto-field" id="rule-combo-row">
+                <label>Tekrarlanan Hediye Davranışı</label>
+                <select id="rule-combo" class="auto-input">
+                    <option value="once">Bir kez çalış (combo'da 1 kez)</option>
+                    <option value="perGift">Her hediye için çalış (10 gül = 10×)</option>
+                </select>
+            </div>
+
+            <!-- actions -->
+            <div class="auto-field">
+                <label>Çalışacak Aksiyonlar</label>
+                <div id="rule-action-picker" class="auto-action-picker"></div>
+                <div class="auto-hint">Bir kural birden çok aksiyonu sırayla çalıştırabilir. Aksiyon yoksa önce "Yeni Aksiyon" oluştur.</div>
+            </div>
+
+            <div style="display:flex;gap:0.5rem;margin-top:1rem;">
+                <button class="auto-btn-ghost" onclick="closeRuleEditor()" style="flex:1;">Kapat</button>
+                <button class="auto-btn-test" id="rule-test-btn" onclick="testCurrentRule()" style="display:none;"><i class="fas fa-vial"></i> Test Et</button>
+                <button class="btn-new-draft" onclick="saveRule()"><i class="fas fa-save"></i> Kaydet</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════ Action Editor Modal ═══════ -->
+    <div class="modal" id="action-modal" onclick="if(event.target===this)closeActionEditor()">
+        <div class="modal-content" style="max-width:600px;max-height:90vh;overflow-y:auto;">
+            <div class="modal-header">
+                <h2 class="modal-title" id="action-modal-title"><i class="fas fa-cubes" style="color:#a855f7;"></i> Yeni Aksiyon</h2>
+                <button class="modal-close" onclick="closeActionEditor()"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="action-modal-alert" class="auto-alert" style="display:none;"></div>
+
+            <div class="auto-field">
+                <label>Aksiyon Adı</label>
+                <input type="text" id="action-name" class="auto-input" placeholder="örn. Blok at (F2)">
+            </div>
+
+            <div class="auto-field">
+                <label>Aksiyon Tipi (Ne olacak?)</label>
+                <select id="action-type" class="auto-input" onchange="renderActionConfig()">
+                    <optgroup label="🖥️ Ekran / Ses (OBS overlay)">
+                        <option value="overlay-alert">🔔 Ekran Uyarısı (resim/yazı/video)</option>
+                        <option value="sound">🔊 Ses Çal</option>
+                        <option value="tts">🗣️ Sesli Oku (TTS)</option>
+                        <option value="confetti">🎉 Konfeti / Partikül</option>
+                        <option value="media">🎬 Video / GIF Göster</option>
+                        <option value="wheel-spin">🎡 Çark Çevir</option>
+                    </optgroup>
+                    <optgroup label="🎮 Oyun Kontrolü (PC)">
+                        <option value="keyboard">⌨️ Klavye Tuşu</option>
+                        <option value="mouse">🖱️ Fare Tıklaması</option>
+                        <option value="text">📝 Metin Yaz</option>
+                        <option value="launch">🚀 Komut / Oyun Çalıştır</option>
+                    </optgroup>
+                    <optgroup label="🏆 Sistem">
+                        <option value="points">💎 Puan Ver</option>
+                    </optgroup>
+                </select>
+            </div>
+
+            <div id="action-config"></div>
+
+            <div style="display:flex;gap:0.5rem;margin-top:1rem;">
+                <button class="auto-btn-ghost" onclick="closeActionEditor()" style="flex:1;">Kapat</button>
+                <button class="auto-btn-test" id="action-test-btn" onclick="testCurrentAction()" style="display:none;"><i class="fas fa-vial"></i> Test Et</button>
+                <button class="btn-new-draft" onclick="saveAction()"><i class="fas fa-save"></i> Kaydet</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Mod Settings Modal -->
     <div class="modal" id="mod-modal">
