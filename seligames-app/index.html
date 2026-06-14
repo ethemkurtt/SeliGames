@@ -165,6 +165,30 @@
             text-transform: uppercase;
         }
 
+        .login-logo-img {
+            display: block;
+            width: 250px;
+            max-width: 82%;
+            height: auto;
+            margin: 0 auto 0.5rem;
+            filter: drop-shadow(0 4px 18px rgba(168, 85, 247, 0.4));
+        }
+
+        .sidebar-logo-img {
+            display: block;
+            width: 100%;
+            max-width: 172px;
+            height: auto;
+        }
+        .sidebar-logo-emblem {
+            display: none;
+            width: 34px;
+            height: auto;
+            margin: 0 auto;
+        }
+        .sidebar.collapsed .sidebar-logo-img { display: none; }
+        .sidebar.collapsed .sidebar-logo-emblem { display: block; }
+
         .login-subtitle {
             text-align: center;
             color: var(--text-muted);
@@ -3982,7 +4006,8 @@
     <!-- Login Overlay -->
     <div id="login-overlay">
         <div class="login-container">
-            <div class="login-logo">SELIGAMES</div>
+            <img src="assets/logo-full.png" alt="SeliGames" class="login-logo-img"
+                 onerror="this.outerHTML='<div class=&quot;login-logo&quot;>SELIGAMES</div>'">
             <div class="login-subtitle">Oyun Modlama Platformu</div>
 
             <div class="auth-tabs">
@@ -4053,7 +4078,9 @@
         </div>
         <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <div class="sidebar-logo">SELIGAMES</div>
+                <img src="assets/logo-full.png" alt="SeliGames" class="sidebar-logo-img"
+                     onerror="this.outerHTML='<div class=&quot;sidebar-logo&quot;>SELIGAMES</div>'">
+                <img src="assets/logo-emblem.png" alt="S" class="sidebar-logo-emblem">
                 <div class="sidebar-subtitle">Modlama Platformu</div>
             </div>
 
