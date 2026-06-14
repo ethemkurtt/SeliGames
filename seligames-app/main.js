@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, globalShortcut } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, globalShortcut, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { execFile } = require('child_process');
@@ -165,6 +165,8 @@ async function executeAction(action) {
 let mainWindow;
 let tiktokConnection = null;
 let backendSocket = null;
+let backendAuthed = false;
+let pendingEvents = [];
 let currentSessionId = null;
 
 // Runtime config — prefer config.json (gitignored, per-machine overrides)
@@ -218,11 +220,18 @@ function connectToBackendSocket(token) {
 
     backendSocket.on('connect', () => {
         console.log('✅ Connected to backend Socket.io');
+        backendAuthed = false;
         backendSocket.emit('auth', { token });
     });
 
     backendSocket.on('auth-success', (data) => {
         console.log('🔐 Backend auth success:', data.userId);
+        backendAuthed = true;
+        // Flush any events that arrived during the connect→auth window so the
+        // first gifts of a stream are never dropped server-side.
+        if (pendingEvents.length) {
+            for (const ev of pendingEvents.splice(0)) backendSocket.emit('tiktok-event', ev);
+        }
         if (mainWindow) {
             mainWindow.webContents.send('backend-socket-status', { connected: true, userId: data.userId });
         }
@@ -230,6 +239,7 @@ function connectToBackendSocket(token) {
 
     backendSocket.on('auth-error', (data) => {
         console.error('🔐 Backend auth error:', data.error);
+        backendAuthed = false;
         // Surface to renderer so it can clear stale token + force re-login.
         // Without this, the socket lives on without socket.userId and the
         // server silently drops every tiktok-event we forward.
@@ -244,6 +254,14 @@ function connectToBackendSocket(token) {
         if (mainWindow) {
             mainWindow.webContents.send('event-processed', data);
         }
+    });
+
+    // Channel-points live updates → renderer (loyalty leaderboard refresh + toast).
+    backendSocket.on('points-update', (data) => {
+        if (mainWindow) mainWindow.webContents.send('points-update', data);
+    });
+    backendSocket.on('redeem-result', (data) => {
+        if (mainWindow) mainWindow.webContents.send('redeem-result', data);
     });
 
     // Actions & Events engine — the backend fires OS-level actions
@@ -281,6 +299,7 @@ function connectToBackendSocket(token) {
 
     backendSocket.on('disconnect', () => {
         console.log('🔌 Backend socket disconnected');
+        backendAuthed = false;
         if (mainWindow) {
             mainWindow.webContents.send('backend-socket-status', { connected: false });
         }
@@ -296,12 +315,30 @@ function disconnectBackendSocket() {
         backendSocket.disconnect();
         backendSocket = null;
     }
+    backendAuthed = false;
+    pendingEvents = [];
     currentSessionId = null;
 }
+
+// Open a URL in the system browser. Routed through IPC because the sandboxed
+// preload cannot access `shell` directly. http/https only.
+ipcMain.handle('open-external', (_e, url) => {
+    try {
+        const u = new URL(String(url));
+        if (u.protocol === 'http:' || u.protocol === 'https:') { shell.openExternal(u.href); return { success: true }; }
+        return { success: false, error: 'unsupported protocol' };
+    } catch (e) { return { success: false, error: e.message }; }
+});
 
 function forwardEventToBackend(eventData) {
     if (!backendSocket || !backendSocket.connected) {
         console.warn('⚠️ Backend socket not connected, event not forwarded');
+        return false;
+    }
+    // Server drops tiktok-event until the socket is authenticated. During the
+    // brief connect→auth window, buffer instead of losing the event.
+    if (!backendAuthed) {
+        if (pendingEvents.length < 200) pendingEvents.push(eventData);
         return false;
     }
     backendSocket.emit('tiktok-event', eventData);
@@ -312,6 +349,7 @@ function createWindow() {
     mainWindow = new BrowserWindow({
         width: 1400,
         height: 900,
+        icon: path.join(__dirname, 'assets', process.platform === 'win32' ? 'icon.ico' : 'icon.png'),
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
             nodeIntegration: false,
@@ -452,6 +490,15 @@ ipcMain.handle('pick-launch-file', async () => {
 ipcMain.handle('login', async (event, { email, password }) => {
     try {
         const response = await axios.post(`${BACKEND_URL}/api/auth/login`, { email, password });
+        return { success: true, data: response.data };
+    } catch (error) {
+        return { success: false, error: error.response?.data?.error || error.message };
+    }
+});
+
+ipcMain.handle('register', async (event, { username, email, password }) => {
+    try {
+        const response = await axios.post(`${BACKEND_URL}/api/auth/register`, { username, email, password });
         return { success: true, data: response.data };
     } catch (error) {
         return { success: false, error: error.response?.data?.error || error.message };
@@ -617,8 +664,25 @@ ipcMain.handle('connect-tiktok-live', async (event, username) => {
             processInitialData: true,
             enableExtendedGiftInfo: true,
             enableWebsocketUpgrade: true,
+            fetchRoomInfoOnConnect: true, // so connect() throws UserOfflineError on status=4
             requestPollingIntervalMs: 1000
         });
+
+        // Pre-check: is the user ACTUALLY live right now? Without this, an offline
+        // user often still has a (stale) roomId, so connect() resolves and the UI
+        // falsely shows "connected" even though no events ever arrive. fetchIsLive()
+        // checks HTML -> API -> Euler and returns false when the room status != live.
+        // Only a definitive `false` blocks; if detection itself throws (transient
+        // network), we fall through and let connect()'s own status=4 check decide.
+        try {
+            const isLive = await tiktokConnection.fetchIsLive();
+            if (isLive === false) {
+                tiktokConnection = null;
+                return { success: false, error: '@' + username + ' şu anda canlı yayında değil. Yayın açıkken tekrar deneyin.' };
+            }
+        } catch (preErr) {
+            console.log('fetchIsLive belirsiz, connect() kontrolüne bırakılıyor:', preErr.message);
+        }
 
         // Connect
         const state = await tiktokConnection.connect();
@@ -631,81 +695,64 @@ ipcMain.handle('connect-tiktok-live', async (event, username) => {
             viewerCount: state.viewerCount || 0
         });
 
-        // Event listeners
+        // Event listeners — every event goes BOTH to the renderer (UI feed)
+        // and to the backend socket (rules/overlays/points/Minecraft). The
+        // backend forward lives here in main so it works no matter which page
+        // the renderer is showing.
+        const sendBoth = (type, rendererData, backendPayload) => {
+            if (mainWindow) mainWindow.webContents.send('tiktok-event', { type, data: rendererData });
+            if (backendPayload) forwardEventToBackend(backendPayload);
+        };
+
         tiktokConnection.on('chat', (data) => {
-            mainWindow.webContents.send('tiktok-event', {
-                type: 'chat',
-                data: {
-                    user: data.uniqueId,
-                    nickname: data.nickname,
-                    comment: data.comment
-                }
-            });
+            sendBoth('chat',
+                { user: data.uniqueId, nickname: data.nickname, comment: data.comment, profilePicture: data.profilePictureUrl || '' },
+                { eventType: 'chat', username: data.uniqueId, nickname: data.nickname, comment: data.comment, profilePicture: data.profilePictureUrl || '', count: 1 });
         });
 
         tiktokConnection.on('gift', (data) => {
-            mainWindow.webContents.send('tiktok-event', {
-                type: 'gift',
-                data: {
-                    user: data.uniqueId,
-                    nickname: data.nickname,
-                    giftName: data.giftName,
-                    giftId: data.giftId,
-                    repeatCount: data.repeatCount,
-                    diamondCount: data.diamondCount
-                }
-            });
+            // streakEnd guard: for streakable gifts only count the final total
+            // (giftType 1 && !repeatEnd means the combo is still running).
+            if (data.giftType === 1 && !data.repeatEnd) {
+                if (mainWindow) mainWindow.webContents.send('tiktok-event', {
+                    type: 'gift-streak', data: { user: data.uniqueId, nickname: data.nickname, giftName: data.giftName, repeatCount: data.repeatCount }
+                });
+                return;
+            }
+            const count = data.repeatCount || 1;
+            sendBoth('gift',
+                { user: data.uniqueId, nickname: data.nickname, giftName: data.giftName, giftId: data.giftId, repeatCount: count, diamondCount: data.diamondCount },
+                { eventType: 'gift', username: data.uniqueId, nickname: data.nickname, giftName: data.giftName, giftId: data.giftId, count, diamondCount: (data.diamondCount || 0) * count, profilePicture: data.profilePictureUrl || '' });
         });
 
         tiktokConnection.on('like', (data) => {
-            mainWindow.webContents.send('tiktok-event', {
-                type: 'like',
-                data: {
-                    user: data.uniqueId,
-                    nickname: data.nickname,
-                    likeCount: data.likeCount,
-                    totalLikeCount: data.totalLikeCount
-                }
-            });
+            sendBoth('like',
+                { user: data.uniqueId, nickname: data.nickname, likeCount: data.likeCount, totalLikeCount: data.totalLikeCount },
+                { eventType: 'like', username: data.uniqueId, nickname: data.nickname, likeCount: data.likeCount || 1, count: data.likeCount || 1 });
         });
 
         tiktokConnection.on('member', (data) => {
-            mainWindow.webContents.send('tiktok-event', {
-                type: 'member',
-                data: {
-                    user: data.uniqueId,
-                    nickname: data.nickname
-                }
-            });
+            sendBoth('member',
+                { user: data.uniqueId, nickname: data.nickname },
+                { eventType: 'member', username: data.uniqueId, nickname: data.nickname, count: 1 });
         });
 
         tiktokConnection.on('follow', (data) => {
-            mainWindow.webContents.send('tiktok-event', {
-                type: 'follow',
-                data: {
-                    user: data.uniqueId,
-                    nickname: data.nickname
-                }
-            });
+            sendBoth('follow',
+                { user: data.uniqueId, nickname: data.nickname },
+                { eventType: 'follow', username: data.uniqueId, nickname: data.nickname, count: 1 });
         });
 
         tiktokConnection.on('share', (data) => {
-            mainWindow.webContents.send('tiktok-event', {
-                type: 'share',
-                data: {
-                    user: data.uniqueId,
-                    nickname: data.nickname
-                }
-            });
+            sendBoth('share',
+                { user: data.uniqueId, nickname: data.nickname },
+                { eventType: 'share', username: data.uniqueId, nickname: data.nickname, count: 1 });
         });
 
         tiktokConnection.on('roomUser', (data) => {
-            mainWindow.webContents.send('tiktok-event', {
-                type: 'roomUser',
-                data: {
-                    viewerCount: data.viewerCount
-                }
-            });
+            sendBoth('roomUser',
+                { viewerCount: data.viewerCount },
+                { eventType: 'viewer', viewerCount: data.viewerCount || 0, count: 1 });
         });
 
         tiktokConnection.on('streamEnd', () => {

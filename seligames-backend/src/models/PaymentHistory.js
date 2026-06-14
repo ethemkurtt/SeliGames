@@ -49,9 +49,8 @@ const paymentHistorySchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Index'ler
+// Index'ler — transactionId zaten `unique: true` ile index'leniyor.
 paymentHistorySchema.index({ userId: 1, paymentDate: -1 });
-paymentHistorySchema.index({ transactionId: 1 });
 paymentHistorySchema.index({ status: 1 });
 
 const PaymentHistory = mongoose.model('PaymentHistory', paymentHistorySchema);

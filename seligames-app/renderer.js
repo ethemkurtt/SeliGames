@@ -1,38 +1,124 @@
+// ─── Theme (dark / light) ──────────────────────────────────────────────────
+// Apply the saved theme as early as possible so there is no dark→light flash
+// on startup. Default is dark (no class).
+(function applySavedThemeEarly() {
+    try {
+        if (localStorage.getItem('seli-theme') === 'light') {
+            document.body.classList.add('light-theme');
+        }
+    } catch (e) { /* localStorage unavailable */ }
+})();
+
+// Toggle the light theme on/off and persist the choice. `isLight` true = light.
+function applyTheme(isLight) {
+    document.body.classList.toggle('light-theme', !!isLight);
+    try { localStorage.setItem('seli-theme', isLight ? 'light' : 'dark'); } catch (e) {}
+    // Keep every theme control in sync (settings checkbox is "Dark Theme")
+    const darkCb = document.getElementById('dark-theme');
+    if (darkCb) darkCb.checked = !isLight;
+    const sideBtn = document.getElementById('theme-quick-toggle');
+    if (sideBtn) {
+        sideBtn.classList.toggle('is-light', !!isLight);
+        const ic = sideBtn.querySelector('i');
+        if (ic) ic.className = isLight ? 'fas fa-sun' : 'fas fa-moon';
+        const lbl = sideBtn.querySelector('span');
+        if (lbl) lbl.textContent = isLight ? 'Açık Tema' : 'Koyu Tema';
+    }
+}
+
+// Quick toggle used by the sidebar button — flips current state.
+function toggleTheme() {
+    const nowLight = !document.body.classList.contains('light-theme');
+    applyTheme(nowLight);
+    // Persist to backend too (mirrors the Settings "Karanlık Tema" switch)
+    if (typeof updateSetting === 'function') updateSetting('darkTheme', !nowLight);
+}
+
 // Login functionality
 const loginForm = document.getElementById('login-form');
 const loginOverlay = document.getElementById('login-overlay');
 const appContainer = document.getElementById('app-container');
 
+// Shared post-auth flow — used by BOTH login and register (register returns the
+// same { token, user } shape as login, so the user is signed in immediately).
+function applyAuthSuccess(data) {
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    if (data.user?.email) localStorage.setItem('lastEmail', data.user.email);
+
+    loginOverlay.classList.add('hidden');
+    appContainer.classList.add('active');
+
+    loadUserInfo(data.user);
+    loadDashboard();
+
+    window.api.connectBackendSocket().then(res => {
+        if (res.success) console.log('✅ Backend socket bridge connected');
+        else console.warn('⚠️ Backend socket bridge failed:', res.error);
+    });
+}
+
+// Tab switching between Login / Register
+function switchAuthTab(which) {
+    const isLogin = which === 'login';
+    const lf = document.getElementById('login-form');
+    const rf = document.getElementById('register-form');
+    if (lf) lf.style.display = isLogin ? '' : 'none';
+    if (rf) rf.style.display = isLogin ? 'none' : '';
+    document.getElementById('tab-login')?.classList.toggle('active', isLogin);
+    document.getElementById('tab-register')?.classList.toggle('active', !isLogin);
+}
+window.switchAuthTab = switchAuthTab;
+
+// Prefill the last successfully used e-mail (convenience; no password is stored).
+(function prefillLastEmail() {
+    const last = localStorage.getItem('lastEmail');
+    const emailEl = document.getElementById('email');
+    if (last && emailEl) emailEl.value = last;
+})();
+
 loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const email = document.getElementById('email').value;
+    const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
 
     try {
         const result = await window.api.login({ email, password });
-
         if (result.success) {
-            localStorage.setItem('token', result.data.token);
-            localStorage.setItem('user', JSON.stringify(result.data.user));
-
-            loginOverlay.classList.add('hidden');
-            appContainer.classList.add('active');
-
-            loadUserInfo(result.data.user);
-            loadDashboard();
-
-            window.api.connectBackendSocket().then(res => {
-                if (res.success) console.log('✅ Backend socket bridge connected');
-                else console.warn('⚠️ Backend socket bridge failed:', res.error);
-            });
+            applyAuthSuccess(result.data);
         } else {
-            alert('Giriş başarısız: ' + result.error);
+            alert('Giriş başarısız: ' + (result.error || 'Bilinmeyen hata'));
         }
     } catch (error) {
         alert('Bağlantı hatası');
     }
 });
+
+const registerForm = document.getElementById('register-form');
+if (registerForm) {
+    registerForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const username = document.getElementById('reg-username').value.trim();
+        const email = document.getElementById('reg-email').value.trim();
+        const password = document.getElementById('reg-password').value;
+
+        if (!username || !email || !password) { alert('Lütfen tüm alanları doldurun'); return; }
+        if (password.length < 6) { alert('Şifre en az 6 karakter olmalı'); return; }
+
+        try {
+            const result = await window.api.register({ username, email, password });
+            if (result.success && result.data?.token) {
+                applyAuthSuccess(result.data);
+            } else {
+                alert('Kayıt başarısız: ' + (result.error || 'Bilinmeyen hata'));
+            }
+        } catch (error) {
+            alert('Bağlantı hatası');
+        }
+    });
+}
 
 // Load user info
 function loadUserInfo(user) {
@@ -105,6 +191,10 @@ function navigateTo(page) {
     else if (page === 'automation') {
         document.getElementById('automation-page')?.classList.add('active');
         initAutomation();
+    }
+    else if (page === 'loyalty') {
+        document.getElementById('loyalty-page')?.classList.add('active');
+        initLoyalty();
     }
 }
 
@@ -340,6 +430,7 @@ function renderGiftDesignerSlots() {
                             ? `<img class="gd-icon" src="${gdProxify(item.iconUrl)}" alt="" onclick="openGiftPicker('${slot}','${item.id}')">`
                             : `<div class="gd-icon-placeholder" onclick="openGiftPicker('${slot}','${item.id}')">🎁</div>`}
                         <input type="text" value="${escapeHtml(item.text || '')}" placeholder="${escapeHtml(item.giftName || 'metin')}"
+                               title="İki satır için | kullanın — örn. GÜL|100"
                                oninput="patchGiftItem('${slot}','${item.id}','text',this.value)">
                         <input type="color" value="${item.color || giftDesign.textColor}"
                                onchange="patchGiftItem('${slot}','${item.id}','color',this.value)">
@@ -489,13 +580,15 @@ function renderGiftDesignerPreview() {
         // Height reserved for the top row — used to vertically push left/right
         // columns so they always start "one below" the top slot, even when top
         // is empty. Keeps slot positions tertipli + predictable.
-        const TOP_RESERVED = giftDesign.giftSize + giftDesign.textGap + giftDesign.fontSize + PAD;
+        const TOP_RESERVED = giftDesign.giftSize + giftDesign.textGap + giftDesign.fontSize + PAD
+            + (giftDesign.autoBlur > 0 ? giftDesign.autoBlur * 2 : 0); // icon blur margin reserves extra height
 
         // Corner-anchored layout:
         //   top    → top-left corner, items extend right
         //   right  → top-right corner, items extend down
         //   left   → top-left, but pushed down past the top row
         //   bottom → bottom-left corner, items extend right
+        container.dataset.gdSlot = slot;
         if (slot === 'top') {
             container.style.top = PAD + 'px';
             container.style.left = PAD + 'px';
@@ -503,6 +596,8 @@ function renderGiftDesignerPreview() {
             container.style.top = PAD + 'px';
             container.style.right = PAD + 'px';
         } else if (slot === 'left') {
+            // First-paint estimate; corrected below to the top row's REAL
+            // height once layout settles (wrapped labels make it taller).
             container.style.top = (PAD + TOP_RESERVED) + 'px';
             container.style.left = PAD + 'px';
         } else if (slot === 'bottom') {
@@ -548,6 +643,14 @@ function renderGiftDesignerPreview() {
     // baseline. Measured on next frame so flex/img sizes have settled.
     requestAnimationFrame(() => {
         if (!wrap) return;
+        // Second pass: drop the LEFT column below the TOP row's actual
+        // rendered height (wrapped labels can exceed the one-line estimate).
+        const topC = preview.querySelector('[data-gd-slot="top"]');
+        const leftC = preview.querySelector('[data-gd-slot="left"]');
+        if (topC && leftC) {
+            const PAD = 24;
+            leftC.style.top = Math.round(PAD + topC.getBoundingClientRect().height + giftDesign.lineHeight) + 'px';
+        }
         const wrapRect = wrap.getBoundingClientRect();
         const wrapTop = wrapRect.top;
         let maxBottom = 0;
@@ -565,6 +668,49 @@ function renderGiftDesignerPreview() {
     });
 }
 
+// Measure-fit: find the largest font size (≤ base) at which the label fits
+// the card width in at most 2 lines without breaking words mid-word.
+// Uses canvas measureText with the real font; +4% pads for letter-spacing.
+const _gdMeasureCanvas = document.createElement('canvas');
+// Normalize a label into explicit lines: a "|" or a literal newline forces a
+// line break (so the user can put e.g. "GÜL|100" → "GÜL" over "100"). Returns
+// an array of line strings (empty lines dropped).
+function gdLabelLines(text) {
+    return (text || '')
+        .replace(/\s*\|\s*/g, '\n')
+        .split('\n')
+        .map((s) => s.trim())
+        .filter(Boolean);
+}
+
+function gdFitFontSize(text, baseFs, cardW, fontFamily) {
+    const ctx = _gdMeasureCanvas.getContext('2d');
+    const segments = gdLabelLines(text).map((s) => s.toLocaleUpperCase('tr-TR'));
+    const allWords = segments.flatMap((s) => s.split(/\s+/).filter(Boolean));
+    if (!allWords.length) return baseFs;
+    for (let fs = baseFs; fs >= 9; fs--) {
+        ctx.font = `${fs}px '${fontFamily}', sans-serif`;
+        const longestWord = Math.max(...allWords.map((w) => ctx.measureText(w).width)) * 1.04;
+        if (longestWord > cardW) continue;            // longest word must fit one line
+        const spaceW = ctx.measureText(' ').width * 1.04;
+        // Each explicit segment wraps independently; total lines is their sum.
+        let totalLines = 0;
+        for (const seg of segments) {
+            const words = seg.split(/\s+/).filter(Boolean);
+            if (!words.length) continue;
+            let lines = 1, lineW = 0;
+            for (const w of words) {
+                const ww = ctx.measureText(w).width * 1.04;
+                if (lineW > 0 && lineW + spaceW + ww > cardW) { lines++; lineW = ww; }
+                else lineW += (lineW > 0 ? spaceW : 0) + ww;
+            }
+            totalLines += lines;
+        }
+        if (totalLines <= 2) return fs;
+    }
+    return 9;
+}
+
 function renderGiftCardEl(item) {
     const card = document.createElement('div');
     card.className = 'gd-card';
@@ -573,10 +719,11 @@ function renderGiftCardEl(item) {
     card.style.alignItems = 'center';
     card.style.justifyContent = 'flex-start';
     card.style.textAlign = 'center';
-    // Card width = icon width. This forces every card to occupy the SAME
-    // horizontal footprint regardless of label length, so icons line up
-    // pixel-perfect across rows. Long labels wrap to multiple lines below.
-    card.style.width = giftDesign.giftSize + 'px';
+    // Uniform card width (a bit wider than the icon) keeps icons aligned
+    // pixel-perfect across rows while giving labels room to breathe; the
+    // label is measure-fitted below so it never spills over neighbours.
+    const cardW = Math.round(giftDesign.giftSize * 1.7);
+    card.style.width = cardW + 'px';
     card.style.flex = '0 0 auto';
 
     const img = document.createElement('img');
@@ -593,34 +740,35 @@ function renderGiftCardEl(item) {
     if (giftDesign.grayscale) filters.push('grayscale(100%)');
     if (giftDesign.autoBlur > 0) filters.push(`blur(${giftDesign.autoBlur}px)`);
     img.style.filter = filters.join(' ') || 'none';
+    // CSS blur bleeds ~N px beyond the element's box without enlarging its layout
+    // box, so blurred icons used to smear over neighbours/text. Reserve that bleed
+    // as margin so the layout accounts for it and nothing overlaps.
+    if (giftDesign.autoBlur > 0) img.style.margin = giftDesign.autoBlur + 'px';
     card.appendChild(img);
 
     const text = item.text || item.giftName || '';
     if (text) {
         const txtEl = document.createElement('div');
         txtEl.className = 'gd-card-text';
-        txtEl.textContent = text;
+        // Honor explicit line breaks ("|" or newline) so labels can be two lines
+        // (e.g. name over coin value). pre-line collapses runs of spaces but keeps \n.
+        txtEl.textContent = gdLabelLines(text).join('\n');
+        txtEl.style.whiteSpace = 'pre-line';
         txtEl.style.textAlign = 'center';
         txtEl.style.marginTop = giftDesign.textGap + 'px';
-        // Auto-shrink long labels so single short words like "GÜL" stay big
-        // while longer phrases like "SENİ SEVİYORUM" still fit within the
-        // icon-wide card cleanly. Step-down by character count.
-        const len = text.length;
-        const baseFs = giftDesign.fontSize;
-        let fs = baseFs;
-        if (len > 18) fs = Math.max(10, Math.round(baseFs * 0.65));
-        else if (len > 12) fs = Math.max(11, Math.round(baseFs * 0.78));
-        else if (len > 8) fs = Math.max(12, Math.round(baseFs * 0.9));
+        // Measure-fit the label: largest size (≤ chosen size) that fits the
+        // card width in ≤2 lines without mid-word breaks. Short words like
+        // "GÜL" stay full-size; long phrases shrink just enough.
+        const fs = gdFitFontSize(text, giftDesign.fontSize, cardW, giftDesign.font);
         txtEl.style.fontSize = fs + 'px';
         txtEl.style.color = item.color || giftDesign.textColor;
         txtEl.style.fontFamily = `'${giftDesign.font}', sans-serif`;
-        // Constrain text to icon width — long labels wrap (multi-line) instead
-        // of stretching the card and breaking icon alignment.
-        txtEl.style.width = giftDesign.giftSize + 'px';
-        txtEl.style.maxWidth = giftDesign.giftSize + 'px';
-        txtEl.style.wordBreak = 'break-word';
-        txtEl.style.overflowWrap = 'break-word';
-        txtEl.style.lineHeight = '1.05';
+        // Constrain text to the card width — wraps (≤2 lines by measure-fit)
+        // instead of spilling over neighbouring cards.
+        txtEl.style.width = cardW + 'px';
+        txtEl.style.maxWidth = cardW + 'px';
+        txtEl.style.overflowWrap = 'break-word'; // last-resort safety only
+        txtEl.style.lineHeight = '1.08';
         // Multi-shadow stroke
         if (giftDesign.borderWidth > 0) {
             const w = giftDesign.borderWidth;
@@ -658,6 +806,89 @@ function saveGiftDesign() {
     } catch (e) {
         showToast('Kaydedilemedi: ' + e.message, true);
     }
+}
+
+// ── "Kaydedilenler": named, multi-slot gift-design library ──────────────
+// Previously only ONE design persisted (the 'giftDesign' key got overwritten on
+// every change). Now designs can be saved under names and reloaded any time.
+const GD_LIB_KEY = 'giftDesigns';
+function gdGetLibrary() {
+    try { return JSON.parse(localStorage.getItem(GD_LIB_KEY) || '[]'); } catch { return []; }
+}
+function gdSetLibrary(arr) {
+    try { localStorage.setItem(GD_LIB_KEY, JSON.stringify(arr)); } catch {}
+}
+function gdNewId() {
+    return 'gd_' + Math.random().toString(36).slice(2, 9) + Date.now().toString(36);
+}
+
+function saveGiftDesignAs() {
+    const name = (prompt('Tasarım adı:', giftDesign.name || 'Tasarım') || '').trim();
+    if (!name) return;
+    const lib = gdGetLibrary();
+    const clone = JSON.parse(JSON.stringify(giftDesign));
+    clone.name = name;
+    const stamp = new Date().toLocaleString('tr-TR');
+    const existing = lib.find(d => (d.name || '').toLocaleLowerCase('tr-TR') === name.toLocaleLowerCase('tr-TR'));
+    if (existing) {
+        if (!confirm(`"${name}" zaten var. Üzerine yazılsın mı?`)) return;
+        existing.design = clone; existing.savedAt = stamp;
+    } else {
+        lib.unshift({ id: gdNewId(), name, savedAt: stamp, design: clone });
+    }
+    gdSetLibrary(lib);
+    giftDesign.name = name;
+    try { localStorage.setItem('giftDesign', JSON.stringify(giftDesign)); } catch {}
+    showToast(`"${name}" kaydedildi ✓`);
+}
+
+function openGiftDesignsModal() {
+    renderSavedGiftDesigns();
+    const m = document.getElementById('gd-saved-modal');
+    if (m) m.style.display = 'flex';
+}
+function closeGiftDesignsModal() {
+    const m = document.getElementById('gd-saved-modal');
+    if (m) m.style.display = 'none';
+}
+function renderSavedGiftDesigns() {
+    const list = document.getElementById('gd-saved-list');
+    if (!list) return;
+    const lib = gdGetLibrary();
+    if (!lib.length) {
+        list.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:1.5rem;">Henüz kayıtlı tasarım yok. “Farklı Kaydet” ile ekleyin.</div>';
+        return;
+    }
+    list.innerHTML = lib.map(d => `
+        <div style="display:flex;align-items:center;gap:0.6rem;padding:0.6rem 0.8rem;border:1px solid var(--ov-04);border-radius:10px;background:rgba(255,255,255,0.02);">
+            <div style="flex:1;min-width:0;">
+                <div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(d.name)}</div>
+                <div style="font-size:0.72rem;color:var(--text-muted);">${escapeHtml(d.savedAt || '')}</div>
+            </div>
+            <button class="btn-success" onclick="loadGiftDesignById('${d.id}')" style="padding:0.35rem 0.7rem;font-size:0.75rem;"><i class="fas fa-upload"></i> Yükle</button>
+            <button class="btn-secondary" onclick="deleteGiftDesignById('${d.id}')" style="padding:0.35rem 0.6rem;font-size:0.75rem;color:#ff6b6b;" title="Sil"><i class="fas fa-trash"></i></button>
+        </div>`).join('');
+}
+function loadGiftDesignById(id) {
+    const entry = gdGetLibrary().find(d => d.id === id);
+    if (!entry) return;
+    giftDesign = { ...GD_DEFAULT, ...JSON.parse(JSON.stringify(entry.design)) };
+    if (!giftDesign.slots) giftDesign.slots = { top: [], left: [], right: [], bottom: [] };
+    try { localStorage.setItem('giftDesign', JSON.stringify(giftDesign)); } catch {}
+    gdSyncFormFromState();
+    gdLoadFont(giftDesign.font);
+    renderGiftDesignerSlots();
+    renderGiftDesignerPreview();
+    closeGiftDesignsModal();
+    showToast(`"${entry.name}" yüklendi`);
+}
+function deleteGiftDesignById(id) {
+    const entry = gdGetLibrary().find(d => d.id === id);
+    if (!entry) return;
+    if (!confirm(`"${entry.name}" silinsin mi?`)) return;
+    gdSetLibrary(gdGetLibrary().filter(d => d.id !== id));
+    renderSavedGiftDesigns();
+    showToast('Silindi');
 }
 
 async function exportGiftDesignPng() {
@@ -806,7 +1037,7 @@ function renderTopGifters(events) {
     const gifters = new Map();
     for (const e of events) {
         if (e.eventType !== 'gift') continue;
-        const user = e.data?.nickname || e.data?.user || 'Unknown';
+        const user = e.data?.nickname || e.data?.user || 'Bilinmeyen';
         const diamonds = e.data?.diamondCount || 0;
         const count = e.data?.giftCount || 1;
         const entry = gifters.get(user) || { user, diamonds: 0, gifts: 0 };
@@ -920,9 +1151,14 @@ function renderCompletedGoals(goals) {
 
 // Sidebar accordion toggle - defined early for HTML onclick
 function toggleAccordion(el) {
-    console.log('toggleAccordion called', el);
+    // When the sidebar is collapsed, accordion bodies are display:none and their
+    // sub-items (OBS katmanları vb.) are unreachable — clicking felt "dead". So if
+    // collapsed, expand the sidebar first, then open the clicked accordion.
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar && sidebar.classList.contains('collapsed')) {
+        toggleSidebar();
+    }
     var body = el.nextElementSibling;
-    console.log('body found:', body, body ? body.className : 'null');
     if (!body) return;
     var wasOpen = body.classList.contains('open');
     // close all
@@ -935,7 +1171,6 @@ function toggleAccordion(el) {
         body.classList.add('open');
         el.classList.add('open');
     }
-    console.log('body open now:', body.classList.contains('open'));
 }
 
 // Load profile data
@@ -1105,6 +1340,27 @@ const GIFT_PRESET_OPTIONS = [
     { value: 'preset:victory', label: '🏆 Victory' },
     { value: 'preset:legendary', label: '⚡ Legendary' },
     { value: 'preset:epic', label: '🎆 Epic' },
+    { value: 'preset:boop', label: '🔘 Boop' },
+    { value: 'preset:blip', label: '📟 Blip' },
+    { value: 'preset:bubble', label: '🫧 Baloncuk' },
+    { value: 'preset:twinkle', label: '🌟 Pırıltı' },
+    { value: 'preset:glassbell', label: '🔔 Cam Çan' },
+    { value: 'preset:arcade', label: '🕹️ Arcade' },
+    { value: 'preset:retro', label: '👾 Retro' },
+    { value: 'preset:powerup', label: '🔼 Power-up' },
+    { value: 'preset:levelup', label: '🆙 Level Up' },
+    { value: 'preset:laser', label: '🔫 Lazer' },
+    { value: 'preset:zap', label: '⚡ Zap' },
+    { value: 'preset:whoosh', label: '💨 Whoosh' },
+    { value: 'preset:magic', label: '🪄 Sihir' },
+    { value: 'preset:bonus', label: '🎁 Bonus' },
+    { value: 'preset:success', label: '✅ Başarı' },
+    { value: 'preset:drumroll', label: '🥁 Davul' },
+    { value: 'preset:gong', label: '🛕 Gong' },
+    { value: 'preset:siren', label: '🚨 Siren' },
+    { value: 'preset:alarm', label: '⏰ Alarm' },
+    { value: 'preset:heartbeat', label: '❤️ Kalp Atışı' },
+    { value: 'preset:jackpot', label: '🎰 Jackpot' },
 ];
 
 async function renderGiftSoundMap() {
@@ -1329,6 +1585,9 @@ async function loadSettings() {
 
 // Apply the side-effects of settings (called on load + each change).
 function applySettingEffects(s) {
+    // Theme — darkTheme === false means the user wants the light theme.
+    // (Backend wins over the early localStorage guess, then we re-cache it.)
+    applyTheme(s.darkTheme === false);
     // Verbose TikTok event console logging
     window.DEBUG_TIKTOK_EVENTS = (s.tiktokEventLogging === true);
     // OS launch-on-startup — sync the native login item with the saved flag
@@ -1347,6 +1606,10 @@ async function updateSetting(settingName, value) {
         console.error('Failed to update setting:', error);
     }
     // Immediate runtime effects
+    if (settingName === 'darkTheme') {
+        applyTheme(value === false);
+        showToast(value === false ? 'Açık tema açıldı' : 'Koyu tema açıldı');
+    }
     if (settingName === 'tiktokEventLogging') window.DEBUG_TIKTOK_EVENTS = (value === true);
     if (settingName === 'launchOnStartup' && window.api?.setLaunchOnStartup) {
         const r = await window.api.setLaunchOnStartup(value === true).catch(() => null);
@@ -1400,8 +1663,12 @@ function toggleSidebar() {
     const toggleIcon = document.getElementById('toggle-icon');
 
     sidebar.classList.toggle('collapsed');
+    // Mirror the state on the container so the (now external) toggle button can
+    // reposition itself to track the collapsed sidebar's right edge.
+    const collapsed = sidebar.classList.contains('collapsed');
+    document.getElementById('app-container')?.classList.toggle('sidebar-collapsed', collapsed);
 
-    if (sidebar.classList.contains('collapsed')) {
+    if (collapsed) {
         toggleIcon.classList.remove('fa-chevron-left');
         toggleIcon.classList.add('fa-chevron-right');
     } else {
@@ -1778,7 +2045,7 @@ function renderActionLog() {
     el.innerHTML = lastActionLog.slice(0, 15).map(l => `
         <div style="display:flex;gap:0.5rem;align-items:center;padding:0.35rem 0.6rem;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.72rem;">
             <span style="color:${l.ok ? '#ff2eb8' : '#ef4444'};font-size:0.8rem;">${l.ok ? '✓' : '✗'}</span>
-            <span style="color:#fff;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(l.giftName)} → <span style="color:#ffd700;">${escapeHtml(l.action.value)}</span></span>
+            <span style="color:#fff;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(l.giftName)} → <span style="color:var(--gold);">${escapeHtml(l.action.value)}</span></span>
             <span style="color:#9d8bbf;font-size:0.65rem;">${l.modTitle}</span>
             <span style="color:#9d8bbf;font-size:0.65rem;">${l.time.toLocaleTimeString('tr-TR')}</span>
         </div>`).join('');
@@ -1792,6 +2059,16 @@ async function testModShortcut(giftName) {
     const result = await window.api.executeAction(action);
     if (result.success) showToast(`🎮 ${giftName} → ${action.value} fire edildi`);
     else showToast('Fire hatası: ' + result.error, true);
+}
+
+// Resolve backend-relative media paths (e.g. "/uploads/mod-images/x.png").
+// The app runs from file://, so relative paths must be prefixed with the
+// backend origin or they resolve to file:///uploads/... and never load.
+function absBackendUrl(u) {
+    if (!u) return '';
+    if (/^(https?:|data:|file:)/i.test(u)) return u;
+    if (u.startsWith('/')) return BACKEND_URL + u;
+    return u;
 }
 
 async function loadMods() {
@@ -1855,7 +2132,7 @@ function displayMods(mods) {
 
     modsGrid.innerHTML = mods.map(mod => {
         const isInstalled = installedModIdSet.has(mod._id);
-        const img = mod.imageUrl || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400"><rect fill="%23101018" width="600" height="400"/></svg>';
+        const img = absBackendUrl(mod.imageUrl) || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400"><rect fill="%23101018" width="600" height="400"/></svg>';
         return `
             <div class="mod-card" onclick="openModDetail('${mod._id}')">
                 <div style="position:relative;">
@@ -1967,7 +2244,7 @@ function renderModDetailHero() {
     setText('md-game', mod.gameTitle || '—');
     setText('md-description', mod.description || '');
     const heroBg = document.getElementById('md-hero-bg');
-    if (heroBg && mod.imageUrl) heroBg.style.backgroundImage = `url('${mod.imageUrl.replace(/'/g, "\\'")}')`;
+    if (heroBg && mod.imageUrl) heroBg.style.backgroundImage = `url('${absBackendUrl(mod.imageUrl).replace(/'/g, "\\'")}')`;
     else if (heroBg) heroBg.style.backgroundImage = 'linear-gradient(135deg, #1a1a2e, #07030f)';
 
     // Install/uninstall button states
@@ -2594,18 +2871,6 @@ function startPerformanceMonitor() {
     }, 2000);
 }
 
-// Start monitor
-// TikTok Connection
-document.getElementById('btn-connect-tiktok')?.addEventListener('click', () => {
-    const username = document.getElementById('tiktok-username').value;
-    if (username) {
-        alert(`TikTok kullanıcısı @${username} bağlanıyor... (Simülasyon)`);
-        // In a real app, this would trigger the backend connection
-    } else {
-        alert('Lütfen bir kullanıcı adı girin!');
-    }
-});
-
 // TikTok Live Monitoring
 let liveStats = {
     comments: 0,
@@ -2669,13 +2934,72 @@ async function loadTikTokUsername() {
     }
 }
 
+// ── Inline edit of the TikTok username, right on the Live page ──────────
+// Previously the username was a read-only <span>; it could only be changed from
+// the Profile page, which testers couldn't discover. Now it's editable here too.
+function editTiktokUsername() {
+    const span = document.getElementById('tiktok-username-text');
+    const input = document.getElementById('tiktok-username-input');
+    const editBtn = document.getElementById('tiktok-username-edit');
+    const saveBtn = document.getElementById('tiktok-username-save');
+    if (!input) return;
+    input.value = (userTikTokUsername || '').replace(/^@+/, '');
+    if (span) span.style.display = 'none';
+    input.style.display = '';
+    if (editBtn) editBtn.style.display = 'none';
+    if (saveBtn) saveBtn.style.display = '';
+    input.focus();
+    input.select();
+    input.onkeydown = (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); saveTiktokUsername(); }
+        else if (e.key === 'Escape') { cancelTiktokUsernameEdit(); }
+    };
+}
+
+function cancelTiktokUsernameEdit() {
+    const span = document.getElementById('tiktok-username-text');
+    const input = document.getElementById('tiktok-username-input');
+    const editBtn = document.getElementById('tiktok-username-edit');
+    const saveBtn = document.getElementById('tiktok-username-save');
+    if (input) input.style.display = 'none';
+    if (saveBtn) saveBtn.style.display = 'none';
+    if (span) span.style.display = '';
+    if (editBtn) editBtn.style.display = '';
+}
+
+async function saveTiktokUsername() {
+    const input = document.getElementById('tiktok-username-input');
+    if (!input) return;
+    const username = input.value.trim().replace(/^@+/, '');
+    if (!username) { showToast('Kullanıcı adı boş olamaz', true); return; }
+    try {
+        const res = await window.api.updateTiktokUsername(username);
+        if (res.success) {
+            userTikTokUsername = username;
+            const span = document.getElementById('tiktok-username-text');
+            if (span) { span.textContent = '@' + username; span.style.color = '#a855f7'; }
+            const profileInput = document.getElementById('profile-tiktok-edit');
+            if (profileInput) profileInput.value = username;
+            cancelTiktokUsernameEdit();
+            showToast('TikTok kullanıcı adı güncellendi: @' + username);
+        } else {
+            showToast('Güncellenemedi: ' + (res.error || 'hata'), true);
+        }
+    } catch (e) {
+        showToast('Bağlantı hatası', true);
+    }
+}
+window.editTiktokUsername = editTiktokUsername;
+window.saveTiktokUsername = saveTiktokUsername;
+window.cancelTiktokUsernameEdit = cancelTiktokUsernameEdit;
+
 async function startLiveStream() {
     if (!userTikTokUsername) {
         alert('⚠️ TikTok kullanıcı adınız bulunamadı!\n\nLütfen önce Profil sayfasından TikTok kullanıcı adınızı ekleyin.');
         navigateTo('profile');
         return;
     }
-    
+
     try {
         const socketStatus = await window.api.getBackendSocketStatus();
         if (!socketStatus.connected) {
@@ -2689,12 +3013,98 @@ async function startLiveStream() {
         console.warn('⚠️ Session start failed:', err);
     }
 
-    connectToTikTokLive();
+    // Primary path: the app's NATIVE TikTok connector (main process).
+    // Events flow main → backend (rules/overlays/points) and main → renderer
+    // (feed/stats below) — no third-party websocket needed.
+    const username = userTikTokUsername.replace('@', '');
+    const statusDot = document.getElementById('connection-status-dot');
+    const statusText = document.getElementById('connection-status-text');
+    if (statusDot && statusText) {
+        statusDot.style.background = '#ffa500';
+        statusDot.style.boxShadow = '0 0 10px #ffa500';
+        statusText.textContent = 'Bağlanıyor...';
+    }
+    try {
+        const r = await window.api.connectTikTokLive(username);
+        if (!r?.success) throw new Error(r?.error || 'bağlanılamadı');
+        if (statusDot && statusText) {
+            statusDot.style.background = '#ff2eb8';
+            statusDot.style.boxShadow = '0 0 10px #ff2eb8';
+            statusText.textContent = 'Bağlı ✓';
+        }
+        const startBtn = document.getElementById('btn-start-live');
+        const stopBtn = document.getElementById('btn-stop-live');
+        if (startBtn) startBtn.style.display = 'none';
+        if (stopBtn) stopBtn.style.display = '';
+        addEventToFeed({ type: 'system', user: 'Sistem', message: `@${username} canlı yayınına bağlandı`, icon: '✅', color: '#ff2eb8' });
+    } catch (err) {
+        if (statusDot && statusText) {
+            statusDot.style.background = '#ef4444';
+            statusDot.style.boxShadow = '0 0 10px #ef4444';
+            statusText.textContent = 'Bağlanamadı';
+        }
+        addEventToFeed({ type: 'system', user: 'Sistem', message: `Bağlantı hatası: ${err.message} — kullanıcı canlı yayında mı?`, icon: '⚠️', color: '#ffd000' });
+    }
+}
+
+// ── Native connector → UI bridge ───────────────────────────────────────
+// main.js forwards events to the backend itself; here we only render the
+// feed + live counters. Registered once at startup.
+if (window.api?.onTikTokEvent) {
+    window.api.onTikTokEvent((msg) => {
+        const d = msg?.data || {};
+        const who = d.nickname || d.user || '';
+        switch (msg?.type) {
+            case 'chat':
+                liveStats.comments++;
+                addEventToFeed({ type: 'comment', user: who, message: d.comment || '', icon: '💬', color: '#22d3ee', profilePhoto: d.profilePicture });
+                break;
+            case 'gift': {
+                const n = d.repeatCount || 1;
+                liveStats.gifts += n;
+                addEventToFeed({ type: 'gift', user: who, message: `${d.giftName || 'Hediye'} ×${n}${d.diamondCount ? ` (💎${d.diamondCount * n})` : ''}`, icon: '🎁', color: '#ff2eb8' });
+                break;
+            }
+            case 'like':
+                liveStats.likes += d.likeCount || 1;
+                break; // sayaç yeter — feed'i beğeni seliyle boğma
+            case 'member':
+                liveStats.members++;
+                addEventToFeed({ type: 'member', user: who, message: 'yayına katıldı', icon: '👋', color: '#a855f7' });
+                break;
+            case 'follow':
+                addEventToFeed({ type: 'follow', user: who, message: 'takip etti! ➕', icon: '➕', color: '#48f0c8' });
+                break;
+            case 'share':
+                addEventToFeed({ type: 'share', user: who, message: 'yayını paylaştı 🔁', icon: '🔁', color: '#ffd000' });
+                break;
+            case 'roomUser':
+                liveStats.viewers = d.viewerCount || liveStats.viewers;
+                break;
+        }
+        updateLiveStats();
+    });
+}
+if (window.api?.onTikTokDisconnected) {
+    window.api.onTikTokDisconnected((info) => {
+        const statusDot = document.getElementById('connection-status-dot');
+        const statusText = document.getElementById('connection-status-text');
+        if (statusDot && statusText) {
+            statusDot.style.background = '#ef4444';
+            statusDot.style.boxShadow = '0 0 10px #ef4444';
+            statusText.textContent = 'Bağlantı Kesildi';
+        }
+        const startBtn = document.getElementById('btn-start-live');
+        const stopBtn = document.getElementById('btn-stop-live');
+        if (startBtn) startBtn.style.display = '';
+        if (stopBtn) stopBtn.style.display = 'none';
+        addEventToFeed({ type: 'system', user: 'Sistem', message: info?.reason || 'Yayın bağlantısı kesildi', icon: '🔌', color: '#ff2eb8' });
+    });
 }
 
 // Message handlers for different event types
 function handleChatMessage(data) {
-    const user = data?.user?.nickname || data?.user?.uniqueId || data?.nickname || 'Unknown';
+    const user = data?.user?.nickname || data?.user?.uniqueId || data?.nickname || 'Bilinmeyen';
     const comment = data?.comment || data?.message || data?.text || '';
 
     if (comment) {
@@ -2712,7 +3122,7 @@ function handleChatMessage(data) {
 }
 
 function handleGiftMessage(data) {
-    const user = data?.user?.nickname || data?.user?.uniqueId || data?.nickname || 'Unknown';
+    const user = data?.user?.nickname || data?.user?.uniqueId || data?.nickname || 'Bilinmeyen';
     const giftName = data?.giftName || data?.name || 'Gift';
     const giftCount = data?.repeatCount || data?.count || 1;
     const diamonds = data?.diamondCount || data?.value || 0;
@@ -2732,7 +3142,7 @@ function handleGiftMessage(data) {
 }
 
 function handleLikeMessage(data) {
-    const user = data?.user?.nickname || data?.user?.uniqueId || data?.nickname || 'Unknown';
+    const user = data?.user?.nickname || data?.user?.uniqueId || data?.nickname || 'Bilinmeyen';
     const likeCount = data?.likeCount || data?.count || 1;
     const totalLikes = data?.totalLikeCount || 0;
 
@@ -2750,7 +3160,7 @@ function handleLikeMessage(data) {
 }
 
 function handleMemberMessage(data) {
-    const user = data?.user?.nickname || data?.user?.uniqueId || data?.nickname || 'Unknown';
+    const user = data?.user?.nickname || data?.user?.uniqueId || data?.nickname || 'Bilinmeyen';
 
     console.log(`  👋 ${user} joined`);
     liveStats.members++;
@@ -2765,7 +3175,7 @@ function handleMemberMessage(data) {
 }
 
 function handleSocialMessage(data) {
-    const user = data?.user?.nickname || data?.user?.uniqueId || data?.nickname || 'Unknown';
+    const user = data?.user?.nickname || data?.user?.uniqueId || data?.nickname || 'Bilinmeyen';
     const action = data?.action || 'followed';
 
     console.log(`  ➕ ${user} ${action}`);
@@ -3172,6 +3582,9 @@ function handleTikTokEvent(msg) {
 }
 
 function disconnectTikTokLive() {
+    // Native connector (primary path)
+    window.api.disconnectTikTokLive?.().catch(() => {});
+    // Legacy Eulerstream WS (if it was ever opened)
     if (ws) {
         ws.close();
         ws = null;
@@ -3441,7 +3854,30 @@ const soundLibrary = {
     // Epic gift sounds
     victory: { frequencies: [523, 587, 659, 784, 880, 1047], duration: 1.5, type: 'sine', volume: 0.45 },
     legendary: { frequencies: [440, 554, 659, 880, 1047, 1319], duration: 1.8, type: 'triangle', volume: 0.45 },
-    epic: { frequencies: [392, 494, 587, 784, 988, 1175], duration: 2, type: 'sine', volume: 0.5 }
+    epic: { frequencies: [392, 494, 587, 784, 988, 1175], duration: 2, type: 'sine', volume: 0.5 },
+
+    // ── Extra synth sounds (library expansion) ──
+    boop: { frequency: 520, duration: 0.12, type: 'sine', volume: 0.28 },
+    blip: { frequency: 950, duration: 0.08, type: 'square', volume: 0.25 },
+    bubble: { frequencies: [600, 900, 1300], duration: 0.3, type: 'sine', volume: 0.28 },
+    twinkle: { frequencies: [1318, 1568, 2093], duration: 0.6, type: 'sine', volume: 0.3 },
+    glassbell: { frequencies: [1760, 2349], duration: 0.7, type: 'sine', volume: 0.3 },
+    arcade: { frequencies: [880, 1108, 1318], duration: 0.4, type: 'square', volume: 0.3 },
+    retro: { frequencies: [440, 660, 880, 660], duration: 0.55, type: 'square', volume: 0.3 },
+    powerup: { frequencies: [330, 440, 554, 660, 880], duration: 0.6, type: 'square', volume: 0.32 },
+    levelup: { frequencies: [392, 523, 659, 784, 1047], duration: 0.8, type: 'square', volume: 0.35 },
+    laser: { frequencies: [1400, 700, 300], duration: 0.3, type: 'sawtooth', volume: 0.3 },
+    zap: { frequencies: [1600, 400], duration: 0.18, type: 'sawtooth', volume: 0.3 },
+    whoosh: { frequencies: [200, 500, 900], duration: 0.45, type: 'sawtooth', volume: 0.28 },
+    magic: { frequencies: [1047, 1319, 1568, 2093, 2637], duration: 0.7, type: 'sine', volume: 0.32 },
+    bonus: { frequencies: [523, 784, 1047, 1319], duration: 0.7, type: 'triangle', volume: 0.38 },
+    success: { frequencies: [659, 880, 1175], duration: 0.5, type: 'sine', volume: 0.35 },
+    drumroll: { frequencies: [150, 150, 150, 150, 150, 150], duration: 0.8, type: 'triangle', volume: 0.3 },
+    gong: { frequencies: [110, 165, 220], duration: 1.6, type: 'sine', volume: 0.4 },
+    siren: { frequencies: [600, 900, 600, 900], duration: 1.0, type: 'sawtooth', volume: 0.3 },
+    alarm: { frequencies: [880, 660, 880, 660], duration: 0.8, type: 'square', volume: 0.3 },
+    heartbeat: { frequencies: [90, 70], duration: 0.5, type: 'sine', volume: 0.36 },
+    jackpot: { frequencies: [523, 659, 784, 1047, 1319, 1568, 2093], duration: 1.6, type: 'sine', volume: 0.45 }
 };
 
 // Play sound using Web Audio API
@@ -3601,29 +4037,30 @@ let currentOverlayContext = null; // { overlayType, subType, overlayDbId, overla
 let currentOverlayData = null;
 
 const overlayTypeMap = {
-    'goal-likes':       { overlayType: 'goal', subType: 'likes', title: 'Likes Hedefi', icon: '❤️' },
-    'goal-shares':      { overlayType: 'goal', subType: 'shares', title: 'Shares Hedefi', icon: '🔁' },
-    'goal-follows':     { overlayType: 'goal', subType: 'follows', title: 'Follows Hedefi', icon: '➕' },
-    'goal-viewers':     { overlayType: 'goal', subType: 'viewer_count', title: 'Viewer Count Hedefi', icon: '👁️' },
-    'goal-coins':       { overlayType: 'goal', subType: 'coins', title: 'Coins Earned Hedefi', icon: '🪙' },
-    'goal-subscribers': { overlayType: 'goal', subType: 'subscribers', title: 'New Subscribers Hedefi', icon: '⭐' },
-    'goal-custom1':     { overlayType: 'goal', subType: 'custom1', title: 'Custom Goal 1', icon: '🎯' },
-    'goal-custom2':     { overlayType: 'goal', subType: 'custom2', title: 'Custom Goal 2', icon: '🎯' },
-    'goal-custom3':     { overlayType: 'goal', subType: 'custom3', title: 'Custom Goal 3', icon: '🎯' },
-    'gift-alert':       { overlayType: 'gift-alert', subType: 'alert', title: 'Hediye Alert Overlay', icon: '🎁' },
-    'gift-ticker':      { overlayType: 'gift-alert', subType: 'ticker', title: 'Hediye Ticker', icon: '📜' },
+    'goal-likes':       { overlayType: 'goal', subType: 'likes', title: 'Beğeni Hedefi', icon: '❤️' },
+    'goal-shares':      { overlayType: 'goal', subType: 'shares', title: 'Paylaşım Hedefi', icon: '🔁' },
+    'goal-follows':     { overlayType: 'goal', subType: 'follows', title: 'Takip Hedefi', icon: '➕' },
+    'goal-viewers':     { overlayType: 'goal', subType: 'viewer_count', title: 'İzleyici Hedefi', icon: '👁️' },
+    'goal-coins':       { overlayType: 'goal', subType: 'coins', title: 'Kazanılan Coin Hedefi', icon: '🪙' },
+    'goal-subscribers': { overlayType: 'goal', subType: 'subscribers', title: 'Yeni Abone Hedefi', icon: '⭐' },
+    'goal-custom1':     { overlayType: 'goal', subType: 'custom1', title: 'Özel Hedef 1', icon: '🎯' },
+    'goal-custom2':     { overlayType: 'goal', subType: 'custom2', title: 'Özel Hedef 2', icon: '🎯' },
+    'goal-custom3':     { overlayType: 'goal', subType: 'custom3', title: 'Özel Hedef 3', icon: '🎯' },
+    'gift-alert':       { overlayType: 'gift-alert', subType: 'alert', title: 'Hediye Uyarısı', icon: '🎁' },
+    'gift-ticker':      { overlayType: 'gift-alert', subType: 'ticker', title: 'Hediye Şeridi', icon: '📜' },
     'lastx-follower':   { overlayType: 'last-x', subType: 'follows', title: 'Son Takipçi', icon: '➕' },
     'lastx-gift':       { overlayType: 'last-x', subType: 'gifts', title: 'Son Hediye', icon: '🎁' },
     'lastx-like':       { overlayType: 'last-x', subType: 'likes', title: 'Son Beğenen', icon: '❤️' },
     'lastx-share':      { overlayType: 'last-x', subType: 'shares', title: 'Son Paylaşan', icon: '🔁' },
-    'lb-gifters':       { overlayType: 'leaderboard', subType: 'gifts', title: 'Top Gifters', icon: '🏆' },
-    'lb-likers':        { overlayType: 'leaderboard', subType: 'likes', title: 'Top Likers', icon: '❤️' },
-    'chart-viewers':    { overlayType: 'chart', subType: 'viewer_count', title: 'Viewer Grafiği', icon: '📊' },
-    'dock-chat':        { overlayType: 'chat', subType: 'chat', title: 'Chat Dock', icon: '💬' },
-    'dock-events':      { overlayType: 'event-feed', subType: 'events', title: 'Event Feed Dock', icon: '📋' },
-    'subathon-timer':   { overlayType: 'subathon', subType: 'timer', title: 'Subathon Timer', icon: '⏱️' },
+    'lb-gifters':       { overlayType: 'leaderboard', subType: 'gifts', title: 'En Çok Hediye', icon: '🏆' },
+    'lb-likers':        { overlayType: 'leaderboard', subType: 'likes', title: 'En Çok Beğeni', icon: '❤️' },
+    'lb-points':        { overlayType: 'leaderboard', subType: 'points', title: 'Sadakat Tablosu', icon: '💎' },
+    'chart-viewers':    { overlayType: 'chart', subType: 'viewer_count', title: 'İzleyici Grafiği', icon: '📊' },
+    'dock-chat':        { overlayType: 'chat', subType: 'chat', title: 'Sohbet Paneli', icon: '💬' },
+    'dock-events':      { overlayType: 'event-feed', subType: 'events', title: 'Olay Akışı Paneli', icon: '📋' },
+    'subathon-timer':   { overlayType: 'subathon', subType: 'timer', title: 'Subathon Sayacı', icon: '⏱️' },
     'wheel-actions':    { overlayType: 'wheel', subType: 'actions', title: 'Şans Çarkı', icon: '🎡' },
-    'my-actions':       { overlayType: 'actions-feed', subType: 'actions', title: 'MyActions (Aksiyon Ekranı)', icon: '⚡' },
+    'my-actions':       { overlayType: 'actions-feed', subType: 'actions', title: 'Aksiyon Ekranı', icon: '⚡' },
     'interaction-slider': { overlayType: 'interaction-slider', subType: 'slider', title: 'Etkileşim Şeridi', icon: '🎞️' },
     'gift-cannon':      { overlayType: 'gift-cannon', subType: 'particles', title: 'Hediye Topu', icon: '💥' },
     'like-fountain':    { overlayType: 'like-fountain', subType: 'particles', title: 'Kalp Çeşmesi', icon: '💗' },
@@ -3653,7 +4090,12 @@ async function navigateOverlay(key) {
     // Clear active states
     document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
     document.querySelectorAll('.nav-sub-item').forEach(i => i.classList.remove('active'));
-    event.target.closest('.nav-sub-item')?.classList.add('active');
+    if (typeof event !== 'undefined' && event?.target) {
+        event.target.closest('.nav-sub-item')?.classList.add('active');
+    } else {
+        // Called programmatically — highlight the matching sidebar item by its handler
+        document.querySelector(`.nav-sub-item[onclick*="navigateOverlay('${key}')"]`)?.classList.add('active');
+    }
 
     // Show overlay page
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -4014,16 +4456,32 @@ function openOverlayUrl() {
     window.api.openExternal(url);
 }
 
-// Style carousel
+// Goal theme normaliser — mirrors normalizeGoalTheme() in the web overlay so
+// legacy saved overlays still map onto a nice modern theme.
+var GOAL_THEMES = ['neon','aurora','fire','holo','gold','cyber','galaxy','synth','glass','candy','electric','minimal'];
+function normalizeGoalThemeJS(t) {
+    var v = (t || '').toLowerCase();
+    if (GOAL_THEMES.indexOf(v) !== -1) return v;
+    if (v === 'gaming') return 'cyber';
+    if (v === 'gradient') return 'holo';
+    return 'neon';
+}
+
+// Style carousel — 12 premium animated presets
 var currentStyleIndex = 0;
 var overlayStyles = [
-    { name: 'Neon', theme: 'neon', barColor: '#ff2eb8', bgColor: '#000000', textColor: '#ffffff' },
-    { name: 'Minimal', theme: 'minimal', barColor: '#4fc3f7', bgColor: '#1a1a2e', textColor: '#e0e0e0' },
-    { name: 'Gaming', theme: 'gaming', barColor: '#ff2eb8', bgColor: '#0a0a1a', textColor: '#ffffff' },
-    { name: 'Gradient', theme: 'gradient', barColor: '#a855f7', bgColor: '#0d0d18', textColor: '#ffffff' },
-    { name: 'Glass', theme: 'glass', barColor: '#a855f7', bgColor: '#111122', textColor: '#ffffff' },
-    { name: 'Fire', theme: 'neon', barColor: '#ff5722', bgColor: '#1a0a00', textColor: '#ffccbc' },
-    { name: 'Gold', theme: 'gradient', barColor: '#ffd700', bgColor: '#1a1500', textColor: '#fff8e1' }
+    { name: 'Neon Pulse', theme: 'neon',     barColor: '#ff2eb8', bgColor: '#08030f', textColor: '#ffffff', animation: 'smooth' },
+    { name: 'Aurora',     theme: 'aurora',   barColor: '#48f0c8', bgColor: '#060c14', textColor: '#eaffff', animation: 'smooth' },
+    { name: 'Fire / Lava',theme: 'fire',     barColor: '#ff6b1a', bgColor: '#120602', textColor: '#ffd9b3', animation: 'pulse'  },
+    { name: 'Rainbow Holo',theme: 'holo',    barColor: '#ff2ec4', bgColor: '#0a0812', textColor: '#ffffff', animation: 'smooth' },
+    { name: 'Gold Luxury',theme: 'gold',     barColor: '#ffd700', bgColor: '#1a1502', textColor: '#ffe9a8', animation: 'smooth' },
+    { name: 'Cyberpunk',  theme: 'cyber',    barColor: '#22d3ee', bgColor: '#04080e', textColor: '#22d3ee', animation: 'smooth' },
+    { name: 'Galaxy',     theme: 'galaxy',   barColor: '#a855f7', bgColor: '#05030f', textColor: '#f0e7ff', animation: 'smooth' },
+    { name: 'Synthwave',  theme: 'synth',    barColor: '#ff2e88', bgColor: '#1e0828', textColor: '#ffffff', animation: 'bounce' },
+    { name: 'Glass',      theme: 'glass',    barColor: '#a855f7', bgColor: '#111122', textColor: '#ffffff', animation: 'smooth' },
+    { name: 'Candy',      theme: 'candy',    barColor: '#ff5fa2', bgColor: '#1a0d14', textColor: '#ffffff', animation: 'bounce' },
+    { name: 'Electric',   theme: 'electric', barColor: '#3b82f6', bgColor: '#030814', textColor: '#dbeafe', animation: 'pulse'  },
+    { name: 'Minimal',    theme: 'minimal',  barColor: '#ff2eb8', bgColor: '#0f0c16', textColor: '#f5f5fa', animation: 'smooth' }
 ];
 
 function prevOverlayStyle() {
@@ -4038,12 +4496,15 @@ function nextOverlayStyle() {
 
 function applyCurrentStyle() {
     var s = overlayStyles[currentStyleIndex];
-    document.getElementById('ov-theme').value = s.theme;
+    var themeSel = document.getElementById('ov-theme');
+    if (themeSel) themeSel.value = s.theme;
     document.getElementById('ov-barColor').value = s.barColor;
     document.getElementById('ov-bgColor').value = s.bgColor;
     document.getElementById('ov-textColor').value = s.textColor;
+    var animSel = document.getElementById('ov-animation');
+    if (animSel && s.animation) animSel.value = s.animation;
     var label = document.getElementById('ov-style-label');
-    if (label) label.textContent = 'Style: ' + (currentStyleIndex + 1) + '/' + overlayStyles.length;
+    if (label) label.textContent = s.name + ' · ' + (currentStyleIndex + 1) + '/' + overlayStyles.length;
     updateOverlayPreview();
 }
 
@@ -4213,80 +4674,69 @@ function updateOverlayPreview() {
     if (type === 'goal') {
         const pct = target > 0 ? Math.min((current / target) * 100, 100) : 0;
         const done = current >= target && target > 0;
+        const gt = normalizeGoalThemeJS(s.theme);
+        const emberFx = gt === 'fire' ? '<span class="ember" style="left:20%"></span><span class="ember" style="left:55%;animation-delay:.6s"></span><span class="ember" style="left:82%;animation-delay:1.1s"></span>' : '';
+        const sparkFx = gt === 'gold' ? '<span class="spark" style="left:30%;top:28%"></span><span class="spark" style="left:68%;top:62%;animation-delay:.8s"></span>' : '';
         preview.innerHTML = `
-            <div style="padding:16px 20px;border-radius:${s.borderRadius}px;min-width:280px;max-width:100%;${themeStyles.container}">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                    <div style="color:${s.textColor};font-size:${s.fontSize}px;font-weight:700;${themeStyles.title}">${title}</div>
-                    ${s.showNumbers ? `<div style="color:${s.barColor};font-size:${s.fontSize*0.75}px;font-weight:600;${themeStyles.numbers}">${current.toLocaleString()} / ${target.toLocaleString()}</div>` : ''}
+            <div class="sg ${gt}${done ? ' is-done' : ''}" style="--bar:${s.barColor};--radius:${s.borderRadius}px;border-radius:${s.borderRadius}px;">
+                <div class="sg-head">
+                    <span class="sg-title" style="font-size:${s.fontSize}px;">${title}</span>
+                    ${s.showNumbers ? `<span class="sg-nums" style="font-size:${Math.round(s.fontSize * 0.74)}px;">${current.toLocaleString('tr-TR')} / ${target.toLocaleString('tr-TR')}</span>` : ''}
                 </div>
-                <div style="height:${s.theme==='gaming'?28:22}px;border-radius:${s.borderRadius}px;background:${s.theme==='glass'?'rgba(255,255,255,0.06)':'rgba(255,255,255,0.08)'};overflow:hidden;position:relative;">
-                    <div style="height:100%;width:${pct}%;border-radius:${s.borderRadius}px;background:linear-gradient(90deg,${s.barColor},${s.barColor}cc);${themeStyles.bar};transition:width 0.5s ease;position:relative;"></div>
-                    ${s.showPercentage ? `<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-size:12px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,0.9)">${pct.toFixed(0)}%</div>` : ''}
+                <div class="sg-track">
+                    <div class="sg-fill shine ${s.animation || 'smooth'}" style="width:${pct}%;">${emberFx}${sparkFx}</div>
+                    ${pct > 1 && pct < 100 ? `<span class="sg-tip" style="left:calc(${pct}% - 5px)"></span>` : ''}
+                    ${s.showPercentage ? `<span class="sg-pct">${pct.toFixed(0)}%</span>` : ''}
                 </div>
-                ${done ? `<div style="text-align:center;margin-top:8px;color:${s.barColor};font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">TAMAMLANDI!</div>` : ''}
+                ${done ? '<div class="sg-done-badge">★ TAMAMLANDI ★</div>' : ''}
             </div>`;
     } else if (type === 'gift-alert') {
+        const gt = normalizeGoalThemeJS(s.theme);
         preview.innerHTML = `
-            <div style="text-align:center;padding:20px;border-radius:${s.borderRadius}px;${themeStyles.container}">
-                <div style="font-size:48px;margin-bottom:12px;">🎁</div>
-                <div style="color:${s.textColor};font-size:${s.fontSize}px;font-weight:700;">Kullanıcı</div>
-                <div style="color:${s.barColor};font-size:${s.fontSize*0.8}px;font-weight:600;">Gül x1</div>
+            <div class="ov-card ${gt} ov-glow ga-pop" style="--bar:${s.barColor};--radius:${s.borderRadius}px;border-radius:${s.borderRadius}px;padding:24px 34px;text-align:center;min-width:280px;">
+                <div class="ga-rays" style="--c:${s.barColor}"></div><div class="ga-halo" style="--c:${s.barColor}"></div>
+                <div style="position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;">
+                    <div class="ga-icon" style="filter:drop-shadow(0 0 18px ${s.barColor}cc);font-size:72px;line-height:1;">🌹</div>
+                    <div class="ov-title ga-user" style="color:${s.textColor};font-size:${s.fontSize}px;font-weight:900;">Kullanıcı</div>
+                    <div class="ga-gift" style="font-size:${Math.round(s.fontSize*0.86)}px;"><span class="ov-accent">Gül</span><span class="ga-mult" style="--c:${s.barColor}">×5</span></div>
+                    <div class="ga-diamonds" style="font-size:${Math.round(s.fontSize*0.66)}px;">💎 5</div>
+                </div>
             </div>`;
     } else if (type === 'last-x') {
+        const gt = normalizeGoalThemeJS(s.theme);
         preview.innerHTML = `
-            <div style="padding:16px 20px;border-radius:${s.borderRadius}px;min-width:240px;${themeStyles.container};border:1px solid ${s.barColor}44;">
-                <div style="color:${s.barColor};font-size:12px;text-transform:uppercase;letter-spacing:2px;font-weight:700;margin-bottom:8px;">${title}</div>
-                <div style="color:${s.textColor};font-size:${s.fontSize}px;font-weight:700;">Kullanıcı Adı</div>
+            <div class="ov-card ${gt}" style="--bar:${s.barColor};--radius:${s.borderRadius}px;border-radius:${s.borderRadius}px;padding:16px 20px;min-width:240px;">
+                <div class="lx-head ov-accent"><span>🎯</span><span>${title}</span></div>
+                <div class="lx-body"><div style="flex:1;min-width:0;"><div class="ov-title lx-user" style="color:${s.textColor};font-size:${s.fontSize}px;">Kullanıcı Adı</div></div></div>
             </div>`;
     } else if (type === 'leaderboard' || type === 'chart') {
-        const medals = ['👑','🥈','🥉'];
-        let rows = '';
-        for (let i = 0; i < 3; i++) {
-            rows += `<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
-                <div style="color:${s.barColor};font-size:18px;font-weight:700;width:28px;text-align:center;">${medals[i]}</div>
-                <div style="color:${s.textColor};font-size:15px;font-weight:600;flex:1;">Kullanıcı ${i+1}</div>
-                <div style="color:${s.barColor};font-size:15px;font-weight:700;">${100-i*20}</div>
-            </div>`;
+        const gt = normalizeGoalThemeJS(s.theme);
+        if (type === 'chart') {
+            const data = [['Kullanıcı 1', 100], ['Kullanıcı 2', 62], ['Kullanıcı 3', 35]];
+            const rows = data.map(([u, w]) => `<div class="ch-row"><div class="ch-user" style="color:${s.textColor}">${u}</div><div class="ch-track"><div class="ch-fill ov-shine" style="width:${w}%"></div></div><div class="ch-score ov-accent">${(w * 40).toLocaleString('tr-TR')}</div></div>`).join('');
+            preview.innerHTML = `<div class="ov-card ${gt}" style="--bar:${s.barColor};--radius:${s.borderRadius}px;border-radius:${s.borderRadius}px;padding:16px 20px;min-width:320px;"><div class="ch-head ov-accent">📊 ${title}</div>${rows}</div>`;
+        } else {
+            const medals = ['👑', '🥈', '🥉']; const widths = [100, 64, 41];
+            const rows = medals.map((m, i) => `<div class="lb-row${i === 0 ? ' lb-first' : ''}"><div class="lb-rankbar" style="width:${widths[i]}%"></div><div class="lb-rank lb-r${i + 1}">${m}</div><div class="lb-user" style="color:${s.textColor}">Kullanıcı ${i + 1}</div><div class="lb-score ov-accent">${(12450 - i * 4000).toLocaleString('tr-TR')}</div></div>`).join('');
+            preview.innerHTML = `<div class="ov-card ${gt}" style="--bar:${s.barColor};--radius:${s.borderRadius}px;border-radius:${s.borderRadius}px;padding:16px 18px;min-width:320px;"><div class="lb-head ov-accent">🏆 ${title}</div>${rows}</div>`;
         }
-        preview.innerHTML = `
-            <div style="padding:16px 20px;border-radius:${s.borderRadius}px;min-width:280px;${themeStyles.container};border:1px solid ${s.barColor}44;">
-                <div style="color:${s.barColor};font-size:14px;text-transform:uppercase;letter-spacing:2px;font-weight:700;margin-bottom:12px;">${title}</div>
-                ${rows}
-            </div>`;
     } else if (type === 'chat') {
-        const msgs = [
-            { user: 'Kullanıcı1', text: 'Merhaba!' },
-            { user: 'Kullanıcı2', text: 'Harika yayın!' },
-            { user: 'Kullanıcı3', text: 'Devam et!' }
-        ];
-        let html = '';
-        msgs.forEach(m => {
-            html += `<div style="padding:6px 0;display:flex;gap:8px;"><span style="color:${s.barColor};font-weight:700;font-size:14px;">${m.user}:</span><span style="color:${s.textColor};font-size:14px;">${m.text}</span></div>`;
-        });
-        preview.innerHTML = `
-            <div style="padding:12px;border-radius:${s.borderRadius}px;min-width:280px;max-width:100%;${themeStyles.container};border:1px solid rgba(255,255,255,0.08);">
-                ${html}
-            </div>`;
+        const gt = normalizeGoalThemeJS(s.theme);
+        const msgs = [['Kullanıcı1', 'Merhaba! 👋'], ['Kullanıcı2', 'Harika yayın!'], ['Kullanıcı3', 'Devam et 🔥']];
+        const html = msgs.map(([u, t]) => `<div class="dk-chatrow"><div class="dk-msg" style="font-size:14px;"><span class="ov-accent dk-user">${u}</span><span style="color:${s.textColor}">${t}</span></div></div>`).join('');
+        preview.innerHTML = `<div class="ov-card ${gt}" style="--bar:${s.barColor};--radius:${s.borderRadius}px;border-radius:${s.borderRadius}px;padding:12px;min-width:280px;"><div class="dk-head ov-accent">💬 ${title}</div><div class="dk-scroll">${html}</div></div>`;
     } else if (type === 'event-feed') {
-        const events = [
-            { icon: '🎁', user: 'Kullanıcı1', text: 'Gül gönderdi' },
-            { icon: '❤️', user: 'Kullanıcı2', text: 'Beğendi' },
-            { icon: '➕', user: 'Kullanıcı3', text: 'Takip etti' }
-        ];
-        let html = '';
-        events.forEach(e => {
-            html += `<div style="padding:6px 0;display:flex;gap:8px;border-bottom:1px solid rgba(255,255,255,0.05);"><span style="font-size:16px;">${e.icon}</span><span style="color:${s.textColor};font-size:14px;"><b style="color:${s.barColor};">${e.user}</b> ${e.text}</span></div>`;
-        });
-        preview.innerHTML = `
-            <div style="padding:12px;border-radius:${s.borderRadius}px;min-width:280px;max-width:100%;${themeStyles.container};border:1px solid rgba(255,255,255,0.08);">
-                ${html}
-            </div>`;
+        const gt = normalizeGoalThemeJS(s.theme);
+        const events = [['🎁', 'Kullanıcı1', 'Gül gönderdi ×5'], ['❤️', 'Kullanıcı2', 'Beğendi'], ['➕', 'Kullanıcı3', 'Takip etti']];
+        const html = events.map(([ic, u, t]) => `<div class="dk-feedrow"><span class="dk-emoji">${ic}</span><div style="flex:1;min-width:0;font-size:14px;color:${s.textColor}"><b class="ov-accent" style="margin-right:5px;">${u}</b><span>${t}</span></div></div>`).join('');
+        preview.innerHTML = `<div class="ov-card ${gt}" style="--bar:${s.barColor};--radius:${s.borderRadius}px;border-radius:${s.borderRadius}px;padding:12px;min-width:280px;"><div class="dk-head ov-accent">📋 ${title}</div><div class="dk-scroll">${html}</div></div>`;
     } else if (type === 'subathon') {
+        const gt = normalizeGoalThemeJS(s.theme);
         preview.innerHTML = `
-            <div style="padding:20px 32px;border-radius:${s.borderRadius}px;text-align:center;${themeStyles.container};">
-                <div style="color:${s.barColor};font-size:13px;text-transform:uppercase;letter-spacing:3px;font-weight:800;margin-bottom:8px;">⏱️ ${title}</div>
-                <div style="color:${s.textColor};font-size:${Math.max(40, s.fontSize*2.2)}px;font-weight:900;letter-spacing:2px;font-variant-numeric:tabular-nums;text-shadow:0 0 14px ${s.barColor}88;">01:00:00</div>
-                <div style="color:${s.textColor};opacity:0.6;font-size:12px;margin-top:8px;">+5 dk eklendi</div>
+            <div class="ov-card ${gt} ov-glow" style="--bar:${s.barColor};--radius:${s.borderRadius}px;border-radius:${s.borderRadius}px;padding:22px 40px;text-align:center;min-width:320px;">
+                <div class="sub-label ov-accent">⏱️ ${title}</div>
+                <div class="sub-time sub-tick" style="color:${s.textColor};font-size:${Math.max(44, s.fontSize * 2.2)}px;">01:00:00</div>
+                <div class="sub-foot"><span class="sub-chip sub-added">+5 dk eklendi</span></div>
             </div>`;
     } else if (type === 'wheel') {
         preview.innerHTML = `
@@ -4390,15 +4840,15 @@ function getThemeCSS(s) {
 
 // Gallery
 const galleryTemplates = [
-    { name: 'Neon Like Goal', overlayType: 'goal', subType: 'likes', style: { barColor:'#ff2eb8', textColor:'#fff', backgroundColor:'rgba(0,0,0,0.6)', fontSize:18, borderRadius:12, theme:'neon', animation:'smooth', showPercentage:true, showNumbers:true }, targetValue: 500 },
-    { name: 'Gaming Follow Goal', overlayType: 'goal', subType: 'follows', style: { barColor:'#ff2eb8', textColor:'#fff', backgroundColor:'rgba(0,0,0,0.7)', fontSize:20, borderRadius:8, theme:'gaming', animation:'bounce', showPercentage:true, showNumbers:true }, targetValue: 200 },
-    { name: 'Glass Share Goal', overlayType: 'goal', subType: 'shares', style: { barColor:'#a855f7', textColor:'#fff', backgroundColor:'rgba(255,255,255,0.08)', fontSize:16, borderRadius:16, theme:'glass', animation:'smooth', showPercentage:true, showNumbers:true }, targetValue: 100 },
-    { name: 'Gradient Gift Alert', overlayType: 'gift-alert', subType: 'alert', style: { barColor:'#ffd700', textColor:'#fff', backgroundColor:'rgba(0,0,0,0.5)', fontSize:22, borderRadius:16, theme:'gradient', animation:'bounce' }, config: { duration: 5 } },
-    { name: 'Minimal Leaderboard', overlayType: 'leaderboard', subType: 'gifts', style: { barColor:'#ff2eb8', textColor:'#fff', backgroundColor:'rgba(0,0,0,0.6)', fontSize:16, borderRadius:12, theme:'minimal' }, config: { maxItems: 5 } },
-    { name: 'Neon Chat Dock', overlayType: 'chat', subType: 'chat', style: { barColor:'#ff2eb8', textColor:'#fff', backgroundColor:'rgba(0,0,0,0.5)', fontSize:14, borderRadius:12, theme:'neon' }, config: { maxMessages: 20 } },
-    { name: 'Glass Event Feed', overlayType: 'event-feed', subType: 'events', style: { barColor:'#a855f7', textColor:'#fff', backgroundColor:'rgba(255,255,255,0.08)', fontSize:14, borderRadius:12, theme:'glass' }, config: { maxEvents: 15 } },
-    { name: 'Gaming Last Follower', overlayType: 'last-x', subType: 'follows', style: { barColor:'#ff2eb8', textColor:'#fff', backgroundColor:'rgba(0,0,0,0.7)', fontSize:24, borderRadius:8, theme:'gaming' } },
-    { name: 'Gradient Viewer Chart', overlayType: 'chart', subType: 'viewer_count', style: { barColor:'#a855f7', textColor:'#fff', backgroundColor:'rgba(0,0,0,0.5)', fontSize:16, borderRadius:12, theme:'gradient' }, config: { maxItems: 5 } },
+    { name: 'Neon Beğeni Hedefi', overlayType: 'goal', subType: 'likes', style: { barColor:'#ff2eb8', textColor:'#fff', backgroundColor:'rgba(0,0,0,0.6)', fontSize:18, borderRadius:12, theme:'neon', animation:'smooth', showPercentage:true, showNumbers:true }, targetValue: 500 },
+    { name: 'Gaming Takip Hedefi', overlayType: 'goal', subType: 'follows', style: { barColor:'#ff2eb8', textColor:'#fff', backgroundColor:'rgba(0,0,0,0.7)', fontSize:20, borderRadius:8, theme:'gaming', animation:'bounce', showPercentage:true, showNumbers:true }, targetValue: 200 },
+    { name: 'Cam Paylaşım Hedefi', overlayType: 'goal', subType: 'shares', style: { barColor:'#a855f7', textColor:'#fff', backgroundColor:'rgba(255,255,255,0.08)', fontSize:16, borderRadius:16, theme:'glass', animation:'smooth', showPercentage:true, showNumbers:true }, targetValue: 100 },
+    { name: 'Degrade Hediye Uyarısı', overlayType: 'gift-alert', subType: 'alert', style: { barColor:'#ffd700', textColor:'#fff', backgroundColor:'rgba(0,0,0,0.5)', fontSize:22, borderRadius:16, theme:'gradient', animation:'bounce' }, config: { duration: 5 } },
+    { name: 'Minimal Liderlik Tablosu', overlayType: 'leaderboard', subType: 'gifts', style: { barColor:'#ff2eb8', textColor:'#fff', backgroundColor:'rgba(0,0,0,0.6)', fontSize:16, borderRadius:12, theme:'minimal' }, config: { maxItems: 5 } },
+    { name: 'Neon Sohbet Paneli', overlayType: 'chat', subType: 'chat', style: { barColor:'#ff2eb8', textColor:'#fff', backgroundColor:'rgba(0,0,0,0.5)', fontSize:14, borderRadius:12, theme:'neon' }, config: { maxMessages: 20 } },
+    { name: 'Cam Olay Akışı', overlayType: 'event-feed', subType: 'events', style: { barColor:'#a855f7', textColor:'#fff', backgroundColor:'rgba(255,255,255,0.08)', fontSize:14, borderRadius:12, theme:'glass' }, config: { maxEvents: 15 } },
+    { name: 'Gaming Son Takipçi', overlayType: 'last-x', subType: 'follows', style: { barColor:'#ff2eb8', textColor:'#fff', backgroundColor:'rgba(0,0,0,0.7)', fontSize:24, borderRadius:8, theme:'gaming' } },
+    { name: 'Degrade İzleyici Grafiği', overlayType: 'chart', subType: 'viewer_count', style: { barColor:'#a855f7', textColor:'#fff', backgroundColor:'rgba(0,0,0,0.5)', fontSize:16, borderRadius:12, theme:'gradient' }, config: { maxItems: 5 } },
 ];
 
 function loadGalleryTemplates() {
@@ -4406,21 +4856,39 @@ function loadGalleryTemplates() {
     if (!grid) return;
     grid.innerHTML = '';
 
-    galleryTemplates.forEach((tmpl, idx) => {
-        const themeColors = { neon:'#ff2eb8', minimal:'#9d8bbf', gaming:'#ff2eb8', gradient:'#a855f7', glass:'#a855f7' };
-        const color = tmpl.style.barColor || themeColors[tmpl.style.theme] || '#ff2eb8';
+    const typeLabels = {
+        'goal':'Hedef', 'gift-alert':'Hediye Uyarısı', 'leaderboard':'Liderlik',
+        'chat':'Sohbet Paneli', 'event-feed':'Olay Akışı', 'last-x':'Son Kişi', 'chart':'Grafik'
+    };
+
+    galleryTemplates.forEach((tmpl) => {
+        const s = tmpl.style || {};
+        const bar = s.barColor || '#ff2eb8';
+        const radius = s.borderRadius || 12;
+        const gt = normalizeGoalThemeJS(s.theme); // real animated theme class (neon/cyber/holo/fire/gold/glass…)
+        const emberFx = gt === 'fire' ? '<span class="ember" style="left:24%"></span><span class="ember" style="left:64%;animation-delay:.6s"></span>' : '';
+        const sparkFx = gt === 'gold' ? '<span class="spark" style="left:34%;top:30%"></span><span class="spark" style="left:72%;top:58%;animation-delay:.7s"></span>' : '';
         const card = document.createElement('div');
         card.className = 'gallery-card';
         card.onclick = () => applyGalleryTemplate(tmpl);
+        // Real, animated, themed mini goal-bar preview (was a static fake bar that
+        // ignored the template's theme — every card looked identical & "flat").
         card.innerHTML = `
-            <div class="gallery-card-preview" style="background:linear-gradient(135deg,${color}11,${color}22);">
-                <div style="width:80%;height:20px;border-radius:10px;background:rgba(255,255,255,0.08);overflow:hidden;position:relative;">
-                    <div style="width:65%;height:100%;border-radius:10px;background:linear-gradient(90deg,${color},${color}cc);box-shadow:0 0 10px ${color}44;"></div>
+            <div class="gallery-card-preview" style="background:linear-gradient(135deg,${bar}11,${bar}22);overflow:hidden;">
+                <div class="sg ${gt}" style="--bar:${bar};--radius:${radius}px;border-radius:${radius}px;width:90%;padding:9px 12px;pointer-events:none;">
+                    <div class="sg-head">
+                        <span class="sg-title" style="font-size:12px;">${tmpl.name}</span>
+                        <span class="sg-nums" style="font-size:9px;">325 / 500</span>
+                    </div>
+                    <div class="sg-track">
+                        <div class="sg-fill shine smooth" style="width:65%;">${emberFx}${sparkFx}</div>
+                        <span class="sg-pct">65%</span>
+                    </div>
                 </div>
             </div>
             <div class="gallery-card-info">
                 <div class="gallery-card-title">${tmpl.name}</div>
-                <div class="gallery-card-desc">${tmpl.overlayType} - ${tmpl.style.theme} tema</div>
+                <div class="gallery-card-desc">${typeLabels[tmpl.overlayType] || tmpl.overlayType} · ${s.theme} tema</div>
             </div>`;
         grid.appendChild(card);
     });
@@ -4578,7 +5046,7 @@ handleTikTokEvent = function(msg) {
     const eventData = msg.data || msg;
 
     if (eventType === 'WebcastGiftMessage') {
-        const user = eventData?.user?.nickname || eventData?.user?.uniqueId || 'Unknown';
+        const user = eventData?.user?.nickname || eventData?.user?.uniqueId || 'Bilinmeyen';
         // Robust gift-name resolution (same cascade the main feed uses) so
         // the scanner doesn't show "Hediye"/0 on stripped payloads.
         const giftId = eventData?.giftId ?? eventData?.gift?.id ?? null;
@@ -4752,13 +5220,13 @@ const WHEEL_PRESETS = {
     ],
     rewards: [
         { label: 'Takip', weight: 2 },
-        { label: 'Like spam', weight: 2 },
-        { label: 'Selam ver', weight: 3 },
-        { label: 'Mesaj oku', weight: 2 },
-        { label: 'Şaka yap', weight: 1 },
-        { label: 'Bonus puan', weight: 1 },
-        { label: 'Soru sor', weight: 1 },
-        { label: 'JACKPOT', weight: 0.3 },
+        { label: 'Beğeni Yağmuru', weight: 2 },
+        { label: 'Selam Ver', weight: 3 },
+        { label: 'Mesaj Oku', weight: 2 },
+        { label: 'Şaka Yap', weight: 1 },
+        { label: 'Bonus Puan', weight: 1 },
+        { label: 'Soru Sor', weight: 1 },
+        { label: 'Büyük İkramiye', weight: 0.3 },
     ],
 };
 
@@ -4915,6 +5383,95 @@ async function autoApi(path, opts = {}) {
     return data;
 }
 
+// ═══════════════════ KANAL PUANI (Loyalty) ═══════════════════
+async function loyApi(path, opts = {}) {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${BACKEND_URL}/api/loyalty${path}`, {
+        method: opts.method || 'GET',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: opts.body ? JSON.stringify(opts.body) : undefined,
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+    return data;
+}
+async function initLoyalty() {
+    try {
+        const cfg = await loyApi('/config');
+        document.getElementById('loy-enabled').checked = cfg.enabled !== false;
+        document.getElementById('loy-name').value = cfg.pointsName || 'Puan';
+        const e = cfg.earn || {};
+        document.getElementById('loy-perChat').value = e.perChat ?? 2;
+        document.getElementById('loy-perLike').value = e.perLike ?? 1;
+        document.getElementById('loy-perFollow').value = e.perFollow ?? 50;
+        document.getElementById('loy-perShare').value = e.perShare ?? 20;
+        document.getElementById('loy-perGiftCoin').value = e.perGiftCoin ?? 1;
+    } catch (err) { showToast('Puan ayarları yüklenemedi: ' + err.message, true); }
+    await loadLoyaltyLeaderboard();
+}
+async function saveLoyaltyConfig() {
+    try {
+        const body = {
+            enabled: document.getElementById('loy-enabled').checked,
+            pointsName: document.getElementById('loy-name').value.trim() || 'Puan',
+            earn: {
+                perChat: +document.getElementById('loy-perChat').value || 0,
+                perLike: +document.getElementById('loy-perLike').value || 0,
+                perFollow: +document.getElementById('loy-perFollow').value || 0,
+                perShare: +document.getElementById('loy-perShare').value || 0,
+                perGiftCoin: +document.getElementById('loy-perGiftCoin').value || 0,
+            },
+        };
+        await loyApi('/config', { method: 'PUT', body });
+        showToast('Puan ayarları kaydedildi ✓');
+    } catch (err) { showToast('Kaydedilemedi: ' + err.message, true); }
+}
+async function loadLoyaltyLeaderboard() {
+    const el = document.getElementById('loy-leaderboard');
+    if (!el) return;
+    try {
+        const [lb, stats] = await Promise.all([
+            loyApi('/leaderboard?limit=25'),
+            loyApi('/stats').catch(() => ({ viewers: 0, totalPoints: 0 })),
+        ]);
+        const sv = document.getElementById('loy-stat-viewers'); if (sv) sv.textContent = (stats.viewers || 0).toLocaleString('tr-TR');
+        const st = document.getElementById('loy-stat-total'); if (st) st.textContent = (stats.totalPoints || 0).toLocaleString('tr-TR');
+        const items = lb.items || [];
+        if (!items.length) { el.innerHTML = '<div class="auto-empty" style="padding:2rem;"><i class="fas fa-gem"></i>Henüz puan kazanan izleyici yok.</div>'; return; }
+        const max = items[0]?.points || 1;
+        const medals = ['👑', '🥈', '🥉'];
+        el.innerHTML = items.map((it, i) => `<div class="loy-lb-row"><div class="loy-lb-bar" style="width:${Math.max(6, (it.points / max) * 100)}%"></div><div class="loy-lb-rank">${medals[i] || (i + 1)}</div><div class="loy-lb-name">${escapeHtml(it.nickname || it.viewer)}</div><div class="loy-lb-pts">${(it.points || 0).toLocaleString('tr-TR')}</div></div>`).join('');
+    } catch (err) { el.innerHTML = `<div class="auto-empty" style="padding:2rem;color:#ef4444;">Yüklenemedi: ${escapeHtml(err.message)}</div>`; }
+}
+// Live channel-points updates from the backend socket (via main bridge):
+// refresh the leaderboard if the page is open, and toast redemption results.
+let _loyRefreshTimer = null;
+if (window.api?.onPointsUpdate) {
+    window.api.onPointsUpdate(() => {
+        if (!document.getElementById('loyalty-page')?.classList.contains('active')) return;
+        clearTimeout(_loyRefreshTimer);
+        _loyRefreshTimer = setTimeout(() => loadLoyaltyLeaderboard().catch(() => {}), 1200);
+    });
+}
+if (window.api?.onRedeemResult) {
+    window.api.onRedeemResult((d) => {
+        if (d?.ok) showToast(`🎁 ${d.viewer} → "${d.rule}" (${d.cost} puan) kullandı`);
+        else showToast(`⚠️ ${d.viewer}: "${d.rule}" için yetersiz puan`, true);
+    });
+}
+
+async function adjustLoyalty() {
+    const viewer = document.getElementById('loy-adj-viewer').value.trim();
+    const delta = parseInt(document.getElementById('loy-adj-delta').value) || 0;
+    if (!viewer || !delta) return showToast('İzleyici adı ve puan miktarı gerekli', true);
+    try {
+        await loyApi('/adjust', { method: 'POST', body: { viewer, delta } });
+        document.getElementById('loy-adj-delta').value = '';
+        showToast(`${viewer}: ${delta > 0 ? '+' : ''}${delta} puan`);
+        await loadLoyaltyLeaderboard();
+    } catch (err) { showToast('Hata: ' + err.message, true); }
+}
+
 async function initAutomation() {
     if (!giftCatalogCache.length) { try { await loadGiftCatalog(); } catch {} }
     await reloadAutomation();
@@ -4967,7 +5524,7 @@ const ACTION_META = {
     media: { icon: '🎬', label: 'Medya' }, 'wheel-spin': { icon: '🎡', label: 'Çark' },
     keyboard: { icon: '⌨️', label: 'Tuş' }, mouse: { icon: '🖱️', label: 'Fare' },
     text: { icon: '📝', label: 'Metin' }, launch: { icon: '🚀', label: 'Çalıştır' },
-    points: { icon: '💎', label: 'Puan' },
+    points: { icon: '💎', label: 'Puan' }, minecraft: { icon: '🟩', label: 'Minecraft' },
 };
 function actionById(id) { return _autoActions.find(a => String(a._id) === String(id)); }
 
@@ -5032,6 +5589,7 @@ function renderActionsList() {
         else if (a.type === 'sound') detail = a.config?.preset || (a.config?.mp3Url ? 'MP3' : '');
         else if (a.type === 'tts') detail = a.config?.text || '';
         else if (a.type === 'launch') detail = a.config?.command || '';
+        else if (a.type === 'minecraft') detail = a.config?.command || '';
         else if (a.type === 'points') detail = `+${a.config?.amount || 0}`;
         return `
         <div class="auto-card">
@@ -5068,6 +5626,7 @@ function openRuleEditor(rule) {
     document.getElementById('rule-cd-global').value = (rule?.cooldown?.globalMs || 0) / 1000;
     document.getElementById('rule-cd-user').value = (rule?.cooldown?.perUserMs || 0) / 1000;
     document.getElementById('rule-combo').value = rule?.combo || 'once';
+    const pcEl = document.getElementById('rule-points-cost'); if (pcEl) pcEl.value = rule?.pointsCost || 0;
     // roles
     const roles = rule?.roles && rule.roles.length ? rule.roles : ['everyone'];
     document.querySelectorAll('#rule-roles input').forEach(cb => { cb.checked = roles.includes(cb.value); });
@@ -5162,6 +5721,7 @@ function buildRulePayload() {
             perUserMs: Math.round((parseFloat(document.getElementById('rule-cd-user').value) || 0) * 1000),
         },
         combo: document.getElementById('rule-combo').value,
+        pointsCost: Math.max(0, parseInt(document.getElementById('rule-points-cost')?.value) || 0),
         actionIds: collectRuleActionIds(),
     };
 }
@@ -5278,8 +5838,31 @@ function renderActionConfig() {
             + `</div>`;
     } else if (type === 'wheel-spin') {
         html = `<div class="auto-hint" style="padding:0.5rem;">Aktif Şans Çarkı overlay'ini çevirir. Çarkı "Etkileşimli Katmanlar → Şans Çarkı"ndan oluştur.</div>`;
+    } else if (type === 'minecraft') {
+        const presets = [
+            ['💥 TNT yağmuru', 'execute at @r run summon minecraft:tnt ~ ~12 ~'],
+            ['🧨 Creeper', 'execute at @r run summon minecraft:creeper ~ ~ ~'],
+            ['💎 Elmas ver', 'give @a minecraft:diamond 1'],
+            ['⚡ Yıldırım', 'execute at @r run summon minecraft:lightning_bolt ~ ~ ~'],
+            ['🐔 Tavuk ordusu', 'execute at @r run summon minecraft:chicken ~ ~3 ~'],
+            ['🌙 Gece', 'time set night'],
+            ['☀️ Gündüz', 'time set day'],
+            ['🧟 Zombi sürüsü', 'execute at @r run summon minecraft:zombie ~ ~ ~'],
+            ['🚀 Fırlat', 'execute at @r run summon minecraft:tnt ~ ~ ~ {Motion:[0.0,2.0,0.0]}'],
+            ['🏃 Hız', 'effect give @a minecraft:speed 30 2'],
+            ['📢 Duyuru', 'say §d%username%§r teşekkürler! 🎉'],
+        ];
+        html = fld('Minecraft Komutu', `<textarea id="ac-mc-command" class="auto-input" rows="2" style="font-family:'JetBrains Mono',monospace;resize:vertical;line-height:1.4;" placeholder="execute at @r run summon creeper ~ ~ ~">${escapeHtml(c.command || '')}</textarea>`, 'Yer tutucular: %username% %giftName% %repeatCount% %coins% · Hedef: @r rastgele oyuncu, @a herkes, @p en yakın')
+            + `<div style="margin-top:0.5rem;"><div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:0.4rem;font-weight:700;">⚡ Hızlı ekle:</div><div style="display:flex;flex-wrap:wrap;gap:0.4rem;">`
+            + presets.map(([lbl, cmd]) => `<button type="button" class="btn-icon" data-cmd="${escapeHtml(cmd)}" onclick="mcInsertCmd(this)" style="font-size:0.72rem;background:rgba(91,168,86,0.12);border-color:rgba(91,168,86,0.3);color:#7ec97a;">${lbl}</button>`).join('')
+            + `</div></div>`
+            + `<div class="auto-hint" style="margin-top:0.6rem;background:rgba(91,168,86,0.08);border:1px solid rgba(91,168,86,0.2);border-radius:8px;padding:0.55rem 0.7rem;">🟩 Komut <b>SeliGames Minecraft sunucusunda</b> (RCON) çalışır. Oyuna katıl: <b style="color:#7ec97a;">187.124.29.94:25565</b> — her sürümden bağlanabilirsin (ViaVersion). <b>@r / @a</b> hedefli komutlar için oyunda en az bir oyuncu olmalı (yoksa sessizce hiçbir şey olmaz); <b>summon / time / weather / say</b> oyuncusuz da çalışır. (Güvenlik: op/ban/stop gibi komutlar engellidir.)</div>`;
     }
     wrap.innerHTML = html;
+}
+function mcInsertCmd(btn) {
+    const t = document.getElementById('ac-mc-command');
+    if (t) { t.value = btn.dataset.cmd || ''; t.focus(); }
 }
 function captureActionKey(e) {
     e.preventDefault();
@@ -5310,6 +5893,7 @@ function collectActionConfig() {
     if (type === 'points') return { amount: parseInt(v('ac-amount')) || 10 };
     if (type === 'confetti') return { intensity: parseInt(v('ac-intensity')) || 5, colors: (v('ac-colors') || '').split(',').map(s => s.trim()).filter(Boolean) };
     if (type === 'media') return { mediaUrl: v('ac-mediaUrl'), mediaType: v('ac-mediaType'), durationMs: Math.round((parseFloat(v('ac-duration')) || 5) * 1000) };
+    if (type === 'minecraft') return { command: v('ac-mc-command') };
     return {};
 }
 async function saveAction() {
@@ -5336,7 +5920,17 @@ async function saveAction() {
 }
 async function testCurrentAction() { if (_autoEditingAction?._id) await testActionById(_autoEditingAction._id); }
 async function testActionById(id) {
-    try { const res = await autoApi(`/actions/${id}/test`, { method: 'POST' }); showToast(`🧪 ${ACTION_META[res.actionType]?.label || res.actionType} test edildi`); }
+    try {
+        const res = await autoApi(`/actions/${id}/test`, { method: 'POST' });
+        if (res.actionType === 'minecraft') {
+            // Surface the real RCON response so silent no-ops (e.g. "No entity
+            // was found" when no players are in-game) are visible.
+            const r = (res.response || '').trim();
+            showToast(r ? `🟩 MC: ${r.slice(0, 90)}` : '🟩 MC komutu gönderildi (sunucu yanıt vermedi)');
+        } else {
+            showToast(`🧪 ${ACTION_META[res.actionType]?.label || res.actionType} test edildi`);
+        }
+    }
     catch (e) { showToast('Test hatası: ' + e.message, true); }
 }
 function editActionById(id) { const a = _autoActions.find(x => String(x._id) === String(id)); if (a) openActionEditor(a); }

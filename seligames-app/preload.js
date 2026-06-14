@@ -1,15 +1,16 @@
-const { contextBridge, ipcRenderer, shell } = require('electron');
+const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
     getAppConfig: () => ipcRenderer.invoke('get-app-config'),
     login: (credentials) => ipcRenderer.invoke('login', credentials),
+    register: (data) => ipcRenderer.invoke('register', data),
     getMods: () => ipcRenderer.invoke('get-mods'),
     getProfile: (token) => ipcRenderer.invoke('get-profile', token),
     connectTiktok: (data) => ipcRenderer.invoke('connect-tiktok', data),
     toggleLive: (data) => ipcRenderer.invoke('toggle-live', data),
     changePassword: (data) => ipcRenderer.invoke('change-password', data),
     getStatistics: (token) => ipcRenderer.invoke('get-statistics', token),
-    openExternal: (url) => shell.openExternal(url),
+    openExternal: (url) => ipcRenderer.invoke('open-external', url),
     saveMod: (data) => ipcRenderer.invoke('save-mod', data),
     saveDataUrl: (data) => ipcRenderer.invoke('save-data-url', data),
     
@@ -54,6 +55,8 @@ contextBridge.exposeInMainWorld('api', {
     launchGame: (opts) => ipcRenderer.invoke('launch-game', opts),
     pickLaunchFile: () => ipcRenderer.invoke('pick-launch-file'),
     onEventProcessed: (callback) => ipcRenderer.on('event-processed', (event, data) => callback(data)),
+    onPointsUpdate: (callback) => ipcRenderer.on('points-update', (event, data) => callback(data)),
+    onRedeemResult: (callback) => ipcRenderer.on('redeem-result', (event, data) => callback(data)),
 
     // Event API
     getEvents: (query) => ipcRenderer.invoke('get-events', query),

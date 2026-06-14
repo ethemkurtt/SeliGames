@@ -17,6 +17,7 @@ const adminRoutes = require('./src/routes/admin');
 const siteRoutes = require('./src/routes/site');
 const proxyRoutes = require('./src/routes/proxy');
 const automationRoutes = require('./src/routes/automation');
+const loyaltyRoutes = require('./src/routes/loyalty');
 const ruleEngine = require('./src/services/ruleEngine');
 const Goal = require('./src/models/Goal');
 const Overlay = require('./src/models/Overlay');
@@ -61,6 +62,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/site', siteRoutes);
 app.use('/api/proxy', proxyRoutes);
 app.use('/api/automation', automationRoutes);
+app.use('/api/loyalty', loyaltyRoutes);
 
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', message: 'SeliGames API is running' });

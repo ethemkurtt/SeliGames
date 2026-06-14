@@ -74,6 +74,11 @@ const ruleSchema = new mongoose.Schema({
     // Actions to run, in order.
     actionIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Action' }],
 
+    // Channel-points reward cost. >0 turns this rule into a redeemable reward:
+    // the triggering viewer must have at least this many points; on fire the
+    // cost is deducted. Best paired with a 'command' trigger (e.g. !heal).
+    pointsCost: { type: Number, default: 0 },
+
     // Runtime stats (handy for the UI + debugging).
     stats: {
         fireCount: { type: Number, default: 0 },

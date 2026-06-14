@@ -17,6 +17,8 @@
 
 const Rule = require('../models/Rule');
 const Action = require('../models/Action');
+const mcrcon = require('./mcrcon');
+const loyalty = require('./loyalty');
 
 // ── In-memory cooldown state ────────────────────────────────────────────
 const globalCooldown = new Map();   // ruleId -> lastFiredMs
@@ -194,6 +196,18 @@ function dispatchAction(io, userId, action, ev, commandParams) {
         repeatCount: ev.repeatCount, coins: ev.coins, profilePicture: ev.profilePicture,
     };
 
+    if (action.type === 'minecraft') {
+        // Minecraft command — run directly via RCON on the local Paper server
+        // (backend and server share the VPS, so this never leaves localhost).
+        const cmd = cfg.command;
+        if (cmd) {
+            mcrcon.sendCommand(cmd)
+                .then((resp) => console.log(`   🟩 mc » ${cmd}  →  ${String(resp).trim().slice(0, 90)}`))
+                .catch((e) => console.warn(`   🟥 mc rcon failed (${cmd}): ${e.message}`));
+        }
+        return;
+    }
+
     if (ELECTRON_TYPES.has(action.type)) {
         // OS-level — only the Electron client acts on this.
         io.to(room).emit('execute-action', {
@@ -231,6 +245,10 @@ async function evaluate(rawEvent, ctx) {
     const ev = normalizeEvent(rawEvent);
     if (!ev.userId || !ev.eventType || !io) return { matched: 0, fired: 0 };
 
+    // Channel points: every interaction earns points (fire-and-forget so it
+    // never blocks rule dispatch). Runs even when no rules match.
+    loyalty.award(ev, io).catch(() => {});
+
     // Pull candidate rules: enabled, this user, matching trigger type
     // (or 'any', or 'command' when the event is chat).
     const triggerTypes = [ev.eventType, 'any'];
@@ -261,6 +279,21 @@ async function evaluate(rawEvent, ctx) {
         if (rule.conditions && rule.conditions.length
             && !rule.conditions.every((c) => evalCondition(c, ev))) continue;
         if (!cooldownOk(rule, ev, now)) continue;
+
+        // Reward redemption: if this rule costs points, the triggering viewer
+        // must afford it. Deduct atomically; skip (and notify) if they can't.
+        if (Number(rule.pointsCost) > 0) {
+            const r = await loyalty.tryRedeem(ev.userId, ev.user, Number(rule.pointsCost));
+            if (!r.ok) {
+                io.to(`user:${ev.userId}`).emit('redeem-result', {
+                    ok: false, viewer: ev.user, rule: rule.name, cost: rule.pointsCost,
+                });
+                continue;
+            }
+            io.to(`user:${ev.userId}`).emit('redeem-result', {
+                ok: true, viewer: ev.user, rule: rule.name, cost: rule.pointsCost, points: r.points,
+            });
+        }
 
         matched++;
 

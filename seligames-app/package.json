@@ -46,6 +46,7 @@
       "renderer.js",
       "index.html",
       "config.default.json",
+      "assets/**/*",
       "node_modules/**/*",
       "!**/*.{md,log,markdown}",
       "!**/.DS_Store",
@@ -73,7 +74,8 @@
       "category": "public.app-category.games",
       "hardenedRuntime": false,
       "gatekeeperAssess": false,
-      "identity": null
+      "identity": null,
+      "icon": "assets/icon.icns"
     },
     "dmg": {
       "title": "SeliGames ${version}",
@@ -88,7 +90,8 @@
           ]
         }
       ],
-      "publisherName": "SeliGames"
+      "publisherName": "SeliGames",
+      "icon": "assets/icon.ico"
     },
     "nsis": {
       "oneClick": false,

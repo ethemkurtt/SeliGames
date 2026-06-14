@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState, useEffect, useRef } from 'react'
 import { io, Socket } from 'socket.io-client'
+import { GOAL_THEME_CSS, normalizeGoalTheme } from '../../../overlays/goalThemes'
 
 export const Route = createFileRoute('/overlay/goal/$overlayId')({
     component: GoalOverlay,
@@ -32,9 +33,12 @@ function GoalOverlay() {
     const { overlayId } = Route.useParams()
     const [goal, setGoal] = useState<GoalData | null>(null)
     const [error, setError] = useState(false)
-    const [flash, setFlash] = useState(false)
+    const [justCompleted, setJustCompleted] = useState(false)
+    const [display, setDisplay] = useState(0)
     const socketRef = useRef<Socket | null>(null)
     const prevValueRef = useRef(0)
+    const wasCompleteRef = useRef(false)
+    const rafRef = useRef<number | null>(null)
 
     useEffect(() => {
         fetch(`${API_URL}/api/goals/overlay/${overlayId}`)
@@ -43,6 +47,8 @@ function GoalOverlay() {
                 if (data.error) { setError(true); return }
                 setGoal(data)
                 prevValueRef.current = data.currentValue
+                wasCompleteRef.current = data.isCompleted
+                setDisplay(data.currentValue)
             })
             .catch(() => setError(true))
     }, [overlayId])
@@ -50,188 +56,83 @@ function GoalOverlay() {
     useEffect(() => {
         const socket = io(API_URL, { transports: ['websocket', 'polling'] })
         socketRef.current = socket
-
-        socket.on('connect', () => {
-            socket.emit('join-overlay', overlayId)
-        })
-
+        socket.on('connect', () => socket.emit('join-overlay', overlayId))
         socket.on('goal-update', (data: any) => {
-            if (data.overlayId === overlayId) {
-                setGoal(prev => prev ? {
-                    ...prev,
-                    currentValue: data.currentValue,
-                    isCompleted: data.isCompleted
-                } : prev)
-
-                if (data.currentValue > prevValueRef.current) {
-                    setFlash(true)
-                    setTimeout(() => setFlash(false), 600)
-                }
-                prevValueRef.current = data.currentValue
+            if (data.overlayId !== overlayId) return
+            setGoal(prev => prev ? { ...prev, currentValue: data.currentValue, isCompleted: data.isCompleted } : prev)
+            if (data.isCompleted && !wasCompleteRef.current) {
+                setJustCompleted(true)
+                setTimeout(() => setJustCompleted(false), 4500)
             }
+            wasCompleteRef.current = data.isCompleted
+            prevValueRef.current = data.currentValue
         })
-
         return () => { socket.disconnect() }
     }, [overlayId])
 
-    if (error) return null
-    if (!goal) return null
+    // Smooth count-up animation for the displayed number
+    useEffect(() => {
+        if (!goal) return
+        const from = display
+        const to = goal.currentValue
+        if (from === to) return
+        const dur = 900
+        const start = performance.now()
+        const step = (now: number) => {
+            const t = Math.min((now - start) / dur, 1)
+            const eased = 1 - Math.pow(1 - t, 3)
+            setDisplay(Math.round(from + (to - from) * eased))
+            if (t < 1) rafRef.current = requestAnimationFrame(step)
+        }
+        rafRef.current = requestAnimationFrame(step)
+        return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current) }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [goal?.currentValue])
 
-    const pct = Math.min((goal.currentValue / goal.targetValue) * 100, 100)
+    if (error || !goal) return null
+
     const s = goal.style
-    const isNeon = s.theme === 'neon'
-    const isGaming = s.theme === 'gaming'
-    const isGlass = s.theme === 'glass'
-    const isGradient = s.theme === 'gradient'
-
-    const containerStyle: React.CSSProperties = {
-        fontFamily: '"Inter", "Segoe UI", sans-serif',
-        padding: isGlass ? '20px 24px' : '16px 20px',
-        borderRadius: s.borderRadius,
-        background: isGlass
-            ? 'rgba(255,255,255,0.08)'
-            : isGradient
-                ? `linear-gradient(135deg, ${s.barColor}22, ${s.barColor}08)`
-                : s.backgroundColor,
-        backdropFilter: isGlass ? 'blur(24px)' : undefined,
-        border: isNeon
-            ? `1px solid ${s.barColor}44`
-            : isGlass
-                ? '1px solid rgba(255,255,255,0.15)'
-                : isGaming
-                    ? `2px solid ${s.barColor}66`
-                    : '1px solid rgba(255,255,255,0.08)',
-        boxShadow: isNeon
-            ? `0 0 20px ${s.barColor}33, inset 0 0 20px ${s.barColor}11`
-            : isGaming
-                ? `0 0 30px ${s.barColor}22`
-                : 'none',
-        overflow: 'hidden',
-        minWidth: 300,
-        maxWidth: 600,
-        transition: 'all 0.3s ease',
-    }
-
-    const barTrackStyle: React.CSSProperties = {
-        height: isGaming ? 28 : 22,
-        borderRadius: s.borderRadius,
-        background: isGlass ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.08)',
-        overflow: 'hidden',
-        position: 'relative',
-    }
-
-    const barFillStyle: React.CSSProperties = {
-        width: `${pct}%`,
-        height: '100%',
-        borderRadius: s.borderRadius,
-        background: isGradient
-            ? `linear-gradient(90deg, ${s.barColor}, ${s.barColor}bb, ${s.barColor})`
-            : isGaming
-                ? `linear-gradient(90deg, ${s.barColor}dd, ${s.barColor}, ${s.barColor}dd)`
-                : `linear-gradient(90deg, ${s.barColor}, ${s.barColor}cc)`,
-        boxShadow: isNeon
-            ? `0 0 16px ${s.barColor}88, 0 0 4px ${s.barColor}`
-            : `0 0 8px ${s.barColor}44`,
-        transition: s.animation === 'smooth'
-            ? 'width 1s cubic-bezier(0.4, 0, 0.2, 1)'
-            : s.animation === 'bounce'
-                ? 'width 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55)'
-                : 'width 0.3s ease',
-        position: 'relative',
-    }
-
-    const animationClass = flash && s.animation === 'pulse'
-        ? { animation: 'overlayPulse 0.6s ease' }
-        : {}
+    const pct = Math.min((goal.currentValue / goal.targetValue) * 100, 100)
+    const theme = normalizeGoalTheme(s.theme)
+    const done = goal.isCompleted
 
     return (
-        <div style={{
-            width: '100vw', height: '100vh',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'transparent',
-        }}>
-            <style>{`
-                * { margin: 0; padding: 0; box-sizing: border-box; }
-                body { background: transparent !important; overflow: hidden; }
-                @keyframes overlayPulse {
-                    0%, 100% { transform: scale(1); }
-                    50% { transform: scale(1.03); }
-                }
-                @keyframes shimmer {
-                    0% { background-position: -200% center; }
-                    100% { background-position: 200% center; }
-                }
-                @keyframes completeCelebrate {
-                    0%, 100% { filter: brightness(1); }
-                    50% { filter: brightness(1.3); }
-                }
-            `}</style>
-
-            <div style={{
-                ...containerStyle,
-                ...animationClass,
-                ...(goal.isCompleted ? { animation: 'completeCelebrate 2s ease infinite' } : {})
-            }}>
-                {/* Header */}
-                <div style={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    marginBottom: 10
-                }}>
-                    <div style={{
-                        color: s.textColor, fontSize: s.fontSize, fontWeight: 700,
-                        textShadow: isNeon ? `0 0 8px ${s.barColor}66` : 'none',
-                        letterSpacing: isGaming ? '1px' : '0',
-                        textTransform: isGaming ? 'uppercase' as const : 'none' as const,
-                    }}>
-                        {goal.title}
-                    </div>
+        <div style={{ width: '100vw', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent' }}>
+            <style>{GOAL_THEME_CSS}</style>
+            <div
+                className={`sg ${theme}${done ? ' is-done' : ''}${justCompleted ? ' celebrate' : ''}`}
+                style={{
+                    ['--bar' as any]: s.barColor || '#ff2eb8',
+                    borderRadius: s.borderRadius,
+                    ['--radius' as any]: `${s.borderRadius}px`,
+                }}
+            >
+                <div className="sg-head">
+                    <span className="sg-title" style={{ fontSize: s.fontSize }}>{goal.title}</span>
                     {s.showNumbers && (
-                        <div style={{
-                            color: s.barColor, fontSize: s.fontSize * 0.75, fontWeight: 600,
-                            fontVariantNumeric: 'tabular-nums',
-                            textShadow: isNeon ? `0 0 6px ${s.barColor}88` : 'none',
-                        }}>
-                            {goal.currentValue.toLocaleString()} / {goal.targetValue.toLocaleString()}
-                        </div>
+                        <span className="sg-nums" style={{ fontSize: Math.round(s.fontSize * 0.74) }}>
+                            {display.toLocaleString('tr-TR')} / {goal.targetValue.toLocaleString('tr-TR')}
+                        </span>
                     )}
                 </div>
-
-                {/* Progress Bar */}
-                <div style={barTrackStyle}>
-                    <div style={barFillStyle}>
-                        {isNeon && (
-                            <div style={{
-                                position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-                                background: `linear-gradient(90deg, transparent, ${s.barColor}44, transparent)`,
-                                backgroundSize: '200% 100%',
-                                animation: 'shimmer 2s linear infinite',
-                            }} />
-                        )}
+                <div className="sg-track">
+                    <div className={`sg-fill shine ${s.animation || 'smooth'}`} style={{ width: `${pct}%` }}>
+                        {theme === 'fire' && <><span className="ember" style={{ left: '20%' }} /><span className="ember" style={{ left: '55%', animationDelay: '.6s' }} /><span className="ember" style={{ left: '82%', animationDelay: '1.1s' }} /></>}
+                        {theme === 'gold' && <><span className="spark" style={{ left: '30%', top: '28%' }} /><span className="spark" style={{ left: '68%', top: '62%', animationDelay: '.8s' }} /></>}
                     </div>
-
-                    {/* Percentage centered on track */}
-                    {s.showPercentage && (
-                        <div style={{
-                            position: 'absolute', top: '50%', left: '50%',
-                            transform: 'translate(-50%, -50%)',
-                            color: '#fff', fontSize: 12, fontWeight: 700,
-                            textShadow: '0 1px 4px rgba(0,0,0,0.9)',
-                            letterSpacing: '0.5px',
-                        }}>
-                            {pct.toFixed(0)}%
-                        </div>
-                    )}
+                    {pct > 1 && pct < 100 && <span className="sg-tip" style={{ left: `calc(${pct}% - 5px)` }} />}
+                    {s.showPercentage && <span className="sg-pct">{pct.toFixed(0)}%</span>}
                 </div>
-
-                {/* Completed badge */}
-                {goal.isCompleted && (
-                    <div style={{
-                        textAlign: 'center', marginTop: 8,
-                        color: s.barColor, fontSize: 13, fontWeight: 700,
-                        letterSpacing: '2px', textTransform: 'uppercase',
-                        textShadow: `0 0 10px ${s.barColor}88`,
-                    }}>
-                        TAMAMLANDI!
+                {done && <div className="sg-done-badge">★ TAMAMLANDI ★</div>}
+                {justCompleted && (
+                    <div className="sg-confetti">
+                        {Array.from({ length: 22 }).map((_, i) => (
+                            <span key={i} style={{
+                                left: `${(i * 4.5) % 100}%`,
+                                background: ['#ff2eb8', '#a855f7', '#22d3ee', '#ffd700', '#48f0c8'][i % 5],
+                                animationDelay: `${(i % 6) * 0.12}s`,
+                            }} />
+                        ))}
                     </div>
                 )}
             </div>

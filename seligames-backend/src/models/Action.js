@@ -34,6 +34,7 @@ const actionSchema = new mongoose.Schema({
         enum: [
             'overlay-alert', 'sound', 'tts', 'keyboard', 'mouse', 'text',
             'launch', 'points', 'wheel-spin', 'confetti', 'chat', 'media',
+            'minecraft',
         ],
     },
     // Type-specific configuration. Kept as Mixed so each action type can
@@ -52,6 +53,9 @@ const actionSchema = new mongoose.Schema({
     //  wheel-spin    : { wheelOverlayId? }   (target wheel; default = any active wheel)
     //  confetti      : { overlayTarget?, colors?, intensity }
     //  media         : { mediaUrl, mediaType, durationMs }
+    //  minecraft     : { command }  Minecraft command run via RCON on the
+    //                   server (placeholders like %username% %coins% allowed).
+    //                   e.g. "execute at @r run summon creeper ~ ~ ~"
     config: { type: mongoose.Schema.Types.Mixed, default: {} },
 
     enabled: { type: Boolean, default: true },

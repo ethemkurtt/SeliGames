@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { io, Socket } from 'socket.io-client'
 import { findGiftByName } from '@/data/tiktokGifts'
+import { GOAL_THEME_CSS, normalizeGoalTheme } from '../../overlays/goalThemes'
+import { OVERLAY_THEME_CSS, normalizeOverlayTheme, overlayAccent } from '../../overlays/overlayThemes'
 
 const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000'
 
@@ -210,12 +212,10 @@ const GOAL_ICONS: Record<string, string> = {
 
 function GoalView({ ov, valueDelta }: { ov: OverlayData; valueDelta: number | null }) {
     const s = ov.style || {}
-    const barColor = s.barColor || '#00ff9d'
-    const textColor = s.textColor || '#ffffff'
-    const bgColor = s.backgroundColor || 'rgba(0,0,0,0.6)'
+    const barColor = s.barColor || '#ff2eb8'
     const fontSize = s.fontSize || 18
-    const borderRadius = s.borderRadius ?? 12
-    const theme = s.theme || 'neon'
+    const borderRadius = s.borderRadius ?? 14
+    const theme = normalizeGoalTheme(s.theme)
     const animation = s.animation || 'smooth'
     const showPercentage = s.showPercentage !== false
     const showNumbers = s.showNumbers !== false
@@ -226,108 +226,68 @@ function GoalView({ ov, valueDelta }: { ov: OverlayData; valueDelta: number | nu
     const completed = target > 0 && current >= target
     const icon = GOAL_ICONS[ov.subType] || '🎯'
 
+    // Smooth count-up for the displayed number
+    const [display, setDisplay] = useState(current)
+    const rafRef = useRef<number | null>(null)
+    useEffect(() => {
+        const from = display, to = current
+        if (from === to) return
+        const start = performance.now(), dur = 850
+        const step = (now: number) => {
+            const t = Math.min((now - start) / dur, 1)
+            const e = 1 - Math.pow(1 - t, 3)
+            setDisplay(Math.round(from + (to - from) * e))
+            if (t < 1) rafRef.current = requestAnimationFrame(step)
+        }
+        rafRef.current = requestAnimationFrame(step)
+        return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current) }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [current])
+
     const [bump, setBump] = useState(false)
     useEffect(() => {
         if (valueDelta && valueDelta > 0) {
             setBump(true)
-            const t = window.setTimeout(() => setBump(false), 260)
+            const t = window.setTimeout(() => setBump(false), 600)
             return () => window.clearTimeout(t)
         }
     }, [valueDelta])
 
-    const containerStyle = themeContainer(theme, barColor, bgColor, borderRadius)
-
     return (
-        <div
-            className={`${bump ? 'ov-bump' : ''} ${completed ? 'ov-celebrate' : ''}`}
-            style={{
-                ...containerStyle,
-                padding: theme === 'glass' ? '20px 24px' : '16px 20px',
-                minWidth: 320, maxWidth: 640, width: '100%',
-                transition: 'transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1)',
-                position: 'relative',
-            }}
-        >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, gap: 12 }}>
-                <div style={{
-                    color: textColor, fontSize, fontWeight: 700,
-                    textShadow: theme === 'neon' ? `0 0 8px ${barColor}66` : 'none',
-                    letterSpacing: theme === 'gaming' ? '1px' : '0',
-                    textTransform: theme === 'gaming' ? 'uppercase' : 'none',
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                }}>
-                    <span style={{ fontSize: fontSize + 2 }}>{icon}</span>
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{ov.title}</span>
-                </div>
-                {showNumbers && (
-                    <div style={{
-                        color: barColor, fontSize: fontSize * 0.75, fontWeight: 700,
-                        fontVariantNumeric: 'tabular-nums',
-                        textShadow: theme === 'neon' ? `0 0 6px ${barColor}88` : 'none',
-                        flexShrink: 0,
-                    }}>
-                        {current.toLocaleString()} / {target.toLocaleString()}
-                    </div>
-                )}
-            </div>
-
-            <div style={{
-                height: theme === 'gaming' ? 28 : 22,
-                borderRadius,
-                background: theme === 'glass' ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.08)',
-                overflow: 'hidden', position: 'relative',
-            }}>
-                <div style={{
-                    width: `${pct}%`, height: '100%', borderRadius,
-                    background: theme === 'gradient'
-                        ? `linear-gradient(90deg, ${barColor}, ${barColor}bb, ${barColor})`
-                        : theme === 'gaming'
-                            ? `linear-gradient(90deg, ${barColor}dd, ${barColor}, ${barColor}dd)`
-                            : `linear-gradient(90deg, ${barColor}, ${barColor}cc)`,
-                    boxShadow: theme === 'neon' ? `0 0 16px ${barColor}88, 0 0 4px ${barColor}` : `0 0 8px ${barColor}44`,
-                    transition: animation === 'smooth' ? 'width 900ms cubic-bezier(0.4, 0, 0.2, 1)'
-                        : animation === 'bounce' ? 'width 600ms cubic-bezier(0.68, -0.55, 0.265, 1.55)'
-                        : animation === 'pulse' ? 'width 500ms ease' : 'width 250ms ease',
-                    position: 'relative', overflow: 'hidden',
-                }}>
-                    {theme === 'neon' && (
-                        <div style={{
-                            position: 'absolute', inset: 0,
-                            background: `linear-gradient(90deg, transparent, ${barColor}44, transparent)`,
-                            backgroundSize: '200% 100%',
-                            animation: 'ov-shimmer 2s linear infinite',
-                        }} />
+        <div style={{ display: 'flex', width: '100%', justifyContent: 'center' }}>
+            <style>{GOAL_THEME_CSS}</style>
+            <div
+                className={`sg ${theme}${completed ? ' is-done' : ''}${bump ? ' celebrate' : ''}`}
+                style={{ ['--bar' as any]: barColor, ['--radius' as any]: `${borderRadius}px`, borderRadius, position: 'relative' }}
+            >
+                <div className="sg-head">
+                    <span className="sg-title" style={{ fontSize, display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                        <span style={{ fontSize: fontSize + 2 }}>{icon}</span>
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ov.title}</span>
+                    </span>
+                    {showNumbers && (
+                        <span className="sg-nums" style={{ fontSize: Math.round(fontSize * 0.74) }}>
+                            {display.toLocaleString('tr-TR')} / {target.toLocaleString('tr-TR')}
+                        </span>
                     )}
                 </div>
-                {showPercentage && (
-                    <div style={{
-                        position: 'absolute', top: '50%', left: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        color: '#fff', fontSize: 12, fontWeight: 800,
-                        textShadow: '0 1px 4px rgba(0,0,0,0.9)',
-                        letterSpacing: '0.5px', fontVariantNumeric: 'tabular-nums',
-                    }}>{pct.toFixed(0)}%</div>
+                <div className="sg-track">
+                    <div className={`sg-fill shine ${animation}`} style={{ width: `${pct}%` }}>
+                        {theme === 'fire' && <><span className="ember" style={{ left: '20%' }} /><span className="ember" style={{ left: '55%', animationDelay: '.6s' }} /><span className="ember" style={{ left: '82%', animationDelay: '1.1s' }} /></>}
+                        {theme === 'gold' && <><span className="spark" style={{ left: '30%', top: '28%' }} /><span className="spark" style={{ left: '68%', top: '62%', animationDelay: '.8s' }} /></>}
+                    </div>
+                    {pct > 1 && pct < 100 && <span className="sg-tip" style={{ left: `calc(${pct}% - 5px)` }} />}
+                    {showPercentage && <span className="sg-pct">{pct.toFixed(0)}%</span>}
+                </div>
+                {completed && <div className="sg-done-badge">★ TAMAMLANDI ★</div>}
+                {valueDelta !== null && valueDelta > 0 && (
+                    <div key={`delta-${Date.now()}`} className="ov-float" style={{
+                        position: 'absolute', right: 16, top: 6, zIndex: 6,
+                        color: barColor, fontSize: Math.max(14, fontSize * 0.85), fontWeight: 900,
+                        textShadow: `0 0 10px ${barColor}, 0 1px 3px rgba(0,0,0,0.8)`, pointerEvents: 'none',
+                    }}>+{valueDelta} {icon}</div>
                 )}
             </div>
-
-            {completed && (
-                <div style={{
-                    textAlign: 'center', marginTop: 10,
-                    color: barColor, fontSize: 13, fontWeight: 800,
-                    letterSpacing: '2px', textTransform: 'uppercase',
-                    textShadow: `0 0 12px ${barColor}88`,
-                }}>🎉 TAMAMLANDI!</div>
-            )}
-
-            {valueDelta !== null && valueDelta > 0 && (
-                <div key={`delta-${Date.now()}`} className="ov-float" style={{
-                    position: 'absolute', right: 16, top: 6,
-                    color: barColor, fontSize: Math.max(14, fontSize * 0.85), fontWeight: 900,
-                    textShadow: `0 0 10px ${barColor}, 0 1px 3px rgba(0,0,0,0.8)`,
-                    pointerEvents: 'none',
-                }}>+{valueDelta} {icon}</div>
-            )}
         </div>
     )
 }
@@ -367,49 +327,61 @@ function GiftAlertView({ ov }: { ov: OverlayData }) {
     const catalogGift = findGiftByName(gift.name)
     const iconUrl = catalogGift?.icon
     const diamonds = gift.diamonds ?? (catalogGift ? catalogGift.coins * (gift.count || 1) : 0)
+    const t = normalizeOverlayTheme(theme)
+    const accent = overlayAccent(t, barColor)
+    const big = (gift.count || 1) >= 5 || diamonds >= 100
 
     return (
-        <div className="ov-giftpop" style={{
-            ...themeContainer(theme, barColor, s.backgroundColor || 'rgba(0,0,0,0.6)', borderRadius),
-            padding: '24px 32px', textAlign: 'center',
-            minWidth: 280, maxWidth: 560, position: 'relative',
-        }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-                {iconUrl ? (
-                    <img src={iconUrl} alt={gift.name} style={{
-                        width: c.iconSize || 96, height: c.iconSize || 96,
-                        objectFit: 'contain',
-                        filter: `drop-shadow(0 0 16px ${barColor}cc)`,
-                    }} />
-                ) : (
-                    <div style={{ fontSize: c.iconSize || 72, filter: `drop-shadow(0 0 16px ${barColor}cc)` }}>
-                        {gift.icon || '🎁'}
+        <div style={{ display: 'flex', width: '100%', justifyContent: 'center' }}>
+            <style>{OVERLAY_THEME_CSS + GIFT_ALERT_CSS}</style>
+            <div
+                className={`ov-card ${t} ov-glow ga-pop`}
+                style={{ ['--bar' as any]: barColor, ['--radius' as any]: `${borderRadius}px`, borderRadius, padding: '26px 36px', textAlign: 'center', minWidth: 300, maxWidth: 560 }}
+            >
+                <div className="ga-rays" style={{ ['--c' as any]: accent }} />
+                <div className="ga-halo" style={{ ['--c' as any]: accent }} />
+                {big && <div className="ga-confetti">{Array.from({ length: 18 }).map((_, i) => (
+                    <span key={i} style={{ left: `${(i * 5.5) % 100}%`, background: ['#ff2eb8', '#a855f7', '#22d3ee', '#ffd700', accent][i % 5], animationDelay: `${(i % 6) * 0.1}s` }} />
+                ))}</div>}
+                <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                    <div className="ga-icon" style={{ filter: `drop-shadow(0 0 18px ${accent}cc)` }}>
+                        {iconUrl
+                            ? <img src={iconUrl} alt={gift.name} style={{ width: c.iconSize || 104, height: c.iconSize || 104, objectFit: 'contain' }} />
+                            : <span style={{ fontSize: c.iconSize || 84, lineHeight: 1 }}>{gift.icon || '🎁'}</span>}
                     </div>
-                )}
-                <div style={{
-                    color: textColor, fontSize, fontWeight: 800,
-                    textShadow: theme === 'neon' ? `0 0 8px ${barColor}88` : '0 1px 3px rgba(0,0,0,0.8)',
-                }}>{gift.user}</div>
-                <div style={{
-                    color: barColor, fontSize: fontSize * 0.85, fontWeight: 700,
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    textShadow: theme === 'neon' ? `0 0 6px ${barColor}88` : '0 1px 2px rgba(0,0,0,0.8)',
-                }}>
-                    <span>{gift.name}</span>
-                    {gift.count > 1 && <span style={{ color: '#ffd700' }}>×{gift.count}</span>}
+                    <div className="ov-title ga-user" style={{ color: textColor, fontSize, fontWeight: 900 }}>{gift.user}</div>
+                    <div className="ga-gift" style={{ fontSize: Math.round(fontSize * 0.86) }}>
+                        <span className="ov-accent">{gift.name}</span>
+                        {gift.count > 1 && <span className="ga-mult" style={{ ['--c' as any]: accent }}>×{gift.count}</span>}
+                    </div>
+                    {diamonds > 0 && (
+                        <div className="ga-diamonds" style={{ fontSize: Math.round(fontSize * 0.66) }}>💎 {diamonds.toLocaleString('tr-TR')}</div>
+                    )}
                 </div>
-                {diamonds > 0 && (
-                    <div style={{
-                        marginTop: 4, padding: '4px 12px',
-                        background: 'rgba(255,215,0,0.12)', border: '1px solid rgba(255,215,0,0.3)',
-                        borderRadius: 999, color: '#ffd700',
-                        fontSize: fontSize * 0.7, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4,
-                    }}>💎 {diamonds.toLocaleString()}</div>
-                )}
             </div>
         </div>
     )
 }
+
+const GIFT_ALERT_CSS = `
+@keyframes gaPop{0%{transform:scale(.4) translateY(30px);opacity:0}55%{transform:scale(1.08) translateY(0);opacity:1}75%{transform:scale(.97)}100%{transform:scale(1)}}
+.ga-pop{animation:gaPop .7s cubic-bezier(.34,1.56,.64,1)}
+.ga-icon{animation:gaFloat 2.4s ease-in-out infinite}
+@keyframes gaFloat{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-7px) scale(1.04)}}
+.ga-halo{position:absolute;top:42px;left:50%;width:150px;height:150px;transform:translate(-50%,-50%);border-radius:50%;
+   background:radial-gradient(circle,color-mix(in srgb,var(--c) 55%,transparent),transparent 68%);animation:gaHalo 1.8s ease-in-out infinite;z-index:0;pointer-events:none}
+@keyframes gaHalo{0%,100%{opacity:.55;transform:translate(-50%,-50%) scale(.9)}50%{opacity:.9;transform:translate(-50%,-50%) scale(1.18)}}
+.ga-rays{position:absolute;top:42px;left:50%;width:230px;height:230px;transform:translate(-50%,-50%);z-index:0;pointer-events:none;opacity:.5;
+   background:repeating-conic-gradient(from 0deg,color-mix(in srgb,var(--c) 40%,transparent) 0deg 8deg,transparent 8deg 22deg);
+   -webkit-mask:radial-gradient(circle,transparent 38%,#000 42%,transparent 72%);mask:radial-gradient(circle,transparent 38%,#000 42%,transparent 72%);animation:gaSpin 9s linear infinite}
+@keyframes gaSpin{to{transform:translate(-50%,-50%) rotate(360deg)}}
+.ga-gift{font-weight:800;display:flex;align-items:center;gap:9px;justify-content:center}
+.ga-mult{color:#fff;background:var(--c);padding:1px 10px;border-radius:999px;font-weight:900;box-shadow:0 0 12px var(--c);animation:ovPop .5s ease}
+.ga-diamonds{margin-top:5px;padding:4px 14px;background:rgba(255,215,0,.14);border:1px solid rgba(255,215,0,.35);border-radius:999px;color:#ffd700;font-weight:800;display:inline-flex;align-items:center;gap:5px;box-shadow:0 0 14px rgba(255,215,0,.25)}
+.ga-confetti{position:absolute;inset:0;pointer-events:none;z-index:5;overflow:hidden}
+.ga-confetti span{position:absolute;top:-10px;width:7px;height:11px;border-radius:2px;opacity:0;animation:gaConf 1.5s ease-in forwards}
+@keyframes gaConf{0%{opacity:0;transform:translateY(-8px) rotate(0)}12%{opacity:1}100%{opacity:0;transform:translateY(170px) rotate(400deg)}}
+`
 
 // ============================================================================
 // View: Last-X — last follower / gift / liker / sharer
@@ -424,59 +396,34 @@ const LASTX_LABELS: Record<string, { label: string; icon: string }> = {
 
 function LastXView({ ov }: { ov: OverlayData }) {
     const s = ov.style || {}
-    const barColor = s.barColor || '#00ff9d'
+    const barColor = s.barColor || '#ff2eb8'
     const textColor = s.textColor || '#ffffff'
-    const bgColor = s.backgroundColor || 'rgba(0,0,0,0.6)'
     const fontSize = s.fontSize || 24
-    const borderRadius = s.borderRadius ?? 12
-    const theme = s.theme || 'neon'
+    const borderRadius = s.borderRadius ?? 14
+    const t = normalizeOverlayTheme(s.theme)
+    const accent = overlayAccent(t, barColor)
 
     const items = (ov.data?.items || []) as LastXItem[]
     const last = items[0]
     const meta = LASTX_LABELS[ov.subType] || { label: ov.title, icon: '🎯' }
     const catalogGift = last?.gift ? findGiftByName(last.gift) : undefined
+    const key = last ? `${last.user}-${last.gift || ''}-${(last as any).time || ''}` : 'none'
 
     return (
-        <div style={{
-            ...themeContainer(theme, barColor, bgColor, borderRadius),
-            padding: '16px 20px', minWidth: 260, maxWidth: 520,
-            position: 'relative',
-        }}>
-            <div style={{
-                color: barColor, fontSize: 12, textTransform: 'uppercase',
-                letterSpacing: 2, fontWeight: 700, marginBottom: 8,
-                display: 'flex', alignItems: 'center', gap: 6,
-            }}>
-                <span>{meta.icon}</span>
-                <span>{ov.title || meta.label}</span>
-            </div>
-            {last ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    {catalogGift && (
-                        <img src={catalogGift.icon} alt={catalogGift.name} style={{
-                            width: 56, height: 56, objectFit: 'contain',
-                            filter: `drop-shadow(0 0 10px ${barColor}88)`,
-                        }} />
-                    )}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{
-                            color: textColor, fontSize, fontWeight: 800,
-                            textShadow: theme === 'neon' ? `0 0 8px ${barColor}66` : 'none',
-                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                        }}>{last.user}</div>
-                        {last.gift && (
-                            <div style={{
-                                color: barColor, fontSize: fontSize * 0.55, fontWeight: 600,
-                                marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                            }}>
-                                {last.gift}{last.count && last.count > 1 ? ` ×${last.count}` : ''}
-                            </div>
-                        )}
+        <div style={{ display: 'flex', width: '100%', justifyContent: 'center' }}>
+            <style>{OVERLAY_THEME_CSS + LISTS_CSS}</style>
+            <div className={`ov-card ${t}`} style={{ ['--bar' as any]: barColor, ['--radius' as any]: `${borderRadius}px`, borderRadius, padding: '16px 20px', minWidth: 260, maxWidth: 520 }}>
+                <div className="lx-head ov-accent"><span>{meta.icon}</span><span>{ov.title || meta.label}</span></div>
+                {last ? (
+                    <div key={key} className="lx-body">
+                        {catalogGift && <img src={catalogGift.icon} alt="" className="lx-gimg" style={{ filter: `drop-shadow(0 0 10px ${accent}88)` }} />}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                            <div className="ov-title lx-user" style={{ color: textColor, fontSize }}>{last.user}</div>
+                            {last.gift && <div className="ov-accent lx-gift" style={{ fontSize: Math.round(fontSize * 0.55) }}>{last.gift}{last.count && last.count > 1 ? ` ×${last.count}` : ''}</div>}
+                        </div>
                     </div>
-                </div>
-            ) : (
-                <div style={{ color: textColor, opacity: 0.5, fontSize, fontStyle: 'italic' }}>Bekleniyor...</div>
-            )}
+                ) : <div style={{ color: textColor, opacity: 0.5, fontSize, fontStyle: 'italic' }}>Bekleniyor...</div>}
+            </div>
         </div>
     )
 }
@@ -490,57 +437,69 @@ const MEDALS = ['👑', '🥈', '🥉']
 function LeaderboardView({ ov }: { ov: OverlayData }) {
     const s = ov.style || {}
     const c = ov.config || {}
-    const barColor = s.barColor || '#00ff9d'
+    const barColor = s.barColor || '#ff2eb8'
     const textColor = s.textColor || '#ffffff'
-    const bgColor = s.backgroundColor || 'rgba(0,0,0,0.6)'
-    const borderRadius = s.borderRadius ?? 12
-    const theme = s.theme || 'neon'
+    const borderRadius = s.borderRadius ?? 14
+    const t = normalizeOverlayTheme(s.theme)
     const maxItems = c.maxItems || 5
+    const isLoyalty = ov.subType === 'points' || ov.subType === 'loyalty'
 
-    const allItems = (ov.data?.items || []) as LeaderItem[]
+    // Loyalty (channel-points) leaderboard pulls its own data source and polls.
+    const [loyaltyItems, setLoyaltyItems] = useState<LeaderItem[]>([])
+    useEffect(() => {
+        if (!isLoyalty || !ov.userId) return
+        let alive = true
+        const fetchLb = () => fetch(`${API_URL}/api/loyalty/leaderboard/${ov.userId}?limit=${maxItems}`)
+            .then((r) => r.json()).then((d) => { if (alive) setLoyaltyItems(d.items || []) }).catch(() => {})
+        fetchLb()
+        const iv = window.setInterval(fetchLb, 5000)
+        return () => { alive = false; window.clearInterval(iv) }
+    }, [isLoyalty, ov.userId, maxItems])
+
+    const allItems = (isLoyalty ? loyaltyItems : (ov.data?.items || [])) as LeaderItem[]
     const items = [...allItems].sort((a, b) => b.score - a.score).slice(0, maxItems)
-    const subIcon = ov.subType === 'likes' ? '❤️' : ov.subType === 'gifts' ? '🎁' : '🏆'
+    const subIcon = isLoyalty ? '💎' : ov.subType === 'likes' ? '❤️' : ov.subType === 'gifts' ? '🎁' : '🏆'
+    const max = items[0]?.score || 1
 
     return (
-        <div style={{
-            ...themeContainer(theme, barColor, bgColor, borderRadius),
-            padding: '16px 20px', minWidth: 300, maxWidth: 560,
-        }}>
-            <div style={{
-                color: barColor, fontSize: 14, textTransform: 'uppercase',
-                letterSpacing: 2, fontWeight: 800, marginBottom: 12,
-                display: 'flex', alignItems: 'center', gap: 6,
-                textShadow: theme === 'neon' ? `0 0 6px ${barColor}88` : 'none',
-            }}>
-                <span>{subIcon}</span>
-                <span>{ov.title}</span>
+        <div style={{ display: 'flex', width: '100%', justifyContent: 'center' }}>
+            <style>{OVERLAY_THEME_CSS + LISTS_CSS}</style>
+            <div className={`ov-card ${t}`} style={{ ['--bar' as any]: barColor, ['--radius' as any]: `${borderRadius}px`, borderRadius, padding: '16px 18px', minWidth: 320, maxWidth: 560 }}>
+                <div className="lb-head ov-accent"><span>{subIcon}</span><span>{ov.title}</span></div>
+                {items.length === 0 ? (
+                    <div style={{ color: textColor, opacity: 0.5, padding: '12px 0', fontStyle: 'italic' }}>Bekleniyor...</div>
+                ) : items.map((item, i) => (
+                    <div key={`${item.user}-${i}`} className={`lb-row${i === 0 ? ' lb-first' : ''}`}>
+                        <div className="lb-rankbar" style={{ width: `${Math.max(8, (item.score / max) * 100)}%` }} />
+                        <div className={`lb-rank lb-r${i + 1}`}>{MEDALS[i] || i + 1}</div>
+                        <div className="lb-user" style={{ color: textColor }}>{item.user}</div>
+                        <div className="lb-score ov-accent">{item.score.toLocaleString('tr-TR')}</div>
+                    </div>
+                ))}
             </div>
-            {items.length === 0 ? (
-                <div style={{ color: textColor, opacity: 0.5, padding: '12px 0', fontStyle: 'italic' }}>Bekleniyor...</div>
-            ) : items.map((item, i) => (
-                <div key={`${item.user}-${i}`} style={{
-                    display: 'flex', alignItems: 'center', gap: 12,
-                    padding: '8px 0',
-                    borderBottom: i < items.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none',
-                }}>
-                    <div style={{
-                        color: barColor, fontSize: 18, fontWeight: 800,
-                        width: 32, textAlign: 'center',
-                        textShadow: theme === 'neon' && i < 3 ? `0 0 8px ${barColor}88` : 'none',
-                    }}>{MEDALS[i] || i + 1}</div>
-                    <div style={{
-                        color: textColor, fontSize: 15, fontWeight: 600, flex: 1,
-                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    }}>{item.user}</div>
-                    <div style={{
-                        color: barColor, fontSize: 15, fontWeight: 800,
-                        fontVariantNumeric: 'tabular-nums',
-                    }}>{item.score.toLocaleString()}</div>
-                </div>
-            ))}
         </div>
     )
 }
+
+const LISTS_CSS = `
+.lx-head,.lb-head{text-transform:uppercase;letter-spacing:2px;font-weight:800;display:flex;align-items:center;gap:7px;margin-bottom:11px;font-size:13px}
+.lx-body{display:flex;align-items:center;gap:14px;animation:lxIn .55s cubic-bezier(.34,1.56,.64,1)}
+@keyframes lxIn{0%{opacity:0;transform:translateX(-16px) scale(.95)}100%{opacity:1;transform:none}}
+.lx-gimg{width:58px;height:58px;object-fit:contain;flex-shrink:0}
+.lx-user{font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lx-gift{font-weight:700;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-row{position:relative;display:flex;align-items:center;gap:12px;padding:9px 11px;border-radius:10px;overflow:hidden;margin-bottom:2px;animation:lbIn .45s ease backwards}
+.lb-row:nth-child(2){animation-delay:.04s}.lb-row:nth-child(3){animation-delay:.09s}.lb-row:nth-child(4){animation-delay:.14s}.lb-row:nth-child(5){animation-delay:.19s}.lb-row:nth-child(6){animation-delay:.24s}
+@keyframes lbIn{0%{opacity:0;transform:translateX(-14px)}100%{opacity:1;transform:none}}
+.lb-rankbar{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 24%,transparent),transparent);z-index:0;transition:width .9s cubic-bezier(.22,1,.36,1)}
+.lb-rank,.lb-user,.lb-score{position:relative;z-index:1}
+.lb-first{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 32%,transparent)}
+.lb-first .lb-rankbar{background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 34%,transparent),transparent)}
+.lb-rank{width:34px;text-align:center;font-size:18px;font-weight:900;flex-shrink:0}
+.lb-r1{filter:drop-shadow(0 0 8px gold)}.lb-r2{filter:drop-shadow(0 0 6px #d8e0ee)}.lb-r3{filter:drop-shadow(0 0 6px #e0996a)}
+.lb-user{flex:1;min-width:0;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-score{font-weight:900;font-variant-numeric:tabular-nums}
+`
 
 // ============================================================================
 // View: Chart — horizontal bars
@@ -559,48 +518,40 @@ function ChartView({ ov }: { ov: OverlayData }) {
     const allItems = (ov.data?.items || []) as LeaderItem[]
     const items = [...allItems].sort((a, b) => b.score - a.score).slice(0, maxItems)
     const maxScore = Math.max(1, ...items.map((i) => i.score))
+    const t = normalizeOverlayTheme(theme)
 
     return (
-        <div style={{
-            ...themeContainer(theme, barColor, bgColor, borderRadius),
-            padding: '16px 20px', minWidth: 340, maxWidth: 640,
-        }}>
-            <div style={{
-                color: barColor, fontSize: 14, textTransform: 'uppercase',
-                letterSpacing: 2, fontWeight: 800, marginBottom: 12,
-                display: 'flex', alignItems: 'center', gap: 6,
-            }}>📊 {ov.title}</div>
-            {items.length === 0 ? (
-                <div style={{ color: textColor, opacity: 0.5, padding: '12px 0', fontStyle: 'italic' }}>Bekleniyor...</div>
-            ) : items.map((item, i) => {
-                const w = (item.score / maxScore) * 100
-                return (
-                    <div key={`${item.user}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                        <div style={{
-                            color: textColor, fontSize: 13, fontWeight: 600,
-                            width: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                        }}>{item.user}</div>
-                        <div style={{
-                            flex: 1, height: 22, borderRadius: 11,
-                            background: 'rgba(255,255,255,0.08)', overflow: 'hidden', position: 'relative',
-                        }}>
-                            <div style={{
-                                width: `${w}%`, height: '100%', borderRadius: 11,
-                                background: `linear-gradient(90deg, ${barColor}, ${barColor}cc)`,
-                                boxShadow: `0 0 8px ${barColor}66`,
-                                transition: 'width 700ms cubic-bezier(0.4, 0, 0.2, 1)',
-                            }} />
+        <div style={{ display: 'flex', width: '100%', justifyContent: 'center' }}>
+            <style>{OVERLAY_THEME_CSS + CHART_CSS}</style>
+            <div className={`ov-card ${t}`} style={{ ['--bar' as any]: barColor, ['--radius' as any]: `${borderRadius}px`, borderRadius, padding: '16px 20px', minWidth: 340, maxWidth: 640 }}>
+                <div className="ch-head ov-accent">📊 {ov.title}</div>
+                {items.length === 0 ? (
+                    <div style={{ color: textColor, opacity: 0.5, padding: '12px 0', fontStyle: 'italic' }}>Bekleniyor...</div>
+                ) : items.map((item, i) => {
+                    const w = (item.score / maxScore) * 100
+                    return (
+                        <div key={`${item.user}-${i}`} className="ch-row">
+                            <div className="ch-user" style={{ color: textColor }}>{item.user}</div>
+                            <div className="ch-track"><div className="ch-fill ov-shine" style={{ width: `${w}%` }} /></div>
+                            <div className="ch-score ov-accent">{item.score.toLocaleString('tr-TR')}</div>
                         </div>
-                        <div style={{
-                            color: barColor, fontSize: 13, fontWeight: 800,
-                            width: 58, textAlign: 'right', fontVariantNumeric: 'tabular-nums',
-                        }}>{item.score.toLocaleString()}</div>
-                    </div>
-                )
-            })}
+                    )
+                })}
+            </div>
         </div>
     )
 }
+
+const CHART_CSS = `
+.ch-head{text-transform:uppercase;letter-spacing:2px;font-weight:800;margin-bottom:13px;font-size:14px;display:flex;align-items:center;gap:7px}
+.ch-row{display:flex;align-items:center;gap:11px;margin-bottom:9px;animation:chIn .45s ease backwards}
+.ch-row:nth-child(3){animation-delay:.05s}.ch-row:nth-child(4){animation-delay:.1s}.ch-row:nth-child(5){animation-delay:.15s}.ch-row:nth-child(6){animation-delay:.2s}
+@keyframes chIn{0%{opacity:0;transform:translateX(-12px)}100%{opacity:1;transform:none}}
+.ch-user{width:112px;font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ch-track{flex:1;height:22px;border-radius:11px;background:rgba(255,255,255,.08);overflow:hidden;position:relative;box-shadow:inset 0 1px 2px rgba(0,0,0,.4)}
+.ch-fill{height:100%;border-radius:11px;background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 65%,#000),var(--accent),color-mix(in srgb,var(--accent) 80%,#fff));box-shadow:0 0 12px color-mix(in srgb,var(--accent) 55%,transparent);transition:width .9s cubic-bezier(.22,1,.36,1)}
+.ch-score{width:62px;text-align:right;font-size:13px;font-weight:900;font-variant-numeric:tabular-nums}
+`
 
 // ============================================================================
 // View: Chat — live chat messages
@@ -619,46 +570,32 @@ function ChatView({ ov, liveEvents }: { ov: OverlayData; liveEvents: TikTokLiveE
 
     const messages = liveEvents.filter((e) => e.type === 'chat').slice(-maxMessages)
     const scrollRef = useRef<HTMLDivElement>(null)
+    const t = normalizeOverlayTheme(theme)
 
     useEffect(() => {
         if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }, [messages.length])
 
     return (
-        <div style={{
-            ...themeContainer(theme, barColor, bgColor, borderRadius),
-            padding: 12, minWidth: 300, maxWidth: 420, width: '100%',
-            display: 'flex', flexDirection: 'column', overflow: 'hidden',
-            maxHeight: '90vh',
-        }}>
-            <div style={{
-                color: barColor, fontSize: 12, textTransform: 'uppercase',
-                letterSpacing: 2, fontWeight: 800, marginBottom: 8,
-                display: 'flex', alignItems: 'center', gap: 6,
-            }}>💬 {ov.title || 'Canlı Chat'}</div>
-            <div ref={scrollRef} style={{
-                flex: 1, overflowY: 'auto', maxHeight: '80vh',
-            }}>
-                {messages.length === 0 ? (
-                    <div style={{ color: textColor, opacity: 0.4, padding: 8, fontStyle: 'italic', fontSize }}>
-                        Mesaj bekleniyor...
-                    </div>
-                ) : messages.map((m) => (
-                    <div key={m._id} className="ov-chatrow" style={{
-                        padding: '5px 0', display: 'flex', gap: 8, alignItems: 'flex-start',
-                    }}>
-                        {m.profilePicture && (
-                            <img src={m.profilePicture} alt="" style={{
-                                width: 22, height: 22, borderRadius: '50%',
-                                flexShrink: 0, objectFit: 'cover',
-                            }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
-                        )}
-                        <div style={{ minWidth: 0, flex: 1 }}>
-                            <span style={{ color: barColor, fontWeight: 700, fontSize, marginRight: 6 }}>{m.user}:</span>
-                            <span style={{ color: textColor, fontSize }}>{m.text}</span>
+        <div style={{ display: 'flex', width: '100%', justifyContent: 'center' }}>
+            <style>{OVERLAY_THEME_CSS + DOCK_CSS}</style>
+            <div className={`ov-card ${t}`} style={{ ['--bar' as any]: barColor, ['--radius' as any]: `${borderRadius}px`, borderRadius, padding: 12, minWidth: 300, maxWidth: 420, width: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', maxHeight: '90vh' }}>
+                <div className="dk-head ov-accent">💬 {ov.title || 'Canlı Chat'}</div>
+                <div ref={scrollRef} className="dk-scroll">
+                    {messages.length === 0 ? (
+                        <div style={{ color: textColor, opacity: 0.4, padding: 8, fontStyle: 'italic', fontSize }}>Mesaj bekleniyor...</div>
+                    ) : messages.map((m) => (
+                        <div key={m._id} className="dk-chatrow">
+                            {m.profilePicture && (
+                                <img src={m.profilePicture} alt="" className="dk-av" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                            )}
+                            <div className="dk-msg" style={{ fontSize }}>
+                                <span className="ov-accent dk-user">{m.user}</span>
+                                <span style={{ color: textColor }}>{m.text}</span>
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    ))}
+                </div>
             </div>
         </div>
     )
@@ -681,52 +618,57 @@ function EventFeedView({ ov, liveEvents }: { ov: OverlayData; liveEvents: TikTok
 
     const events = liveEvents.slice(-maxEvents)
     const scrollRef = useRef<HTMLDivElement>(null)
+    const t = normalizeOverlayTheme(theme)
 
     useEffect(() => {
         if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }, [events.length])
 
     return (
-        <div style={{
-            ...themeContainer(theme, barColor, bgColor, borderRadius),
-            padding: 12, minWidth: 300, maxWidth: 440, width: '100%',
-            display: 'flex', flexDirection: 'column', overflow: 'hidden',
-            maxHeight: '90vh',
-        }}>
-            <div style={{
-                color: barColor, fontSize: 12, textTransform: 'uppercase',
-                letterSpacing: 2, fontWeight: 800, marginBottom: 8,
-            }}>📋 {ov.title || 'Event Akışı'}</div>
-            <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', maxHeight: '80vh' }}>
-                {events.length === 0 ? (
-                    <div style={{ color: textColor, opacity: 0.4, padding: 8, fontStyle: 'italic', fontSize }}>
-                        Event bekleniyor...
-                    </div>
-                ) : events.map((e) => {
-                    const giftInfo = e.eventType === 'gift' && e.giftName ? findGiftByName(e.giftName) : undefined
-                    return (
-                        <div key={e._id} className="ov-feedrow" style={{
-                            padding: '6px 0', display: 'flex', gap: 8, alignItems: 'center',
-                            borderBottom: '1px solid rgba(255,255,255,0.05)',
-                        }}>
-                            {giftInfo ? (
-                                <img src={giftInfo.icon} alt={giftInfo.name} style={{
-                                    width: 24, height: 24, objectFit: 'contain', flexShrink: 0,
-                                }} />
-                            ) : (
-                                <span style={{ fontSize: 18, flexShrink: 0 }}>{e.icon || '📌'}</span>
-                            )}
-                            <div style={{ flex: 1, minWidth: 0, fontSize, color: textColor }}>
-                                <b style={{ color: barColor, marginRight: 4 }}>{e.user}</b>
-                                <span>{e.text}</span>
+        <div style={{ display: 'flex', width: '100%', justifyContent: 'center' }}>
+            <style>{OVERLAY_THEME_CSS + DOCK_CSS}</style>
+            <div className={`ov-card ${t}`} style={{ ['--bar' as any]: barColor, ['--radius' as any]: `${borderRadius}px`, borderRadius, padding: 12, minWidth: 300, maxWidth: 440, width: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', maxHeight: '90vh' }}>
+                <div className="dk-head ov-accent">📋 {ov.title || 'Event Akışı'}</div>
+                <div ref={scrollRef} className="dk-scroll">
+                    {events.length === 0 ? (
+                        <div style={{ color: textColor, opacity: 0.4, padding: 8, fontStyle: 'italic', fontSize }}>Event bekleniyor...</div>
+                    ) : events.map((e) => {
+                        const giftInfo = e.eventType === 'gift' && e.giftName ? findGiftByName(e.giftName) : undefined
+                        return (
+                            <div key={e._id} className="dk-feedrow">
+                                {giftInfo ? (
+                                    <img src={giftInfo.icon} alt={giftInfo.name} className="dk-gift" />
+                                ) : (
+                                    <span className="dk-emoji">{e.icon || '📌'}</span>
+                                )}
+                                <div style={{ flex: 1, minWidth: 0, fontSize, color: textColor }}>
+                                    <b className="ov-accent" style={{ marginRight: 5 }}>{e.user}</b>
+                                    <span>{e.text}</span>
+                                </div>
                             </div>
-                        </div>
-                    )
-                })}
+                        )
+                    })}
+                </div>
             </div>
         </div>
     )
 }
+
+const DOCK_CSS = `
+.dk-head{text-transform:uppercase;letter-spacing:2px;font-weight:800;margin-bottom:9px;font-size:12px;display:flex;align-items:center;gap:6px}
+.dk-scroll{flex:1;overflow-y:auto;max-height:80vh;scrollbar-width:thin}
+.dk-scroll::-webkit-scrollbar{width:4px}
+.dk-scroll::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--accent) 45%,transparent);border-radius:2px}
+.dk-chatrow{padding:5px 2px;display:flex;gap:8px;align-items:flex-start;animation:dkIn .35s ease}
+.dk-feedrow{padding:6px 4px;display:flex;gap:9px;align-items:center;border-radius:8px;animation:dkIn .35s ease}
+.dk-feedrow+.dk-feedrow{border-top:1px solid rgba(255,255,255,.06)}
+@keyframes dkIn{0%{opacity:0;transform:translateX(12px)}100%{opacity:1;transform:none}}
+.dk-av{width:24px;height:24px;border-radius:50%;flex-shrink:0;object-fit:cover;border:1.5px solid color-mix(in srgb,var(--accent) 55%,transparent)}
+.dk-msg{min-width:0;flex:1;line-height:1.42}
+.dk-user{font-weight:800;margin-right:6px}
+.dk-gift{width:26px;height:26px;object-fit:contain;flex-shrink:0;filter:drop-shadow(0 0 5px color-mix(in srgb,var(--accent) 50%,transparent))}
+.dk-emoji{font-size:18px;flex-shrink:0;width:26px;text-align:center}
+`
 
 // ============================================================================
 // View: Wheel of Actions — gift triggers a weighted random spin
@@ -792,69 +734,70 @@ function WheelView({ ov }: { ov: OverlayData }) {
         return `M ${cx} ${cy} L ${start.x} ${start.y} A ${r} ${r} 0 ${large} 1 ${end.x} ${end.y} Z`
     }
 
+    const t = normalizeOverlayTheme(s.theme)
+    const accent = overlayAccent(t, s.barColor)
+    const spinning = !showResult && !!winner
+    const lights = 24
+
     return (
-        <div style={{ position: 'relative', width: size, height: size + 80 }}>
-            {/* Pointer */}
-            <div style={{
-                position: 'absolute', top: -2, left: '50%', transform: 'translateX(-50%)',
-                width: 0, height: 0,
-                borderLeft: '14px solid transparent',
-                borderRight: '14px solid transparent',
-                borderTop: '24px solid #ffd000',
-                filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.6))',
-                zIndex: 10,
-            }} />
-            {/* Wheel */}
-            <svg
-                width={size}
-                height={size}
-                viewBox={`0 0 ${size} ${size}`}
-                style={{
-                    transform: `rotate(${rotation}deg)`,
-                    transition: 'transform 4s cubic-bezier(0.17, 0.67, 0.21, 0.99)',
-                    filter: 'drop-shadow(0 6px 20px rgba(0,0,0,0.6))',
-                }}
-            >
-                {slices.map((sl, i) => {
-                    const labelAngle = i * sliceAngle + sliceAngle / 2
-                    const labelPos = polarToCartesian(size / 2, size / 2, size / 2 - 50, labelAngle)
-                    const color = sl.color || '#bd00ff'
-                    return (
-                        <g key={i}>
-                            <path d={arcPath(i)} fill={color} stroke="#0a0a0f" strokeWidth={2} />
-                            <text
-                                x={labelPos.x}
-                                y={labelPos.y}
-                                fill="#fff"
-                                fontSize={size / 22}
-                                fontWeight={800}
-                                textAnchor="middle"
-                                dominantBaseline="middle"
-                                transform={`rotate(${labelAngle} ${labelPos.x} ${labelPos.y})`}
-                                style={{ textShadow: '0 1px 3px rgba(0,0,0,0.8)', pointerEvents: 'none' }}
-                            >{sl.label}</text>
-                        </g>
-                    )
-                })}
-                <circle cx={size / 2} cy={size / 2} r={18} fill="#0a0a0f" stroke="#ffd000" strokeWidth={3} />
-            </svg>
-            {/* Winner announcement */}
+        <div className="wh-wrap" style={{ ['--c' as any]: accent, position: 'relative', width: size + 30, height: size + 110 }}>
+            <style>{WHEEL_CSS}</style>
+            <div className="wh-stage" style={{ position: 'absolute', top: 12, left: 15, width: size, height: size }}>
+                {/* glow ring */}
+                <div className={`wh-ring${spinning ? ' wh-spinning' : ''}`} />
+                {/* casino rim lights */}
+                <div className="wh-lights">
+                    {Array.from({ length: lights }).map((_, i) => (
+                        <span key={i} style={{ transform: `rotate(${(360 / lights) * i}deg) translateY(-${size / 2 + 6}px)`, animationDelay: `${(i % 6) * 0.12}s` }} />
+                    ))}
+                </div>
+                {/* Pointer */}
+                <div className="wh-pointer" />
+                {/* Wheel */}
+                <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}
+                    style={{ transform: `rotate(${rotation}deg)`, transition: 'transform 4s cubic-bezier(0.17, 0.67, 0.21, 0.99)', filter: 'drop-shadow(0 6px 20px rgba(0,0,0,0.6))', position: 'relative', zIndex: 3 }}>
+                    {slices.map((sl, i) => {
+                        const labelAngle = i * sliceAngle + sliceAngle / 2
+                        const labelPos = polarToCartesian(size / 2, size / 2, size / 2 - 50, labelAngle)
+                        const color = sl.color || '#bd00ff'
+                        return (
+                            <g key={i}>
+                                <path d={arcPath(i)} fill={color} stroke="rgba(0,0,0,0.55)" strokeWidth={2} />
+                                <text x={labelPos.x} y={labelPos.y} fill="#fff" fontSize={size / 22} fontWeight={800}
+                                    textAnchor="middle" dominantBaseline="middle"
+                                    transform={`rotate(${labelAngle} ${labelPos.x} ${labelPos.y})`}
+                                    style={{ textShadow: '0 1px 3px rgba(0,0,0,0.85)', pointerEvents: 'none' }}>{sl.label}</text>
+                            </g>
+                        )
+                    })}
+                    <circle cx={size / 2} cy={size / 2} r={24} fill="#0a0a0f" stroke={accent} strokeWidth={4} />
+                    <circle cx={size / 2} cy={size / 2} r={10} fill={accent} />
+                </svg>
+            </div>
+            {/* Winner announcement card */}
             {showResult && winner && (
-                <div style={{
-                    position: 'absolute', bottom: 0, left: 0, right: 0,
-                    textAlign: 'center',
-                    color: textColor,
-                    fontSize: 26, fontWeight: 900,
-                    textShadow: '0 0 10px rgba(255,208,0,0.8), 0 2px 6px rgba(0,0,0,0.7)',
-                    animation: 'ov-giftpop-kf 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                }}>
-                    🎉 {winner}
-                    {lastSpin?.user ? <div style={{ fontSize: 13, opacity: 0.7, marginTop: 4, fontWeight: 600 }}>{lastSpin.user}</div> : null}
+                <div className={`ov-card ${t} wh-winner`} style={{ ['--bar' as any]: s.barColor || accent, position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)', padding: '12px 26px', textAlign: 'center', minWidth: 220 }}>
+                    <div className="wh-conf">{Array.from({ length: 16 }).map((_, i) => <span key={i} style={{ left: `${(i * 6.5) % 100}%`, background: ['#ff2eb8', '#a855f7', '#22d3ee', '#ffd700', accent][i % 5], animationDelay: `${(i % 5) * 0.1}s` }} />)}</div>
+                    <div className="ov-title" style={{ color: textColor, fontSize: 24, fontWeight: 900 }}>🎉 {winner}</div>
+                    {lastSpin?.user ? <div className="ov-accent" style={{ fontSize: 13, marginTop: 3, fontWeight: 700 }}>{lastSpin.user}</div> : null}
                 </div>
             )}
         </div>
     )
 }
+
+const WHEEL_CSS = `
+.wh-ring{position:absolute;inset:-8px;border-radius:50%;border:3px solid color-mix(in srgb,var(--c) 55%,transparent);box-shadow:0 0 30px color-mix(in srgb,var(--c) 50%,transparent),inset 0 0 24px color-mix(in srgb,var(--c) 28%,transparent);z-index:1;animation:whPulse 2.2s ease-in-out infinite}
+@keyframes whPulse{0%,100%{box-shadow:0 0 24px color-mix(in srgb,var(--c) 40%,transparent),inset 0 0 20px color-mix(in srgb,var(--c) 22%,transparent)}50%{box-shadow:0 0 46px color-mix(in srgb,var(--c) 70%,transparent),inset 0 0 30px color-mix(in srgb,var(--c) 35%,transparent)}}
+.wh-spinning{animation:whPulse .5s ease-in-out infinite}
+.wh-lights{position:absolute;inset:0;z-index:2;pointer-events:none}
+.wh-lights span{position:absolute;top:50%;left:50%;width:7px;height:7px;margin:-3.5px;border-radius:50%;background:#fff;box-shadow:0 0 8px 2px color-mix(in srgb,var(--c) 80%,#fff);transform-origin:center;animation:whBlink 1s ease-in-out infinite}
+@keyframes whBlink{0%,100%{opacity:.35}50%{opacity:1}}
+.wh-pointer{position:absolute;top:-16px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:15px solid transparent;border-right:15px solid transparent;border-top:28px solid var(--c);filter:drop-shadow(0 0 8px var(--c));z-index:6}
+.wh-winner{animation:gaPop .6s cubic-bezier(.34,1.56,.64,1);overflow:visible}
+.wh-conf{position:absolute;inset:0;pointer-events:none;overflow:hidden;border-radius:inherit}
+.wh-conf span{position:absolute;top:-10px;width:6px;height:10px;border-radius:2px;opacity:0;animation:gaConf 1.4s ease-in forwards}
+`
 
 // ============================================================================
 // View: Subathon Timer — countdown that grows with gifts
@@ -893,40 +836,34 @@ function SubathonView({ ov }: { ov: OverlayData }) {
     const display = `${pad(hh)}:${pad(mm)}:${pad(ss)}`
 
     const expired = isRunning && remaining === 0
+    const t = normalizeOverlayTheme(theme)
     return (
-        <div style={{
-            ...themeContainer(theme, barColor, bgColor, borderRadius),
-            padding: '20px 32px',
-            minWidth: 320,
-            textAlign: 'center',
-        }}>
-            <div style={{
-                color: barColor, fontSize: 14, textTransform: 'uppercase',
-                letterSpacing: 3, fontWeight: 800, marginBottom: 8,
-                textShadow: theme === 'neon' ? `0 0 8px ${barColor}aa` : 'none',
-            }}>
-                ⏱️ {ov.title || 'Subathon'}
-            </div>
-            <div style={{
-                color: expired ? '#ff006e' : textColor,
-                fontSize,
-                fontWeight: 900,
-                fontVariantNumeric: 'tabular-nums',
-                lineHeight: 1,
-                letterSpacing: 2,
-                textShadow: theme === 'neon' ? `0 0 14px ${barColor}cc, 0 0 32px ${barColor}55` : '0 2px 8px rgba(0,0,0,0.5)',
-            }}>{display}</div>
-            <div style={{
-                marginTop: 10, fontSize: 12, color: textColor, opacity: 0.7,
-                display: 'flex', justifyContent: 'center', gap: 16,
-            }}>
-                {!isRunning && pausedRem > 0 && <span>⏸ Duraklatıldı</span>}
-                {!isRunning && pausedRem === 0 && !endsAt && <span style={{ opacity: 0.5 }}>Beklemede</span>}
-                {addedTotal > 0 && <span>+{Math.floor(addedTotal / 60)} dk eklendi</span>}
+        <div style={{ display: 'flex', width: '100%', justifyContent: 'center' }}>
+            <style>{OVERLAY_THEME_CSS + SUBATHON_CSS}</style>
+            <div className={`ov-card ${t}${isRunning ? ' ov-glow' : ''}`} style={{ ['--bar' as any]: barColor, ['--radius' as any]: `${borderRadius}px`, borderRadius, padding: '22px 40px', minWidth: 340, textAlign: 'center' }}>
+                <div className="sub-label ov-accent">⏱️ {ov.title || 'Subathon'}</div>
+                <div className={`sub-time${expired ? ' sub-expired' : ''}${isRunning ? ' sub-tick' : ''}`} style={{ color: expired ? '#ff3b6b' : textColor, fontSize }}>{display}</div>
+                <div className="sub-foot">
+                    {!isRunning && pausedRem > 0 && <span className="sub-chip">⏸ Duraklatıldı</span>}
+                    {!isRunning && pausedRem === 0 && !endsAt && <span className="sub-chip" style={{ opacity: 0.6 }}>Beklemede</span>}
+                    {addedTotal > 0 && <span className="sub-chip sub-added">+{Math.floor(addedTotal / 60)} dk eklendi</span>}
+                </div>
             </div>
         </div>
     )
 }
+
+const SUBATHON_CSS = `
+.sub-label{text-transform:uppercase;letter-spacing:3px;font-weight:800;font-size:14px;margin-bottom:9px}
+.sub-time{font-family:'Orbitron','JetBrains Mono',monospace;font-weight:900;line-height:1;letter-spacing:2px;font-variant-numeric:tabular-nums;text-shadow:0 0 16px color-mix(in srgb,var(--accent) 70%,transparent),0 0 38px color-mix(in srgb,var(--accent) 32%,transparent)}
+.sub-tick{animation:subTick 1s ease-in-out infinite}
+@keyframes subTick{0%,100%{transform:scale(1)}50%{transform:scale(1.015)}}
+.sub-expired{animation:subFlash .8s ease-in-out infinite;text-shadow:0 0 20px #ff3b6b}
+@keyframes subFlash{0%,100%{opacity:1}50%{opacity:.5}}
+.sub-foot{margin-top:13px;display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.sub-chip{font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,.1);padding:4px 13px;border-radius:999px;border:1px solid rgba(255,255,255,.14)}
+.sub-added{background:color-mix(in srgb,var(--accent) 18%,transparent);border-color:color-mix(in srgb,var(--accent) 35%,transparent);color:var(--accent);animation:ovPop .5s ease}
+`
 
 // ============================================================================
 // Particle overlays — Gift Cannon / Like Fountain / Emoji Rain
@@ -1304,11 +1241,14 @@ function InteractionSliderView({ ov }: { ov: OverlayData }) {
         }}>
             <div style={{
                 position: 'absolute', top: 0, left: 0, zIndex: 2, height: '100%',
-                display: 'flex', alignItems: 'center', padding: '0 14px',
-                background: `linear-gradient(90deg, ${bgColor}, transparent)`,
+                display: 'flex', alignItems: 'center', padding: '0 16px', boxSizing: 'border-box', whiteSpace: 'nowrap',
+                // Solid dark base UNDER the themed bgColor so the label is fully opaque
+                // (bgColor itself is ~82% alpha) — otherwise the scrolling chips bleed
+                // through and overlap the label text. Fade only in the last ~35px.
+                background: `linear-gradient(90deg, ${bgColor} 0, ${bgColor} 180px, transparent 215px), linear-gradient(90deg, #0d0518 0, #0d0518 180px, transparent 215px)`,
                 color: barColor, fontWeight: 800, fontSize: 13, letterSpacing: 2, textTransform: 'uppercase',
             }}>🎁 HEDİYE → AKSİYON</div>
-            <div className="ov-slider-track" style={{ display: 'flex', gap: 12, paddingLeft: 220, whiteSpace: 'nowrap' }}>
+            <div className="ov-slider-track" style={{ display: 'flex', gap: 12, paddingLeft: 235, whiteSpace: 'nowrap' }}>
                 {doubled.map((it, i) => (
                     <div key={i} style={{
                         display: 'inline-flex', alignItems: 'center', gap: 10, padding: '8px 16px',

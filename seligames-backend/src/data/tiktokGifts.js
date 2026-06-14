@@ -123,8 +123,13 @@ const TIKTOK_GIFTS = [
     { name: 'Yıldızlar Arası', coins: 10000, icon: 'https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/8520d47b59c202a4534c1560a355ae06~tplv-obj.webp' },
     { name: 'Altın Çömlek', coins: 4999, icon: 'https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/c49c3c018faf8f6ba3afd6967f60f9a4.png~tplv-obj.webp' },
     { name: 'Boks eldivenleri', coins: 1999, icon: 'https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/c710020811484c8ce74627d1b76283e7.png~tplv-obj.webp' },
-    { name: 'Roket', coins: 500, icon: 'https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/e0589e95a2b41970f0f30f6202f5fce6~tplv-obj.webp' },
-    { name: 'Aslan', coins: 500, icon: 'https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/ea1fc9cb68514ec3c844179c6f09e8de.png~tplv-obj.webp' },
+    { name: 'Roket', coins: 1000, icon: 'https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/e0589e95a2b41970f0f30f6202f5fce6~tplv-obj.webp' },
+    // 'Aslan' (Lion) is a flagship high-value gift — 29999 coins, not 500 (data error).
+    { name: 'Aslan', coins: 29999, icon: 'https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/ea1fc9cb68514ec3c844179c6f09e8de.png~tplv-obj.webp' },
+    // ── Newly added (testers reported these missing). NOTE: 'Beni Sev' coin value
+    // is approximate and these reuse a thematically-close icon — verify on the live panel.
+    { name: 'TikTok Evreni', coins: 44999, icon: 'https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/79a02148079526539f7599150da9fd28.png~tplv-obj.webp' },
+    { name: 'Beni Sev', coins: 1, icon: 'https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/fc549cf1bc61f9c8a1c97ebab68dced7.png~tplv-obj.webp' },
 ];
 
 module.exports = TIKTOK_GIFTS;

@@ -9,16 +9,23 @@ const SECRET_KEY = process.env.JWT_SECRET || 'super_secret_key_for_seligames';
 
 // Register
 router.post('/register', async (req, res) => {
-    console.log('Register request:', req.body);
     try {
         const { username, email, password } = req.body;
         if (!username || !email || !password) {
-            return res.status(400).json({ error: 'All fields are required' });
+            return res.status(400).json({ error: 'Tüm alanlar zorunludur' });
+        }
+        if (String(password).length < 6) {
+            return res.status(400).json({ error: 'Şifre en az 6 karakter olmalı' });
+        }
+        const existing = await User.findOne({ $or: [{ email: String(email).toLowerCase() }, { username }] });
+        if (existing) {
+            return res.status(409).json({ error: 'Bu e-posta veya kullanıcı adı zaten kayıtlı' });
         }
         const hashedPassword = await bcrypt.hash(password, 10);
         const user = await User.create({ username, email, password: hashedPassword });
-        console.log('User registered:', user._id);
-        res.status(201).json({ message: 'User created successfully', userId: user._id });
+        // Return the same { token, user } shape as /login so the app signs in immediately.
+        const token = jwt.sign({ userId: user._id, role: user.role }, SECRET_KEY, { expiresIn: '7d' });
+        res.status(201).json({ token, user: { id: user._id, username: user.username, email: user.email, role: user.role } });
     } catch (error) {
         console.error('Register error:', error);
         res.status(400).json({ error: error.message });
@@ -27,7 +34,6 @@ router.post('/register', async (req, res) => {
 
 // Login
 router.post('/login', async (req, res) => {
-    console.log('Login request:', req.body);
     try {
         const { email, password } = req.body;
         if (!email || !password) {
@@ -35,18 +41,15 @@ router.post('/login', async (req, res) => {
         }
         const user = await User.findOne({ email });
         if (!user) {
-            console.log('User not found:', email);
             return res.status(404).json({ error: 'User not found' });
         }
 
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            console.log('Invalid password for:', email);
             return res.status(400).json({ error: 'Invalid credentials' });
         }
 
         const token = jwt.sign({ userId: user._id, role: user.role }, SECRET_KEY, { expiresIn: '7d' });
-        console.log('Login successful:', email);
         res.json({ token, user: { id: user._id, username: user.username, email: user.email, role: user.role } });
     } catch (error) {
         console.error('Login error:', error);

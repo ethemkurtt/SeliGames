@@ -167,9 +167,8 @@ const userSchema = new mongoose.Schema({
     timestamps: true // createdAt ve updatedAt otomatik eklenir
 });
 
-// Index'ler
-userSchema.index({ email: 1 });
-userSchema.index({ username: 1 });
+// Index'ler — email & username zaten `unique: true` ile index'leniyor,
+// tekrar tanımlamak Mongoose "duplicate index" uyarısı veriyordu.
 userSchema.index({ tiktokUsername: 1 });
 
 const User = mongoose.model('User', userSchema);
