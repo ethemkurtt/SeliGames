@@ -318,7 +318,7 @@ const GD_DEFAULT = {
     giftSize: 50,
     giftGap: 24,
     textGap: -6,
-    lineHeight: 0,
+    lineHeight: 12,
     fontSize: 18,
     textColor: '#FFFFFF',
     borderColor: '#000000',
@@ -353,6 +353,7 @@ async function initGiftDesigner() {
     gdLoadFont(giftDesign.font);
     renderGiftDesignerSlots();
     renderGiftDesignerPreview();
+    try { setGdPreviewBg(localStorage.getItem('gdPreviewBg') || 'transparent'); } catch {}
 }
 
 function gdSyncFormFromState() {
@@ -429,9 +430,9 @@ function renderGiftDesignerSlots() {
                         ${item.iconUrl
                             ? `<img class="gd-icon" src="${gdProxify(item.iconUrl)}" alt="" onclick="openGiftPicker('${slot}','${item.id}')">`
                             : `<div class="gd-icon-placeholder" onclick="openGiftPicker('${slot}','${item.id}')">🎁</div>`}
-                        <input type="text" value="${escapeHtml(item.text || '')}" placeholder="${escapeHtml(item.giftName || 'metin')}"
-                               title="İki satır için | kullanın — örn. GÜL|100"
-                               oninput="patchGiftItem('${slot}','${item.id}','text',this.value)">
+                        <textarea rows="1" placeholder="${escapeHtml(item.giftName || 'metin')} — 2. satır için Enter"
+                               title="2. satır için Enter'a bas (ör. GÜL ⏎ 100). | de kullanılabilir."
+                               oninput="patchGiftItem('${slot}','${item.id}','text',this.value)">${escapeHtml(item.text || '')}</textarea>
                         <input type="color" value="${item.color || giftDesign.textColor}"
                                onchange="patchGiftItem('${slot}','${item.id}','color',this.value)">
                         <button class="gd-slot-btn add" title="Hediye seç" onclick="openGiftPicker('${slot}','${item.id}')">
@@ -615,7 +616,11 @@ function renderGiftDesignerPreview() {
 
         container.style.display = 'flex';
         container.style.flexDirection = isHorizontal ? (cols > 1 ? 'column' : 'row') : (cols > 1 ? 'row' : 'column');
-        container.style.gap = giftDesign.lineHeight + 'px';
+        // Clear spacing model: giftGap = HORIZONTAL spacing ("Hediye Mesafesi"),
+        // lineHeight = VERTICAL spacing ("Satır Arası"). Flex gaps can't be negative.
+        const hGap = Math.max(0, giftDesign.giftGap);
+        const vGap = Math.max(0, giftDesign.lineHeight);
+        container.style.gap = (isHorizontal ? vGap : hGap) + 'px';
         // Anchor cards to the start edge of the slot — keeps multi-card rows
         // flush at the corner instead of drifting toward center.
         const startAlign = (slot === 'right') ? 'flex-end' : 'flex-start';
@@ -626,7 +631,7 @@ function renderGiftDesignerPreview() {
             const rowEl = document.createElement('div');
             rowEl.style.display = 'flex';
             rowEl.style.flexDirection = isHorizontal ? 'row' : 'column';
-            rowEl.style.gap = giftDesign.giftGap + 'px';
+            rowEl.style.gap = (isHorizontal ? hGap : vGap) + 'px';
             rowEl.style.alignItems = startAlign;
             rowEl.style.justifyContent = 'flex-start';
 
@@ -649,7 +654,9 @@ function renderGiftDesignerPreview() {
         const leftC = preview.querySelector('[data-gd-slot="left"]');
         if (topC && leftC) {
             const PAD = 24;
-            leftC.style.top = Math.round(PAD + topC.getBoundingClientRect().height + giftDesign.lineHeight) + 'px';
+            // Fixed gap below the top row — must NOT depend on lineHeight, otherwise
+            // changing "Satır Arası" shifted the whole left column up/down (R3-7).
+            leftC.style.top = Math.round(PAD + topC.getBoundingClientRect().height + 18) + 'px';
         }
         const wrapRect = wrap.getBoundingClientRect();
         const wrapTop = wrapRect.top;
@@ -666,6 +673,18 @@ function renderGiftDesignerPreview() {
             wrap.style.height = needed + 'px';
         }
     });
+}
+
+// Preview-only background (transparent / dark / white / green). The exported PNG
+// is ALWAYS transparent (export captures #gd-preview, the bg lives on the wrapper).
+function setGdPreviewBg(mode, _btn) {
+    const wrap = document.querySelector('.gd-preview-wrap');
+    if (wrap) {
+        if (mode === 'transparent') { wrap.style.background = ''; wrap.style.backgroundColor = ''; }
+        else { wrap.style.background = mode; }
+    }
+    document.querySelectorAll('.gd-bg-btn').forEach(b => b.classList.toggle('active', b.dataset.bg === mode));
+    try { localStorage.setItem('gdPreviewBg', mode); } catch {}
 }
 
 // Measure-fit: find the largest font size (≤ base) at which the label fits
@@ -768,16 +787,20 @@ function renderGiftCardEl(item) {
         txtEl.style.width = cardW + 'px';
         txtEl.style.maxWidth = cardW + 'px';
         txtEl.style.overflowWrap = 'break-word'; // last-resort safety only
-        txtEl.style.lineHeight = '1.08';
-        // Multi-shadow stroke
+        txtEl.style.lineHeight = '1.12';
+        // Smooth outline: 8 directions left visible gaps/smear at thick widths
+        // (R3-5). Sample many angles across two radii so the outline merges into a
+        // clean, even stroke like a sticker border.
         if (giftDesign.borderWidth > 0) {
             const w = giftDesign.borderWidth;
             const c = giftDesign.borderColor;
             const shadows = [];
-            for (let a = 0; a < 8; a++) {
-                const x = (Math.cos((a * Math.PI) / 4) * w).toFixed(1);
-                const y = (Math.sin((a * Math.PI) / 4) * w).toFixed(1);
-                shadows.push(`${x}px ${y}px 0 ${c}`);
+            const N = 16;
+            for (const rr of [w, w * 0.5]) {
+                for (let a = 0; a < N; a++) {
+                    const ang = (a / N) * Math.PI * 2;
+                    shadows.push(`${(Math.cos(ang) * rr).toFixed(1)}px ${(Math.sin(ang) * rr).toFixed(1)}px 0 ${c}`);
+                }
             }
             txtEl.style.textShadow = shadows.join(', ');
         }
@@ -4819,28 +4842,33 @@ function updateOverlayPreview() {
                 <div style="font-size:11px;color:#9d8bbf;text-align:center;margin-top:10px;padding:0 14px;">Hediye kurallarından otomatik dolar, yayının altında kayar.</div>
             </div>`;
     } else if (type === 'gift-cannon') {
+        // Style-aware: barColor (theme), fontSize, borderRadius now drive the preview.
+        const r = s.borderRadius ?? 16;
+        const fs = s.fontSize || 15;
         preview.innerHTML = `
             <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
-                <div style="display:flex;align-items:center;gap:10px;">
-                    <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#ff2eb8,#a855f7);border:3px solid #ff2eb8;box-shadow:0 0 18px #ff2eb8aa;"></div>
+                <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:${r}px;background:linear-gradient(135deg,${s.barColor}22,rgba(15,7,32,0.9));border:1px solid ${s.barColor}55;box-shadow:0 0 26px ${s.barColor}44;">
+                    <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,${s.barColor},${s.barColor}99);border:3px solid ${s.barColor};box-shadow:0 0 18px ${s.barColor}aa;"></div>
                     <div style="font-size:42px;">🎁</div>
-                    <div style="display:flex;flex-direction:column;"><span style="color:#fff;font-weight:800;font-size:15px;">tester</span><span style="color:#ff9fdc;font-weight:700;font-size:13px;">Gül ×5</span></div>
+                    <div style="display:flex;flex-direction:column;"><span style="color:${s.textColor};font-weight:800;font-size:${fs}px;">tester</span><span style="color:${s.barColor};font-weight:700;font-size:${Math.round(fs * 0.82)}px;">Gül ×5</span></div>
                 </div>
                 <div style="font-size:11px;color:#9d8bbf;text-align:center;max-width:300px;line-height:1.5;">Hediye gelince gönderenin profil fotosu + hediye ikonu ekranı boydan boya uçar.</div>
             </div>`;
     } else if (type === 'like-fountain') {
+        const fs = s.fontSize || 32;
         preview.innerHTML = `
             <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
-                <div style="display:flex;gap:6px;font-size:32px;">
-                    <span style="color:#ff2eb8;">❤</span><span style="color:#ff5fc4;font-size:26px;">❤</span><span style="color:#a855f7;font-size:38px;">❤</span><span style="color:#ff9fdc;font-size:28px;">❤</span><span style="color:#ff2eb8;font-size:34px;">❤</span>
+                <div style="display:flex;gap:6px;align-items:flex-end;">
+                    <span style="color:${s.barColor};font-size:${Math.round(fs)}px;">❤</span><span style="color:${s.barColor};font-size:${Math.round(fs * 0.8)}px;opacity:0.85;">❤</span><span style="color:${s.barColor};font-size:${Math.round(fs * 1.25)}px;">❤</span><span style="color:${s.barColor};font-size:${Math.round(fs * 0.9)}px;opacity:0.9;">❤</span><span style="color:${s.barColor};font-size:${Math.round(fs)}px;">❤</span>
                 </div>
-                <div style="font-size:11px;color:#9d8bbf;text-align:center;max-width:300px;line-height:1.5;">Beğeni geldikçe ekranın altından kalpler yükselir. Beğeni sayısına göre yoğunlaşır.</div>
+                <div style="font-size:11px;color:#9d8bbf;text-align:center;max-width:300px;line-height:1.5;">Beğeni geldikçe ekranın altından kalpler yükselir. Renk = Bar Rengi / tema.</div>
             </div>`;
     } else if (type === 'emoji-rain') {
+        const fs = s.fontSize || 30;
         preview.innerHTML = `
             <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
-                <div style="display:flex;gap:8px;font-size:30px;">🎉 🔥 😍 👏 ✨ 💯</div>
-                <div style="font-size:11px;color:#9d8bbf;text-align:center;max-width:300px;line-height:1.5;">Sohbetteki emojiler ekranın üstünden yağar. İzleyici emoji yazdıkça tetiklenir.</div>
+                <div style="display:flex;gap:8px;font-size:${fs}px;">🎉 🔥 😍 👏 ✨ 💯</div>
+                <div style="font-size:11px;color:#9d8bbf;text-align:center;max-width:300px;line-height:1.5;">Sohbetteki emojiler ekranın üstünden yağar. Emoji boyutu = Font Boyutu.</div>
             </div>`;
     }
 

@@ -3335,7 +3335,7 @@
             color: rgba(255,255,255,0.3);
         }
         .gd-slot-row img.gd-icon:hover { border-color: rgba(168, 85, 247,0.4); }
-        .gd-slot-row input[type="text"] {
+        .gd-slot-row input[type="text"], .gd-slot-row textarea {
             flex: 1; min-width: 0;
             background: var(--bg);
             border: 1px solid var(--ov-08);
@@ -3344,6 +3344,9 @@
             color: var(--fg-strong);
             font-size: 0.78rem;
             outline: none;
+            font-family: inherit;
+            resize: none;
+            line-height: 1.3;
         }
         .gd-slot-row input[type="color"] {
             width: 28px; height: 28px;
@@ -3393,6 +3396,15 @@
         .gd-slot-add-all:hover { background: rgba(168, 85, 247,0.2); }
 
         /* Preview canvas — starts at 16:9, grows vertically when content overflows */
+        .gd-bg-toggle { display: flex; gap: 0.4rem; margin-bottom: 0.5rem; flex-wrap: wrap; }
+        .gd-bg-btn {
+            width: 26px; height: 26px; border-radius: 6px; cursor: pointer;
+            border: 1px solid var(--ov-10); background: var(--bg);
+            color: var(--text-muted); display: flex; align-items: center; justify-content: center;
+            transition: all 0.15s;
+        }
+        .gd-bg-btn:hover { transform: scale(1.08); }
+        .gd-bg-btn.active { border-color: #ff2eb8; box-shadow: 0 0 0 2px rgba(255,46,184,0.35); }
         .gd-preview-wrap {
             width: 100%;
             /* JS sets height each render; this is the floor (16:9 of width). */
@@ -6002,14 +6014,14 @@
                         <label>Hediye Boyutu <span style="color:#ff2eb8">*</span>
                             <input type="number" id="gd-giftSize" value="75" min="20" max="300" step="5" oninput="updateGiftDesign()">
                         </label>
-                        <label>Hediye Mesafesi <span style="color:#ff2eb8">*</span>
+                        <label>Hediye Mesafesi (yatay) <span style="color:#ff2eb8">*</span>
                             <input type="number" id="gd-giftGap" value="40" min="0" max="200" step="5" oninput="updateGiftDesign()">
                         </label>
-                        <label>Yazı Mesafesi <span style="color:#ff2eb8">*</span>
+                        <label>Yazı Mesafesi (ikon↔yazı) <span style="color:#ff2eb8">*</span>
                             <input type="number" id="gd-textGap" value="-10" min="-50" max="100" step="1" oninput="updateGiftDesign()">
                         </label>
-                        <label>Satır Arası <span style="color:#ff2eb8">*</span>
-                            <input type="number" id="gd-lineHeight" value="-5" min="-30" max="100" step="1" oninput="updateGiftDesign()">
+                        <label>Satır Arası (dikey) <span style="color:#ff2eb8">*</span>
+                            <input type="number" id="gd-lineHeight" value="12" min="0" max="100" step="1" oninput="updateGiftDesign()">
                         </label>
                     </div>
                 </div>
@@ -6042,11 +6054,18 @@
                 <!-- Preview -->
                 <div class="settings-section gd-settings">
                     <h3>👁 Canlı Önizleme</h3>
+                    <div class="gd-bg-toggle">
+                        <span style="font-size:0.7rem;color:var(--text-muted);align-self:center;">Önizleme zemini:</span>
+                        <button type="button" class="gd-bg-btn active" data-bg="transparent" onclick="setGdPreviewBg('transparent',this)" title="Şeffaf (varsayılan)"><i class="fas fa-border-none" style="font-size:0.7rem;"></i></button>
+                        <button type="button" class="gd-bg-btn" data-bg="#0a0a0f" onclick="setGdPreviewBg('#0a0a0f',this)" title="Koyu" style="background:#0a0a0f;"></button>
+                        <button type="button" class="gd-bg-btn" data-bg="#ffffff" onclick="setGdPreviewBg('#ffffff',this)" title="Beyaz" style="background:#fff;"></button>
+                        <button type="button" class="gd-bg-btn" data-bg="#00b140" onclick="setGdPreviewBg('#00b140',this)" title="Yeşil (green screen)" style="background:#00b140;"></button>
+                    </div>
                     <div class="gd-preview-wrap">
                         <div id="gd-preview" class="gd-preview"></div>
                     </div>
                     <p style="text-align:center;color:var(--text-muted);font-size:0.7rem;margin-top:0.6rem;">
-                        Yaptığınız değişiklikler otomatik olarak güncellenir
+                        Değişiklikler otomatik güncellenir · indirilen PNG <b>her zaman şeffaftır</b> (zemin sadece önizleme içindir)
                     </p>
                 </div>
             </section>
