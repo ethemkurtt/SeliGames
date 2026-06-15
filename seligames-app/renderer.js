@@ -175,7 +175,7 @@ function navigateTo(page) {
     else if (page === 'statistics') loadStatistics();
     else if (page === 'overlay-gallery') {
         document.getElementById('overlay-gallery-page')?.classList.add('active');
-        if (typeof loadGalleryTemplates === 'function') loadGalleryTemplates();
+        if (typeof showGalleryTab === 'function') showGalleryTab('templates');
     }
     else if (page === 'gift-scanner') {
         document.getElementById('gift-scanner-page')?.classList.add('active');
@@ -2560,27 +2560,31 @@ function showInstallProgress(mod) {
     closeInstallProgress();
     const el = document.createElement('div');
     el.id = 'install-progress-modal';
+    // Non-blocking bottom-right widget — the download runs in the background and the
+    // user can keep navigating the app (this used to be a full-screen blocking modal,
+    // so testers couldn't leave the page or browse while a mod downloaded).
     el.style.cssText = `
-        position:fixed;inset:0;background:rgba(0,0,0,0.78);backdrop-filter:blur(8px);
-        z-index:10000;display:flex;align-items:center;justify-content:center;padding:1rem;
+        position:fixed;right:18px;bottom:18px;z-index:10000;width:340px;max-width:calc(100vw - 36px);
+        animation:ipSlideIn 0.25s ease;
     `;
     el.innerHTML = `
-        <div style="background:#160a2e;border:1px solid rgba(255, 46, 184,0.25);border-radius:16px;padding:1.5rem 1.75rem;max-width:480px;width:100%;box-shadow:0 0 40px rgba(255, 46, 184,0.15);">
-            <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem;">
-                <div style="width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,#ff2eb8,#a855f7);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                    <i class="fas fa-download" style="color:#07030f;font-size:1.1rem;"></i>
+        <div style="background:#160a2e;border:1px solid rgba(255, 46, 184,0.3);border-radius:14px;padding:1rem 1.1rem;box-shadow:0 14px 44px rgba(0,0,0,0.5),0 0 28px rgba(255, 46, 184,0.12);">
+            <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.7rem;">
+                <div style="width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#ff2eb8,#a855f7);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="fas fa-download" style="color:#07030f;font-size:0.95rem;"></i>
                 </div>
                 <div style="min-width:0;flex:1;">
-                    <div style="color:#fff;font-weight:700;font-size:1rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(mod.title)}</div>
-                    <div id="ip-phase" style="color:#9d8bbf;font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;margin-top:0.15rem;">Hazırlanıyor...</div>
+                    <div style="color:#fff;font-weight:700;font-size:0.86rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(mod.title)}</div>
+                    <div id="ip-phase" style="color:#9d8bbf;font-size:0.64rem;text-transform:uppercase;letter-spacing:1px;margin-top:0.1rem;">Hazırlanıyor...</div>
                 </div>
-                <div id="ip-pct" style="color:#ff2eb8;font-weight:800;font-size:1.4rem;font-variant-numeric:tabular-nums;">0%</div>
+                <div id="ip-pct" style="color:#ff2eb8;font-weight:800;font-size:1.05rem;font-variant-numeric:tabular-nums;">0%</div>
             </div>
-            <div style="height:8px;border-radius:4px;background:rgba(255,255,255,0.06);overflow:hidden;margin-bottom:0.5rem;">
+            <div style="height:7px;border-radius:4px;background:rgba(255,255,255,0.06);overflow:hidden;margin-bottom:0.4rem;">
                 <div id="ip-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#ff2eb8,#a855f7);box-shadow:0 0 12px #ff2eb888;transition:width 0.2s ease;"></div>
             </div>
-            <div id="ip-meta" style="color:#9d8bbf;font-size:0.72rem;font-variant-numeric:tabular-nums;text-align:right;">—</div>
-            <div id="ip-msg" style="display:none;margin-top:0.75rem;padding:0.55rem 0.75rem;border-radius:8px;font-size:0.78rem;"></div>
+            <div id="ip-meta" style="color:#9d8bbf;font-size:0.66rem;font-variant-numeric:tabular-nums;text-align:right;">—</div>
+            <div id="ip-msg" style="display:none;margin-top:0.6rem;padding:0.5rem 0.65rem;border-radius:8px;font-size:0.74rem;"></div>
+            <div style="color:#6b5a8a;font-size:0.6rem;margin-top:0.5rem;text-align:center;">İndirme arka planda sürüyor — uygulamayı kullanmaya devam edebilirsin.</div>
         </div>
     `;
     document.body.appendChild(el);
@@ -4076,8 +4080,7 @@ async function navigateOverlay(key) {
             event.target.closest?.('.nav-sub-item')?.classList.add('active');
         }
         navigateTo('overlay-gallery');
-        if (key === 'gallery-templates') loadGalleryTemplates?.();
-        else loadMyOverlays?.();
+        showGalleryTab(key === 'gallery-templates' ? 'templates' : 'my');
         return;
     }
 
@@ -4459,6 +4462,26 @@ function openOverlayUrl() {
 // Goal theme normaliser — mirrors normalizeGoalTheme() in the web overlay so
 // legacy saved overlays still map onto a nice modern theme.
 var GOAL_THEMES = ['neon','aurora','fire','holo','gold','cyber','galaxy','synth','glass','candy','electric','minimal'];
+
+// Per-theme slice palette for the Wheel overlay so each theme actually looks
+// different (the wheel preview used to hardcode the same 6 colours regardless of
+// theme — that's why "Electric ile Candy aynı" and theme changes did nothing).
+var WHEEL_PALETTES = {
+    neon:    ['#ff2eb8','#a855f7','#22d3ee','#ff5fc4','#7c3aed','#ec4899'],
+    aurora:  ['#48f0c8','#22d3ee','#34d399','#5eead4','#2dd4bf','#67e8f9'],
+    fire:    ['#ff6b1a','#ff3b3b','#ffa42e','#ff5722','#ff8c42','#e63946'],
+    holo:    ['#ff2ec4','#a855f7','#22d3ee','#34d399','#ffd700','#ff6b1a'],
+    gold:    ['#ffd700','#f59e0b','#fbbf24','#eab308','#d4af37','#fcd34d'],
+    cyber:   ['#22d3ee','#3b82f6','#a855f7','#06b6d4','#0ea5e9','#e879f9'],
+    galaxy:  ['#a855f7','#7c3aed','#6366f1','#c084fc','#8b5cf6','#3b82f6'],
+    synth:   ['#ff2e88','#ff6ac1','#a855f7','#22d3ee','#f72585','#7209b7'],
+    glass:   ['#a855f7','#818cf8','#c4b5fd','#93c5fd','#a78bfa','#bfdbfe'],
+    candy:   ['#ff5fa2','#ff9ec9','#ffb3d9','#ff7eb6','#ffc2dd','#f06595'],
+    electric:['#3b82f6','#22d3ee','#60a5fa','#2563eb','#38bdf8','#0ea5e9'],
+    minimal: ['#9d8bbf','#cbd5e1','#a1a1aa','#d4d4d8','#b4a7d6','#e2e8f0'],
+};
+function wheelPalette(theme) { return WHEEL_PALETTES[normalizeGoalThemeJS(theme)] || WHEEL_PALETTES.neon; }
+
 function normalizeGoalThemeJS(t) {
     var v = (t || '').toLowerCase();
     if (GOAL_THEMES.indexOf(v) !== -1) return v;
@@ -4505,6 +4528,15 @@ function applyCurrentStyle() {
     if (animSel && s.animation) animSel.value = s.animation;
     var label = document.getElementById('ov-style-label');
     if (label) label.textContent = s.name + ' · ' + (currentStyleIndex + 1) + '/' + overlayStyles.length;
+    if (currentOverlayContext && currentOverlayContext.overlayType === 'wheel') recolorWheelSlicesToTheme(s.theme);
+    updateOverlayPreview();
+}
+
+// Theme dropdown handler — recolours wheel slices to the theme before previewing.
+function onOverlayThemeChange() {
+    if (currentOverlayContext && currentOverlayContext.overlayType === 'wheel') {
+        recolorWheelSlicesToTheme(document.getElementById('ov-theme')?.value);
+    }
     updateOverlayPreview();
 }
 
@@ -4739,12 +4771,33 @@ function updateOverlayPreview() {
                 <div class="sub-foot"><span class="sub-chip sub-added">+5 dk eklendi</span></div>
             </div>`;
     } else if (type === 'wheel') {
+        // Theme-driven wheel: slice colours come from the theme palette (or each
+        // slice's own colour), pointer/center use the theme accent. So changing the
+        // theme actually changes the wheel, and every theme looks distinct.
+        const wheelConf = readWheelConfig();
+        const pal = wheelPalette(s.theme);
+        const accent = s.barColor || '#ffd000';
+        const wslices = (wheelConf.slices && wheelConf.slices.length) ? wheelConf.slices : [{}, {}, {}, {}, {}, {}];
+        const n = wslices.length;
+        const cx = 100, cy = 100, r = 92, step = 360 / n;
+        const polar = (d, rr) => [cx + rr * Math.cos((d - 90) * Math.PI / 180), cy + rr * Math.sin((d - 90) * Math.PI / 180)];
+        const paths = wslices.map((sl, i) => {
+            const a0 = i * step, a1 = (i + 1) * step;
+            const [x0, y0] = polar(a0, r), [x1, y1] = polar(a1, r);
+            const large = step > 180 ? 1 : 0;
+            const col = sl.color || pal[i % pal.length];
+            const mid = a0 + step / 2;
+            const [lx, ly] = polar(mid, r * 0.6);
+            const lbl = sl.label ? `<text x="${lx}" y="${ly}" fill="#fff" font-size="9" font-weight="800" text-anchor="middle" dominant-baseline="middle" transform="rotate(${mid} ${lx} ${ly})" style="text-shadow:0 1px 2px rgba(0,0,0,0.85)">${escapeHtml(String(sl.label).slice(0, 9))}</text>` : '';
+            return `<path d="M${cx} ${cy} L${x0} ${y0} A${r} ${r} 0 ${large} 1 ${x1} ${y1} Z" fill="${col}" stroke="#0a0a0f" stroke-width="2"/>${lbl}`;
+        }).join('');
         preview.innerHTML = `
             <div style="position:relative;width:200px;height:200px;margin:0 auto;">
-                <div style="position:absolute;top:-2px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-top:18px solid #ffd000;z-index:2;"></div>
+                <div style="position:absolute;top:-2px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-top:18px solid ${accent};z-index:2;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5));"></div>
                 <svg width="200" height="200" viewBox="0 0 200 200" style="filter:drop-shadow(0 6px 16px rgba(0,0,0,0.5));">
-                    ${[0,1,2,3,4,5].map(i=>{const a0=i*60,a1=(i+1)*60;const r=96,cx=100,cy=100;const p=(d)=>[cx+r*Math.cos((d-90)*Math.PI/180),cy+r*Math.sin((d-90)*Math.PI/180)];const[x0,y0]=p(a0),[x1,y1]=p(a1);const colors=['#ff006e','#bd00ff','#00d9ff','#00ff9d','#ffd000','#ff7800'].map(c=>c.replace('#ff006e','#ff2eb8').replace('#bd00ff','#a855f7').replace('#00d9ff','#22d3ee').replace('#00ff9d','#a855f7').replace('#ff7800','#ff5fc4'));return `<path d="M100 100 L${x0} ${y0} A96 96 0 0 1 ${x1} ${y1} Z" fill="${colors[i]}" stroke="#0a0a0f" stroke-width="2"/>`}).join('')}
-                    <circle cx="100" cy="100" r="16" fill="#0a0a0f" stroke="#ffd000" stroke-width="3"/>
+                    ${paths}
+                    <circle cx="100" cy="100" r="16" fill="#0a0a0f" stroke="${accent}" stroke-width="3"/>
+                    <circle cx="100" cy="100" r="6" fill="${accent}"/>
                 </svg>
             </div>`;
     } else if (type === 'actions-feed') {
@@ -4851,6 +4904,15 @@ const galleryTemplates = [
     { name: 'Degrade İzleyici Grafiği', overlayType: 'chart', subType: 'viewer_count', style: { barColor:'#a855f7', textColor:'#fff', backgroundColor:'rgba(0,0,0,0.5)', fontSize:16, borderRadius:12, theme:'gradient' }, config: { maxItems: 5 } },
 ];
 
+// On-page gallery tab switch (so users don't need the sidebar to go back to
+// templates after viewing "Kaplamalarım").
+function showGalleryTab(which) {
+    const isT = which === 'templates';
+    document.getElementById('gtab-templates')?.classList.toggle('active', isT);
+    document.getElementById('gtab-my')?.classList.toggle('active', !isT);
+    if (isT) loadGalleryTemplates(); else loadMyOverlays();
+}
+
 function loadGalleryTemplates() {
     const grid = document.getElementById('gallery-grid');
     if (!grid) return;
@@ -4876,9 +4938,9 @@ function loadGalleryTemplates() {
         card.innerHTML = `
             <div class="gallery-card-preview" style="background:linear-gradient(135deg,${bar}11,${bar}22);overflow:hidden;">
                 <div class="sg ${gt}" style="--bar:${bar};--radius:${radius}px;border-radius:${radius}px;width:90%;padding:9px 12px;pointer-events:none;">
-                    <div class="sg-head">
-                        <span class="sg-title" style="font-size:12px;">${tmpl.name}</span>
-                        <span class="sg-nums" style="font-size:9px;">325 / 500</span>
+                    <div class="sg-head" style="gap:6px;">
+                        <span class="sg-title" style="font-size:11px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${typeLabels[tmpl.overlayType] || 'Hedef'}</span>
+                        <span class="sg-nums" style="font-size:9px;flex-shrink:0;">325 / 500</span>
                     </div>
                     <div class="sg-track">
                         <div class="sg-fill shine smooth" style="width:65%;">${emberFx}${sparkFx}</div>
@@ -4944,8 +5006,9 @@ async function applyGalleryTemplate(tmpl) {
         };
         const result = await window.api.createOverlay(data);
         if (result.success) {
-            showToast('Şablon uygulandı! URL: ' + buildOverlayLiveUrl(result.data));
-            loadMyOverlays();
+            // Stay on the Templates tab (don't auto-switch to "Kaplamalarım" — that
+            // left users stranded with no back button). Just confirm + tell them where.
+            showToast('✓ Şablon eklendi — "Kaplamalarım" sekmesinden yönetebilirsin');
         } else {
             showToast('Hata: ' + result.error, true);
         }
@@ -5091,18 +5154,22 @@ const SUBATHON_PRESETS = {
 function renderSubathonGiftRows(map) {
     const wrap = document.getElementById('ov-sub-gift-rows');
     if (!wrap) return;
-    wrap.innerHTML = '';
+    // Shared datalist so the gift-name field autocompletes from the real catalog
+    // (testers couldn't tell which gift names were valid). Coin value shown as hint.
+    const dl = (giftCatalogCache || []).map(g =>
+        `<option value="${escapeHtml(g.name)}" label="${g.coins} 💎"></option>`).join('');
+    wrap.innerHTML = `<datalist id="subathon-gift-names">${dl}</datalist>`;
     const entries = Object.entries(map || {});
     if (entries.length === 0) {
-        wrap.innerHTML = '<div style="color:#9d8bbf;font-size:0.75rem;font-style:italic;padding:0.5rem 0;">Henüz hediye eklenmedi. Yukarıdaki + ile ekle ya da preset seç.</div>';
+        wrap.insertAdjacentHTML('beforeend', '<div style="color:#9d8bbf;font-size:0.75rem;font-style:italic;padding:0.5rem 0;">Henüz hediye eklenmedi. Yukarıdaki + ile ekle ya da preset seç.</div>');
         return;
     }
     entries.forEach(([gift, sec], i) => {
         const row = document.createElement('div');
         row.style.cssText = 'display:flex;gap:0.4rem;align-items:center;';
         row.innerHTML = `
-            <input type="text" class="ov-input" placeholder="Hediye adı" value="${escapeHtml(gift)}" style="flex:1;" data-sub-key="${i}">
-            <input type="number" class="ov-input" placeholder="sn" value="${sec}" min="0" step="1" style="width:90px;" data-sub-val="${i}">
+            <input type="text" class="ov-input" list="subathon-gift-names" placeholder="Hediye adı (yaz/seç)" value="${escapeHtml(gift)}" style="flex:1;" data-sub-key="${i}">
+            <input type="number" class="ov-input" placeholder="sn" value="${sec}" min="0" step="1" style="width:90px;" data-sub-val="${i}" title="Bu hediye gelince eklenecek saniye">
             <button class="btn-icon" onclick="removeSubathonGiftRow(${i})" style="background:rgba(255, 46, 184,0.08);color:#ff2eb8;" title="Sil"><i class="fas fa-times"></i></button>
         `;
         wrap.appendChild(row);
@@ -5196,13 +5263,16 @@ async function subathonControl(action) {
 const _origPopulate = populateOverlayForm;
 populateOverlayForm = function (ov) {
     _origPopulate(ov);
-    if (ov.overlayType === 'subathon') writeSubathonConfig(ov.config || {});
+    if (ov.overlayType === 'subathon') {
+        // Load the gift catalog first so the per-gift autocomplete has options.
+        loadGiftCatalog().then(() => writeSubathonConfig(ov.config || {}));
+    }
 };
 const _origReset = resetOverlayForm;
 resetOverlayForm = function (info) {
     _origReset(info);
     if (info.overlayType === 'subathon') {
-        writeSubathonConfig({ startSeconds: 3600, perCoin: 0, perGift: {} });
+        loadGiftCatalog().then(() => writeSubathonConfig({ startSeconds: 3600, perCoin: 0, perGift: {} }));
     }
 };
 // ==================== END SUBATHON TIMER ====================
@@ -5281,9 +5351,20 @@ function writeWheelConfig(config) {
     renderWheelSliceRows(config?.slices || []);
 }
 
+// Recolor the wheel slices to the active theme's palette (in place, keeps labels/
+// weights). Called when the theme/style changes so the wheel actually follows the
+// theme — both the preview and the saved (live) overlay.
+function recolorWheelSlicesToTheme(theme) {
+    const wrap = document.getElementById('ov-wheel-slices');
+    if (!wrap) return;
+    const pal = wheelPalette(theme);
+    wrap.querySelectorAll('[data-w-color]').forEach((inp, i) => { inp.value = pal[i % pal.length]; });
+}
+
 function addWheelSlice() {
     const slices = readWheelSlices();
-    slices.push({ label: '', weight: 1, color: WHEEL_COLORS[slices.length % WHEEL_COLORS.length] });
+    const pal = wheelPalette(document.getElementById('ov-theme')?.value);
+    slices.push({ label: '', weight: 1, color: pal[slices.length % pal.length] });
     renderWheelSliceRows(slices);
 }
 

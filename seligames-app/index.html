@@ -383,6 +383,8 @@
         }
 
         /* Dashboard hero cover banner */
+        @keyframes ipSlideIn { from { transform: translateY(14px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
         .hero-cover {
             position: relative;
             border-radius: 14px;
@@ -2430,6 +2432,32 @@
         .btn-import-file:hover { background: rgba(255, 46, 184,0.15); }
 
         /* Gallery Cards - Compact */
+        .gallery-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .gallery-tab {
+            padding: 0.55rem 1.1rem;
+            border: 1px solid var(--ov-04);
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-muted);
+            font-weight: 700;
+            font-size: 0.82rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.18s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .gallery-tab:hover { color: #fff; }
+        .gallery-tab.active {
+            background: linear-gradient(135deg, #ff2eb8, #a855f7);
+            color: #fff;
+            border-color: transparent;
+            box-shadow: 0 3px 14px rgba(255, 46, 184, 0.3);
+        }
         .gallery-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -5651,15 +5679,16 @@
                         <input type="number" class="ov-input" id="ov-sub-ss" value="0" min="0" max="59" style="width:80px;" oninput="updateOverlayPreview()">
                     </div>
                     <div style="margin-top:0.85rem;">
-                        <label style="display:flex;align-items:center;gap:0.5rem;">💎 Saniye / Coin (yedek kural)</label>
-                        <input type="number" class="ov-input" id="ov-sub-perCoin" value="0" min="0" max="60" step="0.1" placeholder="örn. 1 = her coin için 1 saniye" oninput="updateOverlayPreview()">
-                        <div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.3rem;">Aşağıdaki listede eşleşmeyen hediyeler için kullanılır. 0 ise yok sayılır.</div>
+                        <label style="display:flex;align-items:center;gap:0.5rem;">💎 Jeton başına saniye (otomatik kural)</label>
+                        <input type="number" class="ov-input" id="ov-sub-perCoin" value="0" min="0" max="60" step="0.1" placeholder="örn. 1 = her jeton +1 saniye" oninput="updateOverlayPreview()">
+                        <div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.3rem;">Jeton (coin) değerine göre süre ekler. Örn: <b>1</b> → 15 jetonluk hediye +15 sn, 100 jetonluk +100 sn. Aşağıda özel olarak eşlenmeyen tüm hediyelere uygulanır. 0 = kapalı.</div>
                     </div>
                     <div style="margin-top:1rem;">
                         <label style="display:flex;align-items:center;justify-content:space-between;">
                             <span>🎁 Hediye → Saniye Eşlemesi</span>
                             <button class="btn-icon" onclick="addSubathonGiftRow()" title="Hediye ekle" style="background:rgba(255, 46, 184,0.1);color:#ff2eb8;border:1px solid rgba(255, 46, 184,0.2);"><i class="fas fa-plus"></i></button>
                         </label>
+                        <div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.3rem;">Belirli bir hediye için sabit süre. Hediye adını yazıp listeden seç (jeton değeri yanında görünür), saniyeyi gir. Buradaki hediyeler yukarıdaki jeton kuralını ezer.</div>
                         <div id="ov-sub-gift-rows" style="display:flex;flex-direction:column;gap:0.4rem;margin-top:0.5rem;"></div>
                         <div style="display:flex;gap:0.4rem;margin-top:0.6rem;flex-wrap:wrap;">
                             <button class="btn-icon" onclick="loadSubathonPreset('basic')" style="font-size:0.72rem;padding:0.35rem 0.7rem;background:var(--ov-04);">⚡ Temel preset</button>
@@ -5712,7 +5741,7 @@
 
                 <div class="setting-group">
                     <label>Tema</label>
-                    <select class="ov-select" id="ov-theme" onchange="updateOverlayPreview()">
+                    <select class="ov-select" id="ov-theme" onchange="onOverlayThemeChange()">
                         <option value="neon">⚡ Neon Pulse</option>
                         <option value="aurora">🌌 Aurora</option>
                         <option value="fire">🔥 Fire / Lava</option>
@@ -5828,6 +5857,11 @@
         <div class="page-header">
             <div class="page-title"><i class="fas fa-images" style="color:#ff2eb8;"></i> Kaplama Galerisi</div>
             <div class="page-subtitle">Hazır overlay şablonlarını tek tıkla uygulayın</div>
+        </div>
+
+        <div class="gallery-tabs">
+            <button class="gallery-tab active" id="gtab-templates" onclick="showGalleryTab('templates')"><i class="fas fa-wand-magic-sparkles"></i> Hazır Şablonlar</button>
+            <button class="gallery-tab" id="gtab-my" onclick="showGalleryTab('my')"><i class="fas fa-folder"></i> Kaplamalarım</button>
         </div>
 
         <div class="gallery-grid" id="gallery-grid"></div>
