@@ -1228,16 +1228,21 @@ function InteractionSliderView({ ov }: { ov: OverlayData }) {
         return () => { alive = false; window.clearInterval(t) }
     }, [ov.userId])
 
-    if (!items.length) {
-        return <div style={{ color: textColor, opacity: 0.5, fontStyle: 'italic', padding: 16 }}>Etkileşim eşlemesi bekleniyor…</div>
-    }
+    // No gift→action rules yet → show a scrolling EXAMPLE strip (faded) instead of
+    // a static "bekleniyor" so the overlay isn't empty while the streamer tests /
+    // sets up rules. Real rules replace it automatically once added in Aksiyonlar.
+    const isDemo = !items.length
+    const data = isDemo
+        ? [{ giftName: 'Gül', label: 'Blok at' }, { giftName: 'Roket', label: 'Çark çevir' }, { giftName: 'Aslan', label: '+60sn' }, { giftName: 'Elmas', label: 'TNT yağmuru' }, { giftName: 'Yıldız', label: 'Konfeti' }]
+        : items
 
     // Continuous marquee of gift→action chips.
-    const doubled = [...items, ...items]
+    const doubled = [...data, ...data]
     return (
         <div style={{
             ...themeContainer(s.theme || 'glass', barColor, bgColor, s.borderRadius ?? 16),
             padding: '12px 0', width: '100%', maxWidth: 1280, overflow: 'hidden', position: 'relative',
+            opacity: isDemo ? 0.6 : 1,
         }}>
             <div style={{
                 position: 'absolute', top: 0, left: 0, zIndex: 2, height: '100%',
