@@ -39,6 +39,14 @@ const loginForm = document.getElementById('login-form');
 const loginOverlay = document.getElementById('login-overlay');
 const appContainer = document.getElementById('app-container');
 
+// The gift-picker modal is authored inside the gift-designer page; reparent it to
+// <body> so it works from ANY page (mod detail, "Yeni Oyun Ekle" template, etc.).
+// A page div is display:none when inactive, which hid the modal (0×0) elsewhere.
+(function liftGiftPickerModal() {
+    const m = document.getElementById('gd-picker-modal');
+    if (m && m.parentElement !== document.body) document.body.appendChild(m);
+})();
+
 // Shared post-auth flow — used by BOTH login and register (register returns the
 // same { token, user } shape as login, so the user is signed in immediately).
 function applyAuthSuccess(data) {
