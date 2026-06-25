@@ -38,6 +38,16 @@ const modSchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
+    // Optional default gift→action template. When a streamer first opens the mod
+    // (and has no personal config yet), this pre-fills their gift→shortcut map so
+    // they don't start from a blank/cluttered table. Set in the admin "Oyun Ekle".
+    // Each entry: { giftName, type: 'keyboard'|'text'|'mouse', value }.
+    template: [{
+        _id: false,
+        giftName: { type: String, trim: true },
+        type: { type: String, enum: ['keyboard', 'text', 'mouse'], default: 'keyboard' },
+        value: { type: String, trim: true }
+    }],
     downloadCount: {
         type: Number,
         default: 0

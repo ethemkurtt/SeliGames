@@ -7,7 +7,7 @@ export const Route = createFileRoute('/admin/mods')({
     component: ModsAdmin,
 })
 
-const empty = { title: '', gameTitle: '', description: '', category: 'open-world', version: '1.0.0', imageUrl: '', downloadUrl: '', isActive: true, tags: [] as string[] }
+const empty = { title: '', gameTitle: '', description: '', category: 'open-world', version: '1.0.0', imageUrl: '', downloadUrl: '', isActive: true, tags: [] as string[], template: [] as any[] }
 
 // Resolve a possibly-relative imageUrl (e.g. "/uploads/mod-images/xxx.png")
 // against the backend so img tags actually render. External https:// URLs
@@ -143,6 +143,9 @@ function ModsAdmin() {
                             </Row>
                             <Row label="İndirme URL (VPS)" wide><input value={editing.downloadUrl} onChange={(e) => setEditing({ ...editing, downloadUrl: e.target.value })} placeholder="https://vps.seligame.com/..." className="w-full px-3 py-2 rounded bg-input border border-white/10 text-sm" /></Row>
                             <Row label="Açıklama" wide><textarea rows={3} value={editing.description} onChange={(e) => setEditing({ ...editing, description: e.target.value })} className="w-full px-3 py-2 rounded bg-input border border-white/10 text-sm font-sans" /></Row>
+                            <Row label="Taslak — Hediye → Kısayol (opsiyonel)" wide>
+                                <TemplateEditor value={editing.template} onChange={(t) => setEditing({ ...editing, template: t })} />
+                            </Row>
                             <Row label="Aktif">
                                 <label className="flex items-center gap-2 text-sm">
                                     <input type="checkbox" checked={!!editing.isActive} onChange={(e) => setEditing({ ...editing, isActive: e.target.checked })} className="accent-neon-green" />
@@ -173,6 +176,79 @@ function Row({ label, children, wide }: { label: string; children: React.ReactNo
         <div className={wide ? 'sm:col-span-2' : ''}>
             <label className="block text-xs font-bold uppercase tracking-widest text-white/60 mb-1.5">{label}</label>
             {children}
+        </div>
+    )
+}
+
+// Add-one-at-a-time gift→shortcut template editor (mirrors the desktop app).
+function TemplateEditor({ value, onChange }: { value: any[]; onChange: (v: any[]) => void }) {
+    const list = Array.isArray(value) ? value : []
+    const [gifts, setGifts] = useState<any[]>([])
+    const [type, setType] = useState('keyboard')
+    const [val, setVal] = useState('')
+    const [giftName, setGiftName] = useState('')
+    const [search, setSearch] = useState('')
+    const [open, setOpen] = useState(false)
+    const ic: any = { keyboard: '⌨', text: '📝', mouse: '🖱' }
+
+    useEffect(() => { api.get('/gifts').then((r) => setGifts(r.data || [])).catch(() => {}) }, [])
+
+    const capture = (e: React.KeyboardEvent) => {
+        if (type !== 'keyboard') return
+        e.preventDefault()
+        if (e.key === 'Escape') { setVal(''); return }
+        const p: string[] = []
+        if (e.ctrlKey) p.push('Ctrl'); if (e.altKey) p.push('Alt'); if (e.shiftKey) p.push('Shift'); if (e.metaKey) p.push('Cmd')
+        if (!['Control', 'Alt', 'Shift', 'Meta'].includes(e.key)) { p.push(e.key.length === 1 ? e.key.toUpperCase() : e.key); setVal(p.join('+')) }
+    }
+    const add = () => {
+        if (!giftName) { alert('Önce hediye seç'); return }
+        if (!val.trim()) { alert('Önce kısayol/değer gir'); return }
+        onChange([...list, { giftName, type, value: val.trim() }])
+        setVal(''); setGiftName(''); setSearch('')
+    }
+    const remove = (i: number) => onChange(list.filter((_, idx) => idx !== i))
+    const filtered = (search ? gifts.filter((g) => g.name.toLocaleLowerCase('tr').includes(search.toLocaleLowerCase('tr'))) : gifts).slice(0, 8)
+
+    return (
+        <div>
+            <p className="text-xs text-white/50 mb-2 normal-case font-normal tracking-normal">Bu modu açan yayıncıya hazır gelir; dilerse değiştirir. Boş bırakırsan taslaksız eklenir.</p>
+            <div className="flex flex-wrap gap-2 items-center bg-input/40 border border-white/10 rounded-lg p-2">
+                <select value={type} onChange={(e) => { setType(e.target.value); setVal('') }} className="px-2 py-1.5 rounded bg-input border border-white/10 text-xs">
+                    <option value="keyboard">⌨ Klavye</option><option value="text">📝 Metin</option><option value="mouse">🖱 Fare</option>
+                </select>
+                {type === 'keyboard' ? (
+                    <input value={val} onKeyDown={capture} readOnly placeholder="Tıkla + tuşa bas" className="flex-1 min-w-[110px] px-2 py-1.5 rounded bg-input border border-white/10 text-xs cursor-pointer" />
+                ) : type === 'mouse' ? (
+                    <select value={val} onChange={(e) => setVal(e.target.value)} className="flex-1 min-w-[110px] px-2 py-1.5 rounded bg-input border border-white/10 text-xs">
+                        <option value="">Fare tuşu…</option><option value="LeftClick">Sol tık</option><option value="RightClick">Sağ tık</option><option value="MiddleClick">Orta tık</option>
+                    </select>
+                ) : (
+                    <input value={val} onChange={(e) => setVal(e.target.value)} placeholder="Komut (örn. /heal)" className="flex-1 min-w-[110px] px-2 py-1.5 rounded bg-input border border-white/10 text-xs" />
+                )}
+                <div className="relative">
+                    <input value={giftName || search} onChange={(e) => { setSearch(e.target.value); setGiftName(''); setOpen(true) }} onFocus={() => setOpen(true)} onBlur={() => setTimeout(() => setOpen(false), 180)} placeholder="🎁 Hediye ara" className="w-44 px-2 py-1.5 rounded bg-input border border-white/10 text-xs" />
+                    {open && filtered.length > 0 && (
+                        <div className="absolute z-20 mt-1 w-56 max-h-52 overflow-auto bg-card border border-white/10 rounded-lg shadow-xl">
+                            {filtered.map((g) => (
+                                <button key={g.name} type="button" onClick={() => { setGiftName(g.name); setSearch(''); setOpen(false) }} className="flex items-center gap-2 w-full px-2 py-1.5 hover:bg-white/5 text-xs text-left">
+                                    <img src={g.icon} className="w-4 h-4 rounded" /> <span className="flex-1 truncate">{g.name}</span> <span className="text-white/40">💎{g.coins}</span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+                <button type="button" onClick={add} className="px-3 py-1.5 rounded bg-gaming-gradient text-black text-xs font-bold">+ Ekle</button>
+            </div>
+            <div className="flex flex-col gap-1.5 mt-2">
+                {list.map((t, i) => (
+                    <div key={i} className="flex items-center gap-2 bg-input/40 border border-white/10 rounded px-2 py-1.5 text-xs">
+                        <span className="flex-1 truncate">{t.giftName}</span>
+                        <span className="text-neon-green font-bold whitespace-nowrap">{ic[t.type] || '⌨'} {t.value}</span>
+                        <button type="button" onClick={() => remove(i)} className="text-red-400">✕</button>
+                    </div>
+                ))}
+            </div>
         </div>
     )
 }

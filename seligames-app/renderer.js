@@ -2187,6 +2187,11 @@ function displayMods(mods) {
 function openAddGameModal() {
     const m = document.getElementById('add-game-modal');
     if (m) m.classList.add('active');
+    _agTemplate = [];
+    _agTplDraft = { giftName: '', iconUrl: '', value: '' };
+    renderAgTemplate();
+    const gv = document.getElementById('ag-tpl-value'); if (gv) gv.value = '';
+    const gg = document.getElementById('ag-tpl-gift'); if (gg) gg.innerHTML = '🎁 Hediye';
 }
 function closeAddGameModal() {
     const m = document.getElementById('add-game-modal');
@@ -2196,6 +2201,8 @@ function closeAddGameModal() {
         const el = document.getElementById(id); if (el) el.value = '';
     });
     const ver = document.getElementById('ag-version'); if (ver) ver.value = '1.0.0';
+    _agTemplate = [];
+    renderAgTemplate();
 }
 
 async function submitAddGame() {
@@ -2207,7 +2214,8 @@ async function submitAddGame() {
         version: document.getElementById('ag-version').value.trim() || '1.0.0',
         imageUrl: document.getElementById('ag-image').value.trim(),
         downloadUrl: document.getElementById('ag-download').value.trim(),
-        tags: []
+        tags: [],
+        template: _agTemplate.map(t => ({ giftName: t.giftName, type: t.type, value: t.value }))
     };
     if (!payload.title || !payload.gameTitle || !payload.downloadUrl) {
         showToast('Başlık, oyun adı ve indirme URL zorunlu', true);
@@ -2227,6 +2235,90 @@ async function submitAddGame() {
     }
 }
 
+// ─── "Yeni Oyun Ekle" taslak (template) editörü ────────────────────────
+let _agTemplate = [];
+let _agTplDraft = { giftName: '', iconUrl: '', value: '' };
+
+// Shared keyboard/mouse/text capture used by both the mod-detail and the
+// add-game-template editors. Calls onValue(value) with the captured shortcut.
+function captureShortcutInto(type, input, onValue) {
+    if (!input) return;
+    if (type === 'text') {
+        input.readOnly = false; input.focus();
+        input.onblur = () => { input.readOnly = true; onValue(input.value.trim()); };
+        return;
+    }
+    input.classList.add('capturing'); input.value = '...';
+    const finish = (val) => {
+        input.classList.remove('capturing'); input.value = val || ''; onValue(val || '');
+        window.removeEventListener('keydown', onKey, true);
+        window.removeEventListener('mousedown', onMouse, true);
+    };
+    const onKey = (e) => {
+        if (type !== 'keyboard') return;
+        e.preventDefault(); e.stopPropagation();
+        if (e.key === 'Escape') { finish(''); return; }
+        const p = [];
+        if (e.ctrlKey) p.push('Ctrl'); if (e.altKey) p.push('Alt');
+        if (e.shiftKey) p.push('Shift'); if (e.metaKey) p.push('Cmd');
+        if (!['Control', 'Alt', 'Shift', 'Meta'].includes(e.key)) { p.push(e.key.length === 1 ? e.key.toUpperCase() : e.key); finish(p.join('+')); }
+    };
+    const onMouse = (e) => {
+        if (type !== 'mouse') return;
+        if (e.target === input) return;
+        e.preventDefault(); e.stopPropagation();
+        finish(e.button === 0 ? 'LeftClick' : e.button === 2 ? 'RightClick' : e.button === 1 ? 'MiddleClick' : `Mouse${e.button}`);
+    };
+    window.addEventListener('keydown', onKey, true);
+    if (type === 'mouse') setTimeout(() => window.addEventListener('mousedown', onMouse, true), 50);
+}
+
+function agTplTypeChanged() {
+    _agTplDraft.value = '';
+    const v = document.getElementById('ag-tpl-value');
+    const type = document.getElementById('ag-tpl-type')?.value || 'keyboard';
+    if (v) { v.value = ''; v.readOnly = true; v.classList.remove('capturing'); v.placeholder = { keyboard: 'Kısayol (tıkla+bas)', text: 'Komut yaz (tıkla)', mouse: 'Fare (tıkla+bas)' }[type]; }
+}
+function agTplCapture() {
+    const type = document.getElementById('ag-tpl-type').value;
+    captureShortcutInto(type, document.getElementById('ag-tpl-value'), (val) => { _agTplDraft.value = val; });
+}
+function agTplPickGift() {
+    openGiftPickerFor((giftName, iconUrl) => {
+        _agTplDraft.giftName = giftName; _agTplDraft.iconUrl = iconUrl;
+        const g = document.getElementById('ag-tpl-gift');
+        if (g) g.innerHTML = `<img src="${iconUrl}" style="width:16px;height:16px;border-radius:3px;vertical-align:middle;" onerror="this.style.display='none'"> ${escapeHtml(giftName)}`;
+    });
+}
+function agTplAdd() {
+    const type = document.getElementById('ag-tpl-type').value;
+    if (type === 'text') { const v = document.getElementById('ag-tpl-value'); if (v) _agTplDraft.value = v.value.trim(); }
+    if (!_agTplDraft.giftName) { showToast('Önce hediye seç', true); return; }
+    if (!_agTplDraft.value) { showToast('Önce kısayol/değer gir', true); return; }
+    _agTemplate.push({ giftName: _agTplDraft.giftName, iconUrl: _agTplDraft.iconUrl, type, value: _agTplDraft.value });
+    _agTplDraft = { giftName: '', iconUrl: '', value: '' };
+    const v = document.getElementById('ag-tpl-value'); if (v) v.value = '';
+    const g = document.getElementById('ag-tpl-gift'); if (g) g.innerHTML = '🎁 Hediye';
+    renderAgTemplate();
+}
+function agTplRemove(i) { _agTemplate.splice(i, 1); renderAgTemplate(); }
+function renderAgTemplate() {
+    const list = document.getElementById('ag-tpl-list'); if (!list) return;
+    const ic = { keyboard: '⌨', text: '📝', mouse: '🖱' };
+    list.innerHTML = _agTemplate.map((t, i) => `
+        <div style="display:flex;align-items:center;gap:0.5rem;background:var(--bg);border:1px solid var(--ov-06);border-radius:6px;padding:0.35rem 0.55rem;font-size:0.74rem;">
+            <img src="${t.iconUrl || ''}" style="width:18px;height:18px;border-radius:3px;" onerror="this.style.display='none'">
+            <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(t.giftName)}</span>
+            <span style="color:#ff2eb8;font-weight:700;white-space:nowrap;">${ic[t.type] || '⌨'} ${escapeHtml(t.value)}</span>
+            <button type="button" onclick="agTplRemove(${i})" style="background:none;border:none;color:#ff6b9d;cursor:pointer;font-size:0.9rem;">✕</button>
+        </div>`).join('');
+}
+window.agTplTypeChanged = agTplTypeChanged;
+window.agTplCapture = agTplCapture;
+window.agTplPickGift = agTplPickGift;
+window.agTplAdd = agTplAdd;
+window.agTplRemove = agTplRemove;
+
 // ═══════════════════ MOD DETAIL PAGE ═══════════════════
 
 let currentModDetail = null;   // full mod object
@@ -2242,6 +2334,18 @@ async function openModDetail(modId) {
         const cfgRes = await window.api.getModConfig(modId);
         currentModDetail = mod;
         currentModConfig = cfgRes.success ? cfgRes.data : { installed: false, giftActions: {} };
+        if (!currentModConfig.giftActions) currentModConfig.giftActions = {};
+
+        // First open with no personal mapping → seed from the mod's template (if any),
+        // so the streamer starts with sensible gift→shortcut defaults instead of blank.
+        if (Object.keys(currentModConfig.giftActions).length === 0 && Array.isArray(mod.template) && mod.template.length) {
+            const seeded = {};
+            mod.template.forEach(t => { if (t && t.giftName && t.value) seeded[t.giftName] = { type: t.type || 'keyboard', value: t.value }; });
+            if (Object.keys(seeded).length) {
+                currentModConfig.giftActions = seeded;
+                window.api.saveModConfig(modId, { giftActions: seeded }).catch(() => {});
+            }
+        }
 
         // Switch to detail page
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -2344,67 +2448,134 @@ function renderModGiftActions() {
     if (!grid) return;
 
     const q = (document.getElementById('md-search')?.value || '').toLocaleLowerCase('tr-TR').trim();
-    const mode = document.getElementById('md-filter')?.value || 'all';
     const actions = currentModConfig?.giftActions || {};
-
-    let items = [...giftCatalogCache];
-    if (q) items = items.filter(g => g.name.toLocaleLowerCase('tr-TR').includes(q) || String(g.coins).includes(q));
-    if (mode === 'mapped') items = items.filter(g => actions[g.name]);
-    else if (mode === 'unmapped') items = items.filter(g => !actions[g.name]);
-    else if (mode === 'low') items = items.filter(g => g.coins < 10);
-    else if (mode === 'mid') items = items.filter(g => g.coins >= 10 && g.coins < 100);
-    else if (mode === 'high') items = items.filter(g => g.coins >= 100 && g.coins < 1000);
-    else if (mode === 'epic') items = items.filter(g => g.coins >= 1000);
-    items.sort((a, b) => a.coins - b.coins);
+    // Only the ASSIGNED mappings are shown now (was: all 123 gifts → huge clutter).
+    const allEntries = Object.entries(actions).filter(([, a]) => a && a.value);
+    let entries = allEntries;
+    if (q) entries = allEntries.filter(([name]) => name.toLocaleLowerCase('tr-TR').includes(q));
 
     // Update badges
     const totalGifts = giftCatalogCache.length;
-    const mapped = Object.keys(actions).length;
-    const kbCount = Object.values(actions).filter(a => a && a.type === 'keyboard').length;
+    const mapped = allEntries.length;
     setText('md-gifts-total', totalGifts);
     setText('md-actions-count', mapped);
-    setText('md-kb-count', kbCount);
-    setText('md-unmapped-count', totalGifts - mapped);
+    setText('md-kb-count', allEntries.filter(([, a]) => a.type === 'keyboard').length);
+    setText('md-unmapped-count', Math.max(0, totalGifts - mapped));
 
-    if (!items.length) {
-        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#9d8bbf;padding:2rem;">Eşleşen hediye yok</div>';
+    if (!allEntries.length) {
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:2rem;line-height:1.7;">Henüz eşleştirme yok.<br><b style="color:#ff2eb8;">+ Hediye Eşleştir</b> ile ekle. (Bu modun bir taslağı varsa otomatik gelir.)</div>';
+        return;
+    }
+    if (!entries.length) {
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:2rem;">Aramayla eşleşen yok</div>';
         return;
     }
 
-    grid.innerHTML = items.map(g => {
-        const act = actions[g.name];
-        const hasAction = !!act;
-        const type = act?.type || 'keyboard';
-        const value = act?.value || '';
+    const typeIcon = { keyboard: '⌨', text: '📝', mouse: '🖱' };
+    grid.innerHTML = entries.map(([name, act]) => {
+        const g = giftCatalogCache.find(x => x.name === name) || {};
+        const nameEsc = escapeHtml(name).replace(/'/g, "\\'");
         return `
-            <div class="md-gift-row ${hasAction ? 'mapped' : ''}" data-name="${escapeHtml(g.name)}">
-                <img class="md-gift-icon" src="${g.icon}" alt="" onerror="this.style.display='none'">
+            <div class="md-gift-row mapped" data-name="${escapeHtml(name)}">
+                <img class="md-gift-icon" src="${g.icon || ''}" alt="" onerror="this.style.display='none'">
                 <div class="md-gift-info">
-                    <div class="md-gift-name">${escapeHtml(g.name)}</div>
-                    <div class="md-gift-coins">💎 ${g.coins}</div>
+                    <div class="md-gift-name">${escapeHtml(name)}</div>
+                    <div class="md-gift-coins">💎 ${g.coins ?? '?'}</div>
                 </div>
-                <div class="md-action-controls">
-                    <select class="md-action-type" onchange="updateGiftActionType('${escapeHtml(g.name).replace(/'/g, "\\'")}', this.value)">
-                        <option value="keyboard" ${type === 'keyboard' ? 'selected' : ''}>⌨ Klavye</option>
-                        <option value="text" ${type === 'text' ? 'selected' : ''}>📝 Metin</option>
-                        <option value="mouse" ${type === 'mouse' ? 'selected' : ''}>🖱 Fare</option>
-                    </select>
-                    <input type="text" class="md-shortcut-input" readonly
-                        value="${escapeHtml(value)}"
-                        placeholder="${type === 'keyboard' ? 'Tıkla + tuş bas' : type === 'mouse' ? 'Tıkla + fare bas' : 'yazı gir'}"
-                        data-name="${escapeHtml(g.name)}"
-                        onclick="startShortcutCapture(this, '${escapeHtml(g.name).replace(/'/g, "\\'")}')"
-                    >
-                    <button class="md-gift-btn ${hasAction ? 'md-gift-btn-test' : ''}" onclick="testGiftAction('${escapeHtml(g.name).replace(/'/g, "\\'")}')" title="Bu aksiyonu hemen test et" ${hasAction ? '' : 'disabled style="opacity:0.3;cursor:not-allowed;"'}>
-                        <i class="fas fa-bolt"></i>
-                    </button>
-                    <button class="md-gift-btn" onclick="clearGiftAction('${escapeHtml(g.name).replace(/'/g, "\\'")}')" title="Temizle">
-                        <i class="fas fa-times"></i>
-                    </button>
+                <div style="margin-left:auto;display:flex;align-items:center;gap:0.4rem;">
+                    <span style="background:rgba(255,46,184,0.12);border:1px solid rgba(255,46,184,0.3);color:#ff2eb8;padding:0.25rem 0.6rem;border-radius:6px;font-size:0.74rem;font-weight:700;white-space:nowrap;">${typeIcon[act.type] || '⌨'} ${escapeHtml(act.value)}</span>
+                    <button class="md-gift-btn md-gift-btn-test" onclick="testGiftAction('${nameEsc}')" title="Test et"><i class="fas fa-bolt"></i></button>
+                    <button class="md-gift-btn" onclick="clearGiftAction('${nameEsc}')" title="Kaldır"><i class="fas fa-times"></i></button>
                 </div>
             </div>`;
     }).join('');
 }
+
+// ─── Tek-tek "Hediye Eşleştir" ekleme paneli ───────────────────────────
+let _mdAdd = { giftName: '', iconUrl: '', value: '' };
+
+function toggleMdAddPanel(show) {
+    const panel = document.getElementById('md-add-panel');
+    if (!panel) return;
+    const willShow = (show === undefined) ? panel.style.display === 'none' : !!show;
+    panel.style.display = willShow ? 'block' : 'none';
+    if (willShow) {
+        _mdAdd = { giftName: '', iconUrl: '', value: '' };
+        const v = document.getElementById('md-add-value'); if (v) { v.value = ''; v.readOnly = true; v.classList.remove('capturing'); }
+        const g = document.getElementById('md-add-gift'); if (g) g.innerHTML = '🎁 Hediye seç (ara)';
+        const t = document.getElementById('md-add-type'); if (t) t.value = 'keyboard';
+        mdAddTypeChanged();
+    }
+}
+
+function mdAddTypeChanged() {
+    _mdAdd.value = '';
+    const v = document.getElementById('md-add-value');
+    const type = document.getElementById('md-add-type')?.value || 'keyboard';
+    if (v) {
+        v.value = ''; v.readOnly = true; v.classList.remove('capturing');
+        v.placeholder = { keyboard: 'Tıkla, sonra tuşa bas (örn. Ctrl+1)', text: 'Tıkla ve komutu yaz (örn. /heal)', mouse: 'Tıkla, sonra fare tuşuna bas' }[type];
+    }
+}
+
+function mdCaptureValue() {
+    const type = document.getElementById('md-add-type').value;
+    const input = document.getElementById('md-add-value');
+    if (!input) return;
+    if (type === 'text') {
+        input.readOnly = false; input.focus();
+        input.onblur = () => { input.readOnly = true; _mdAdd.value = input.value.trim(); };
+        return;
+    }
+    input.classList.add('capturing'); input.value = '...';
+    const finish = (val) => {
+        input.classList.remove('capturing');
+        input.value = val || ''; _mdAdd.value = val || '';
+        window.removeEventListener('keydown', onKey, true);
+        window.removeEventListener('mousedown', onMouse, true);
+    };
+    const onKey = (e) => {
+        if (type !== 'keyboard') return;
+        e.preventDefault(); e.stopPropagation();
+        if (e.key === 'Escape') { finish(''); return; }
+        const parts = [];
+        if (e.ctrlKey) parts.push('Ctrl'); if (e.altKey) parts.push('Alt');
+        if (e.shiftKey) parts.push('Shift'); if (e.metaKey) parts.push('Cmd');
+        if (!['Control', 'Alt', 'Shift', 'Meta'].includes(e.key)) { parts.push(e.key.length === 1 ? e.key.toUpperCase() : e.key); finish(parts.join('+')); }
+    };
+    const onMouse = (e) => {
+        if (type !== 'mouse') return;
+        if (e.target === input) return;
+        e.preventDefault(); e.stopPropagation();
+        finish(e.button === 0 ? 'LeftClick' : e.button === 2 ? 'RightClick' : e.button === 1 ? 'MiddleClick' : `Mouse${e.button}`);
+    };
+    window.addEventListener('keydown', onKey, true);
+    if (type === 'mouse') setTimeout(() => window.addEventListener('mousedown', onMouse, true), 50);
+}
+
+function mdPickGift() {
+    openGiftPickerFor((giftName, iconUrl) => {
+        _mdAdd.giftName = giftName; _mdAdd.iconUrl = iconUrl;
+        const g = document.getElementById('md-add-gift');
+        if (g) g.innerHTML = `<img src="${iconUrl}" style="width:18px;height:18px;border-radius:3px;" onerror="this.style.display='none'"> ${escapeHtml(giftName)}`;
+    });
+}
+
+async function mdAddMapping() {
+    const type = document.getElementById('md-add-type').value;
+    if (type === 'text') { const v = document.getElementById('md-add-value'); if (v) _mdAdd.value = v.value.trim(); }
+    if (!_mdAdd.giftName) { showToast('Önce bir hediye seç', true); return; }
+    if (!_mdAdd.value) { showToast('Önce kısayol/değer gir', true); return; }
+    const gn = _mdAdd.giftName, val = _mdAdd.value;
+    await saveGiftAction(gn, { type, value: val });
+    toggleMdAddPanel(false);
+    showToast(`✓ ${gn} → ${type === 'keyboard' ? '⌨' : type === 'text' ? '📝' : '🖱'} ${val}`);
+}
+window.toggleMdAddPanel = toggleMdAddPanel;
+window.mdAddTypeChanged = mdAddTypeChanged;
+window.mdCaptureValue = mdCaptureValue;
+window.mdPickGift = mdPickGift;
+window.mdAddMapping = mdAddMapping;
 
 // Test a single gift's mapped action without needing a live TikTok event.
 // Useful to verify a key actually reaches the foreground app (e.g. open
@@ -4833,13 +5004,18 @@ function updateOverlayPreview() {
                 <div style="font-size:11px;color:#9d8bbf;text-align:center;max-width:300px;line-height:1.5;">Bu overlay aksiyon ateşlendiğinde uyarı/ses/TTS/konfeti gösterir. Yayında <b>şeffaftır</b> — sadece aksiyon olunca görünür.</div>
             </div>`;
     } else if (type === 'interaction-slider') {
-        const demo = [['🎁 Gül','Blok at'],['🚀 Roket','Çark çevir'],['🦁 Aslan','+60sn']];
+        // Animated marquee preview (was static — testers expected it to scroll like
+        // the live overlay). Chips are doubled so the loop is seamless (-50%).
+        const demo = [['🎁 Gül', 'Blok at'], ['🚀 Roket', 'Çark çevir'], ['🦁 Aslan', '+60sn'], ['💎 Elmas', 'TNT yağmuru'], ['🌟 Yıldız', 'Konfeti']];
+        const chip = ([g, a]) => `<div style="display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:999px;background:${s.barColor}1a;border:1px solid ${s.barColor}44;white-space:nowrap;flex:0 0 auto;"><span style="color:${s.barColor};font-weight:800;font-size:13px;">${g}</span><span style="color:${s.textColor};opacity:0.5;">→</span><span style="color:${s.textColor};font-weight:600;font-size:13px;">${a}</span></div>`;
+        const chips = demo.concat(demo).map(chip).join('');
         preview.innerHTML = `
-            <div style="width:100%;max-width:420px;padding:12px 0;border-radius:${s.borderRadius}px;${themeStyles.container};overflow:hidden;">
-                <div style="display:flex;gap:10px;padding:0 14px;">
-                    ${demo.map(([g,a])=>`<div style="display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:999px;background:${s.barColor}1a;border:1px solid ${s.barColor}44;white-space:nowrap;"><span style="color:${s.barColor};font-weight:800;font-size:13px;">${g}</span><span style="color:${s.textColor};opacity:0.5;">→</span><span style="color:${s.textColor};font-weight:600;font-size:13px;">${a}</span></div>`).join('')}
+            <style>@keyframes gdSliderMarquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}</style>
+            <div style="width:100%;max-width:460px;padding:12px 0;border-radius:${s.borderRadius}px;${themeStyles.container};overflow:hidden;">
+                <div style="display:flex;gap:10px;padding:0 14px;width:max-content;animation:gdSliderMarquee 16s linear infinite;">
+                    ${chips}
                 </div>
-                <div style="font-size:11px;color:#9d8bbf;text-align:center;margin-top:10px;padding:0 14px;">Hediye kurallarından otomatik dolar, yayının altında kayar.</div>
+                <div style="font-size:11px;color:#9d8bbf;text-align:center;margin-top:10px;padding:0 14px;">Hediye kurallarından otomatik dolar, yayının altında soldan sağa kayar.</div>
             </div>`;
     } else if (type === 'gift-cannon') {
         // Style-aware: barColor (theme), fontSize, borderRadius now drive the preview.
