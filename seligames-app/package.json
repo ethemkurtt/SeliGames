@@ -99,7 +99,8 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "SeliGames"
+      "shortcutName": "SeliGames",
+      "artifactName": "SeliGames-Setup-${version}.exe"
     },
     "linux": {
       "target": [
