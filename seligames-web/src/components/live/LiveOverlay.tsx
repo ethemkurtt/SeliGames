@@ -1089,7 +1089,9 @@ function ActionAlertCard({ fire }: { fire: ActionFire }) {
     const animClass = anim === 'slide' ? 'ov-actalert-slide' : anim === 'bounce' ? 'ov-actalert-bounce' : 'ov-actalert-pop'
     const isMedia = fire.actionType === 'media'
     const mediaUrl = c.mediaUrl
-    const mediaType = c.mediaType || (/\.(mp4|webm)$/i.test(mediaUrl || '') ? 'video' : 'image')
+    // Detect video by explicit mediaType, by extension, OR by a data:video/ URI
+    // (uploaded files are embedded as data-URIs without a .mp4 extension).
+    const mediaType = c.mediaType || (/^data:video\//i.test(mediaUrl || '') || /\.(mp4|webm)(\?|$)/i.test(mediaUrl || '') ? 'video' : 'image')
 
     return (
         <div style={{

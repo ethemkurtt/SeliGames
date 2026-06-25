@@ -2384,17 +2384,26 @@ function renderModDetailHero() {
 
     // Install/uninstall button states
     const isInstalled = !!currentModConfig?.installed;
+    const integration = isIntegrationMod(mod);
     const installBtn = document.getElementById('md-install-btn');
     const uninstallBtn = document.getElementById('md-uninstall-btn');
     if (installBtn) {
-        installBtn.innerHTML = isInstalled
-            ? '<i class="fas fa-check-circle"></i> Yüklü ✓'
-            : '<i class="fas fa-download"></i> Kur';
-        installBtn.disabled = isInstalled;
-        installBtn.style.opacity = isInstalled ? '0.7' : '1';
-        installBtn.style.cursor = isInstalled ? 'default' : 'pointer';
+        if (integration) {
+            // Minecraft/integration mods aren't downloaded — connect in-game instead.
+            installBtn.innerHTML = '<i class="fas fa-plug"></i> Sunucuya Bağlan';
+            installBtn.disabled = false;
+            installBtn.style.opacity = '1';
+            installBtn.style.cursor = 'pointer';
+        } else {
+            installBtn.innerHTML = isInstalled
+                ? '<i class="fas fa-check-circle"></i> Yüklü ✓'
+                : '<i class="fas fa-download"></i> Kur';
+            installBtn.disabled = isInstalled;
+            installBtn.style.opacity = isInstalled ? '0.7' : '1';
+            installBtn.style.cursor = isInstalled ? 'default' : 'pointer';
+        }
     }
-    if (uninstallBtn) uninstallBtn.style.display = isInstalled ? 'inline-flex' : 'none';
+    if (uninstallBtn) uninstallBtn.style.display = (isInstalled && !integration) ? 'inline-flex' : 'none';
 
     // Per-mod arm/disarm card — only meaningful once the mod is installed
     const armCard = document.getElementById('md-arm-card');
@@ -2720,8 +2729,26 @@ async function saveAllGiftActions() {
     } catch (e) { showToast('Kayıt hatası', true); }
 }
 
+// Minecraft / server-integration mods aren't downloadable files — they're joined
+// in-game. Detect by gameTitle or a minecraft:// downloadUrl so we never try to
+// download them (that produced "Unsupported protocol minecraft:").
+function isIntegrationMod(mod) {
+    if (!mod) return false;
+    const dl = (mod.downloadUrl || '').toLowerCase();
+    return /minecraft/i.test(mod.gameTitle || '') || dl.startsWith('minecraft:') || mod.modType === 'integration';
+}
+
+function showMinecraftConnectInfo(mod) {
+    const addr = (mod.downloadUrl || '').replace(/^minecraft:\/\//i, '').trim() || '187.124.29.94';
+    try { window.api.openExternal && navigator.clipboard?.writeText(addr); } catch {}
+    showToast('Sunucu adresi panoya kopyalandı: ' + addr);
+    alert(`🎮 ${mod.title}\n\nBu bir Minecraft entegrasyonudur — indirme gerekmez.\n\n1) Minecraft → Çok Oyunculu → Sunucu Ekle\n2) Adres: ${addr}   (panoya kopyalandı)\n3) Bağlan (ViaVersion ile her sürüm)\n4) Aksiyonlar & Olaylar'dan hediyeleri 🟩 Minecraft komutlarına bağla\n\nDetay: Kullanım Kılavuzu Bölüm 7.`);
+}
+
 async function installModAction() {
     if (!currentModDetail) return;
+    // Integration mods (Minecraft) → show connect instructions, never download.
+    if (isIntegrationMod(currentModDetail)) { showMinecraftConnectInfo(currentModDetail); return; }
     const dirRes = await window.api.pickInstallDirectory(currentModDetail.title);
     if (!dirRes.success) return;
 
@@ -6080,6 +6107,27 @@ function openActionEditor(action) {
 }
 function closeActionEditor() { document.getElementById('action-modal').classList.remove('active'); _autoEditingAction = null; }
 
+// File-based media for actions: read the chosen image/video as a data-URI and put
+// it into the media field (embedded → works in the OBS overlay without a server).
+// Capped so the action config + per-event socket payload stay reasonable.
+function acPickMediaFile(input) {
+    const f = input.files && input.files[0];
+    if (!f) return;
+    const MAX = 4 * 1024 * 1024;
+    if (f.size > MAX) { showToast('Dosya çok büyük (max 4MB). Büyük videolar için URL kullanın.', true); input.value = ''; return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+        const el = document.getElementById('ac-mediaUrl');
+        if (el) el.value = reader.result;
+        const mt = document.getElementById('ac-mediaType');
+        if (mt) mt.value = f.type.startsWith('video/') ? 'video' : (f.type === 'image/gif' ? 'gif' : 'image');
+        showToast('Dosya eklendi: ' + f.name);
+    };
+    reader.onerror = () => showToast('Dosya okunamadı', true);
+    reader.readAsDataURL(f);
+}
+window.acPickMediaFile = acPickMediaFile;
+
 function renderActionConfig() {
     const type = document.getElementById('action-type').value;
     const c = _autoEditingAction?.config || {};
@@ -6089,7 +6137,7 @@ function renderActionConfig() {
     if (type === 'overlay-alert') {
         html = fld('Başlık', `<input id="ac-title" class="auto-input" value="${escapeHtml(c.title || '')}" placeholder="%username% %giftName% gönderdi!">`, 'Yer tutucular: %username% %giftName% %repeatCount% %coins%')
             + fld('Alt Yazı', `<input id="ac-message" class="auto-input" value="${escapeHtml(c.message || '')}" placeholder="Teşekkürler!">`)
-            + fld('Görsel/Video URL (ops.)', `<input id="ac-mediaUrl" class="auto-input" value="${escapeHtml(c.mediaUrl || '')}" placeholder="https://...">`)
+            + fld('Görsel/Video (ops.)', `<div style="display:flex;gap:0.4rem;align-items:center;"><input id="ac-mediaUrl" class="auto-input" value="${escapeHtml(c.mediaUrl || '')}" placeholder="https://... veya dosya seç →" style="flex:1;min-width:0;"><input type="file" id="ac-mediaFile" accept="image/*,video/*" style="display:none;" onchange="acPickMediaFile(this)"><button type="button" class="btn-secondary" onclick="document.getElementById('ac-mediaFile').click()" style="white-space:nowrap;padding:0.45rem 0.7rem;"><i class="fas fa-folder-open"></i> Dosya</button></div>`, 'URL yapıştır ya da bilgisayardan dosya seç (görsel/küçük video, ≤4MB — yayında gömülü gösterilir).')
             + `<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;">`
             + fld('Süre (sn)', `<input id="ac-duration" type="number" class="auto-input" value="${(c.durationMs || 4000) / 1000}" min="1" step="0.5">`)
             + fld('Animasyon', `<select id="ac-animation" class="auto-input"><option value="pop" ${c.animation === 'pop' ? 'selected' : ''}>Pop</option><option value="slide" ${c.animation === 'slide' ? 'selected' : ''}>Kayma</option><option value="bounce" ${c.animation === 'bounce' ? 'selected' : ''}>Zıplama</option></select>`)
@@ -6124,7 +6172,7 @@ function renderActionConfig() {
         html = fld('Yoğunluk', `<input id="ac-intensity" type="range" class="auto-input" min="1" max="10" value="${c.intensity || 5}" style="padding:0;">`)
             + fld('Renkler (virgülle)', `<input id="ac-colors" class="auto-input" value="${escapeHtml((c.colors || ['#ff2eb8', '#a855f7', '#22d3ee']).join(','))}">`);
     } else if (type === 'media') {
-        html = fld('Medya URL', `<input id="ac-mediaUrl" class="auto-input" value="${escapeHtml(c.mediaUrl || '')}" placeholder="https://...mp4 / .gif">`)
+        html = fld('Medya (URL veya dosya)', `<div style="display:flex;gap:0.4rem;align-items:center;"><input id="ac-mediaUrl" class="auto-input" value="${escapeHtml(c.mediaUrl || '')}" placeholder="https://...mp4 / .gif veya dosya seç →" style="flex:1;min-width:0;"><input type="file" id="ac-mediaFile" accept="image/*,video/*" style="display:none;" onchange="acPickMediaFile(this)"><button type="button" class="btn-secondary" onclick="document.getElementById('ac-mediaFile').click()" style="white-space:nowrap;padding:0.45rem 0.7rem;"><i class="fas fa-folder-open"></i> Dosya</button></div>`, 'Bilgisayardan görsel/küçük video seç (≤4MB, gömülü) ya da URL gir.')
             + `<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;">`
             + fld('Tip', `<select id="ac-mediaType" class="auto-input"><option value="video" ${c.mediaType === 'video' ? 'selected' : ''}>Video</option><option value="gif" ${c.mediaType === 'gif' ? 'selected' : ''}>GIF</option><option value="image" ${c.mediaType === 'image' ? 'selected' : ''}>Resim</option></select>`)
             + fld('Süre (sn)', `<input id="ac-duration" type="number" class="auto-input" value="${(c.durationMs || 5000) / 1000}" min="1" step="0.5">`)
