@@ -140,17 +140,26 @@ async function executeText(text) {
 
 async function executeMouse(value) {
     const btn = String(value).toLowerCase();
-    const map = { leftclick: 1, rightclick: 2, middleclick: 3 };
     if (process.platform === 'darwin') {
         // AppleScript click requires absolute coords; keeping mouse action off the MVP on macOS.
         throw new Error('mouse action not implemented on macOS');
     }
     if (process.platform === 'win32') {
-        const mouseBtn = btn === 'rightclick' ? 'right' : 'left';
-        const script = `Add-Type -Name U -Namespace W -MemberDefinition '[DllImport("user32.dll")]public static extern void mouse_event(uint f,int x,int y,uint d,int e);'; $d=${mouseBtn === 'right' ? '0x0008' : '0x0002'}; $u=${mouseBtn === 'right' ? '0x0010' : '0x0004'}; [W.U]::mouse_event($d,0,0,0,0); [W.U]::mouse_event($u,0,0,0,0)`;
+        // mouse_event flags: [down, up, dwData]. X-buttons (yan/makro tuşlar) use
+        // 0x0080/0x0100 with dwData XBUTTON1=1 (Mouse4) / XBUTTON2=2 (Mouse5).
+        const map = {
+            leftclick:   ['0x0002', '0x0004', 0],
+            rightclick:  ['0x0008', '0x0010', 0],
+            middleclick: ['0x0020', '0x0040', 0],
+            mouse4:      ['0x0080', '0x0100', 1],
+            mouse5:      ['0x0080', '0x0100', 2],
+        };
+        const [down, up, data] = map[btn] || map.leftclick;
+        const script = `Add-Type -Name U -Namespace W -MemberDefinition '[DllImport("user32.dll")]public static extern void mouse_event(uint f,int x,int y,uint d,int e);'; [W.U]::mouse_event(${down},0,0,${data},0); [W.U]::mouse_event(${up},0,0,${data},0)`;
         return execSim('powershell.exe', ['-NoProfile', '-Command', script]);
     }
-    const bn = map[btn] || 1;
+    // linux (xdotool): 1=sol, 2=orta, 3=sağ, 8=yan4, 9=yan5
+    const bn = { leftclick: 1, middleclick: 2, rightclick: 3, mouse4: 8, mouse5: 9 }[btn] || 1;
     return execSim('xdotool', ['click', String(bn)]);
 }
 
@@ -160,6 +169,43 @@ async function executeAction(action) {
     if (action.type === 'text') return await executeText(action.value);
     if (action.type === 'mouse') return await executeMouse(action.value);
     throw new Error(`unknown action type: ${action.type}`);
+}
+
+// All incoming rule actions run through ONE serial chain so a rule's multiple
+// actions (multi-command gift, e.g. Minecraft chat → cmd → Enter → cmd) fire
+// strictly IN ORDER with a gap between them. The backend delivers them back-to-
+// back; a per-event async handler would otherwise interleave the keystroke
+// subprocesses and corrupt the sequence.
+let _execChain = Promise.resolve();
+async function runExecutePayload(payload) {
+    try {
+        const type = payload?.actionType || payload?.type;
+        if (type === 'launch') {
+            const parsed = _parseLaunch?.(payload.command);
+            if (parsed) {
+                const child = spawn(parsed.bin, parsed.args, { detached: true, stdio: 'ignore', windowsHide: false });
+                child.unref?.();
+                console.log(`⚙️→🚀 rule-launched: ${payload.command}`);
+            }
+            return;
+        }
+        if (['keyboard', 'mouse', 'text'].includes(type)) {
+            const action = { type, value: payload.value };
+            const fires = Math.max(1, Math.min(20, Number(payload.repeatCount) || 1));
+            for (let i = 0; i < fires; i++) {
+                try { await executeAction(action); }
+                catch (e) { console.warn('rule action failed:', e.message); break; }
+                if (i < fires - 1) await new Promise(r => setTimeout(r, 40));
+            }
+            console.log(`⚙️→⌨️ rule-fired ${type}:${payload.value} ×${fires}`);
+            if (mainWindow) mainWindow.webContents.send('rule-action-fired', { type, value: payload.value, fires });
+            // Gap AFTER each action so the next queued rule-action (e.g. the 2nd
+            // command of a multi-command gift) is discrete and correctly ordered.
+            await new Promise(r => setTimeout(r, 130));
+        }
+    } catch (e) {
+        console.warn('execute-action handler error:', e.message);
+    }
 }
 
 let mainWindow;
@@ -269,32 +315,11 @@ function connectToBackendSocket(token) {
     // this user's room. Run them straight from the main process (it owns
     // executeAction + the launch handler). Honour repeatCount with a small
     // gap so games register discrete taps.
-    backendSocket.on('execute-action', async (payload) => {
-        try {
-            const type = payload?.actionType || payload?.type;
-            if (type === 'launch') {
-                const parsed = _parseLaunch?.(payload.command);
-                if (parsed) {
-                    const child = spawn(parsed.bin, parsed.args, { detached: true, stdio: 'ignore', windowsHide: false });
-                    child.unref?.();
-                    console.log(`⚙️→🚀 rule-launched: ${payload.command}`);
-                }
-                return;
-            }
-            if (['keyboard', 'mouse', 'text'].includes(type)) {
-                const action = { type, value: payload.value };
-                const fires = Math.max(1, Math.min(20, Number(payload.repeatCount) || 1));
-                for (let i = 0; i < fires; i++) {
-                    try { await executeAction(action); }
-                    catch (e) { console.warn('rule action failed:', e.message); break; }
-                    if (i < fires - 1) await new Promise(r => setTimeout(r, 40));
-                }
-                console.log(`⚙️→⌨️ rule-fired ${type}:${payload.value} ×${fires}`);
-                if (mainWindow) mainWindow.webContents.send('rule-action-fired', { type, value: payload.value, fires });
-            }
-        } catch (e) {
-            console.warn('execute-action handler error:', e.message);
-        }
+    backendSocket.on('execute-action', (payload) => {
+        // Serialize through the shared chain → a rule's multiple actions fire in
+        // order with a gap; different gifts' actions also can't interleave their
+        // keystrokes (you can't type two things into a game at once anyway).
+        _execChain = _execChain.then(() => runExecutePayload(payload)).catch((e) => console.warn('exec chain error:', e.message));
     });
 
     backendSocket.on('disconnect', () => {

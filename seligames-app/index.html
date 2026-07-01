@@ -4508,14 +4508,23 @@
                         oninput="filterMods()">
                     <select id="mod-category" onchange="filterMods()"
                         style="padding:0.6rem 0.85rem;background:var(--bg);border:1px solid var(--ov-08);border-radius:8px;color:var(--fg-strong);font-size:0.82rem;">
-                        <option value="all">Tüm Kategoriler</option>
-                        <option value="open-world">Açık Dünya</option>
-                        <option value="fps">FPS</option>
-                        <option value="battle-royale">Battle Royale</option>
-                        <option value="moba">MOBA</option>
-                        <option value="sandbox">Sandbox</option>
-                        <option value="sports">Spor</option>
-                        <option value="party">Parti</option>
+                        <option value="all">Tüm Oyunlar</option>
+                        <option value="Minecraft">Minecraft</option>
+                        <option value="Grand Theft Auto V">GTA V</option>
+                        <option value="Fortnite">Fortnite</option>
+                        <option value="PUBG">PUBG</option>
+                        <option value="Valorant">Valorant</option>
+                        <option value="Roblox">Roblox</option>
+                        <option value="Among Us">Among Us</option>
+                        <option value="Fall Guys">Fall Guys</option>
+                        <option value="Call of Duty">Call of Duty</option>
+                        <option value="League of Legends">League of Legends</option>
+                        <option value="Counter-Strike 2">CS2 / CS:GO</option>
+                        <option value="Rust">Rust</option>
+                        <option value="ARK">ARK: Survival</option>
+                        <option value="The Sims 4">The Sims 4</option>
+                        <option value="Stardew Valley">Stardew Valley</option>
+                        <option value="Diğer">Diğer</option>
                     </select>
                     <select id="mod-filter" onchange="filterMods()"
                         style="padding:0.6rem 0.85rem;background:var(--bg);border:1px solid var(--ov-08);border-radius:8px;color:var(--fg-strong);font-size:0.82rem;">
@@ -4560,16 +4569,24 @@
                         </div>
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;">
                             <div>
-                                <label style="display:block;margin-bottom:0.25rem;color:var(--text-muted);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;">Kategori</label>
-                                <select id="ag-category" class="profile-input">
-                                    <option value="open-world">Açık Dünya</option>
-                                    <option value="fps">FPS</option>
-                                    <option value="battle-royale">Battle Royale</option>
-                                    <option value="moba">MOBA</option>
-                                    <option value="sandbox">Sandbox</option>
-                                    <option value="sports">Spor</option>
-                                    <option value="party">Parti</option>
-                                    <option value="other">Diğer</option>
+                                <label style="display:block;margin-bottom:0.25rem;color:var(--text-muted);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;">Oyun</label>
+                                <select id="ag-category" class="profile-input" onchange="agCategoryChanged()">
+                                    <option value="Minecraft">Minecraft</option>
+                                    <option value="Grand Theft Auto V">GTA V</option>
+                                    <option value="Fortnite">Fortnite</option>
+                                    <option value="PUBG">PUBG</option>
+                                    <option value="Valorant">Valorant</option>
+                                    <option value="Roblox">Roblox</option>
+                                    <option value="Among Us">Among Us</option>
+                                    <option value="Fall Guys">Fall Guys</option>
+                                    <option value="Call of Duty">Call of Duty</option>
+                                    <option value="League of Legends">League of Legends</option>
+                                    <option value="Counter-Strike 2">CS2 / CS:GO</option>
+                                    <option value="Rust">Rust</option>
+                                    <option value="ARK">ARK: Survival</option>
+                                    <option value="The Sims 4">The Sims 4</option>
+                                    <option value="Stardew Valley">Stardew Valley</option>
+                                    <option value="Diğer">Diğer</option>
                                 </select>
                             </div>
                             <div>
@@ -4589,12 +4606,19 @@
                         <!-- Taslak (opsiyonel) — varsayılan hediye→kısayol eşleştirmeleri -->
                         <div style="border-top:1px solid var(--ov-06);padding-top:0.7rem;">
                             <label style="display:block;margin-bottom:0.25rem;color:var(--text-muted);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;">Taslak — Hediye → Kısayol (opsiyonel)</label>
-                            <p style="color:var(--text-muted);font-size:0.68rem;margin:0 0 0.5rem;line-height:1.5;">Bu modu açan yayıncıya hazır gelir; dilerse değiştirir. Boş bırakırsan taslaksız eklenir.</p>
+                            <p style="color:var(--text-muted);font-size:0.68rem;margin:0 0 0.5rem;line-height:1.5;">Bu modu açan yayıncıya hazır gelir; dilerse değiştirir. Boş bırakırsan taslaksız eklenir.<br><b style="color:#ff2eb8;">💡 Aynı hediyeyi tekrar seçip "+ Ekle"'ye basarak o hediyeye 2., 3. komut zincirleyebilirsin</b> — komutlar sırayla çalışır (Minecraft için: "/tnt 1 0 0" → Enter → "/tnt 2 0 0").</p>
                             <div style="display:flex;gap:0.4rem;flex-wrap:wrap;align-items:center;background:var(--bg);border:1px solid var(--ov-08);border-radius:8px;padding:0.55rem;">
                                 <select id="ag-tpl-type" onchange="agTplTypeChanged()" style="padding:0.4rem 0.5rem;background:var(--bg-2);border:1px solid var(--ov-08);border-radius:6px;color:var(--fg-strong);font-size:0.75rem;">
                                     <option value="keyboard">⌨ Klavye</option><option value="text">📝 Metin</option><option value="mouse">🖱 Fare</option>
                                 </select>
                                 <input type="text" id="ag-tpl-value" readonly placeholder="Kısayol (tıkla+bas)" onclick="agTplCapture()" style="flex:1;min-width:110px;padding:0.4rem 0.5rem;background:var(--bg-2);border:1px solid var(--ov-08);border-radius:6px;color:var(--fg-strong);font-size:0.75rem;cursor:pointer;">
+                                <select id="ag-tpl-mouse" onchange="agTplMouseChanged()" style="display:none;flex:1;min-width:110px;padding:0.4rem 0.5rem;background:var(--bg-2);border:1px solid var(--ov-08);border-radius:6px;color:var(--fg-strong);font-size:0.75rem;cursor:pointer;">
+                                    <option value="LeftClick">🖱 Sol Tık</option>
+                                    <option value="RightClick">🖱 Sağ Tık</option>
+                                    <option value="MiddleClick">🖱 Orta Tık</option>
+                                    <option value="Mouse4">🖱 Yan Tuş 4 (makro)</option>
+                                    <option value="Mouse5">🖱 Yan Tuş 5 (makro)</option>
+                                </select>
                                 <button type="button" id="ag-tpl-gift" onclick="agTplPickGift()" style="padding:0.4rem 0.6rem;background:var(--bg-2);border:1px solid var(--ov-08);border-radius:6px;color:var(--fg-strong);font-size:0.75rem;cursor:pointer;">🎁 Hediye</button>
                                 <button type="button" class="btn-success" onclick="agTplAdd()" style="padding:0.42rem 0.7rem;font-size:0.75rem;">+ Ekle</button>
                             </div>
@@ -5573,6 +5597,9 @@
                     </button>
                     <button id="md-uninstall-btn" class="btn-secondary" onclick="uninstallModAction()" style="display:none;min-width:160px;">
                         <i class="fas fa-trash"></i> Kaldır
+                    </button>
+                    <button id="md-download-btn" class="btn-secondary" onclick="downloadIntegrationFile()" style="display:none;min-width:160px;">
+                        <i class="fas fa-download"></i> Dosyayı İndir
                     </button>
                     <button class="btn-secondary" onclick="saveAllGiftActions()">
                         <i class="fas fa-save"></i> Tüm Eşlemeleri Kaydet

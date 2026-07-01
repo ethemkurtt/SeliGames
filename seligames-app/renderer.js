@@ -4010,6 +4010,34 @@ document.addEventListener('DOMContentLoaded', () => {
 //     protect against rapid-fire spam locking up the OS).
 //   - per-key cooldown 40ms between consecutive presses → most games still
 //     register each as a discrete tap.
+// Normalize any gift action / template row into an ordered command list.
+// Supports the new multi-command shape { commands:[{type,value}...] } AND the
+// legacy single-command shape { type, value } (→ one-element list). Empty-value
+// commands are dropped so a half-filled row never fires a blank keystroke.
+function toCommands(a) {
+    if (a && Array.isArray(a.commands) && a.commands.length) {
+        return a.commands.filter(c => c && c.value).map(c => ({ type: c.type || 'keyboard', value: c.value }));
+    }
+    if (a && a.value) return [{ type: a.type || 'keyboard', value: a.value }];
+    return [];
+}
+// Small gap between chained commands so games register each discretely and
+// slow steps (e.g. Minecraft chat opening) have time before the next command.
+const CMD_GAP_MS = 130;
+
+// Run a command list ONCE, in order, with a gap between commands. Used by the
+// test buttons (dispatch has its own repeatCount-aware loop). Returns {ok,error}.
+async function runCommandsOnce(cmds) {
+    for (let s = 0; s < cmds.length; s++) {
+        let res;
+        try { res = await window.api.executeAction(cmds[s]); }
+        catch (e) { return { ok: false, error: e.message }; }
+        if (!res || !res.success) return { ok: false, error: res && res.error };
+        if (s < cmds.length - 1) await new Promise(r => setTimeout(r, CMD_GAP_MS));
+    }
+    return { ok: true };
+}
+
 async function dispatchModActions(giftName, repeatCount = 1, giftId = null) {
     if (!modActionsArmed) return;
     // Build candidate keys: resolved name, raw ID, and any alias names we
@@ -4033,16 +4061,25 @@ async function dispatchModActions(giftName, repeatCount = 1, giftId = null) {
     console.log(`[DISPATCH HIT] matched "${matchedKey}" → ${entries.length} action(s) × ${repeatCount}`);
     const fires = Math.max(1, Math.min(20, Number(repeatCount) || 1));
     for (const { modTitle, action } of entries) {
+        const cmds = toCommands(action);
+        if (!cmds.length) continue;
+        // Fire the whole command sequence once per gift (×repeatCount for combos).
+        // Each command in the sequence runs in order with a small gap between them.
+        outer:
         for (let i = 0; i < fires; i++) {
-            try {
-                const res = await window.api.executeAction(action);
-                logActionFired({ giftName, modTitle, action, ok: res.success, error: res.error, n: `${i+1}/${fires}` });
-                if (!res.success) break; // bail the loop on first failure (e.g. AX denied)
-            } catch (err) {
-                logActionFired({ giftName, modTitle, action, ok: false, error: err.message });
-                break;
+            for (let s = 0; s < cmds.length; s++) {
+                const cmd = cmds[s];
+                try {
+                    const res = await window.api.executeAction(cmd);
+                    logActionFired({ giftName, modTitle, action: cmd, ok: res.success, error: res.error, n: `${i+1}/${fires}${cmds.length > 1 ? ` · ${s+1}/${cmds.length}` : ''}` });
+                    if (!res.success) break outer; // bail on first failure (e.g. AX denied)
+                } catch (err) {
+                    logActionFired({ giftName, modTitle, action: cmd, ok: false, error: err.message });
+                    break outer;
+                }
+                if (s < cmds.length - 1) await new Promise(r => setTimeout(r, CMD_GAP_MS));
             }
-            if (i < fires - 1) await new Promise(r => setTimeout(r, 40));
+            if (i < fires - 1) await new Promise(r => setTimeout(r, CMD_GAP_MS));
         }
     }
 }
@@ -4073,11 +4110,11 @@ function renderActionLog() {
 // Test firing a specific mod's Gül mapping (used by Mod Detail page)
 async function testModShortcut(giftName) {
     if (!currentModDetail) return;
-    const action = currentModConfig?.giftActions?.[giftName];
-    if (!action || !action.value) { showToast('Önce bu hediyeye bir aksiyon ata', true); return; }
-    const result = await window.api.executeAction(action);
-    if (result.success) showToast(`🎮 ${giftName} → ${action.value} fire edildi`);
-    else showToast('Fire hatası: ' + result.error, true);
+    const cmds = toCommands(currentModConfig?.giftActions?.[giftName]);
+    if (!cmds.length) { showToast('Önce bu hediyeye bir aksiyon ata', true); return; }
+    const r = await runCommandsOnce(cmds);
+    if (r.ok) showToast(`🎮 ${giftName} → ${cmds.length > 1 ? cmds.length + ' komut' : cmds[0].value} fire edildi`);
+    else showToast('Fire hatası: ' + (r.error || 'bilinmeyen'), true);
 }
 
 // Resolve backend-relative media paths (e.g. "/uploads/mod-images/x.png").
@@ -4088,6 +4125,18 @@ function absBackendUrl(u) {
     if (/^(https?:|data:|file:)/i.test(u)) return u;
     if (u.startsWith('/')) return BACKEND_URL + u;
     return u;
+}
+
+// Kategori artık oyun ismi. Eski mods'ta kalan tür-slug'ları (open-world vb.)
+// dostça etikete çevir ki rozet/hero'da çirkin "OPEN-WORLD" görünmesin. Yeni
+// oyun isimleri olduğu gibi geçer.
+const LEGACY_CATEGORY_LABELS = {
+    'open-world': 'Açık Dünya', 'fps': 'FPS', 'battle-royale': 'Battle Royale',
+    'moba': 'MOBA', 'sandbox': 'Sandbox', 'sports': 'Spor', 'party': 'Parti', 'other': 'Diğer'
+};
+function prettyCategory(cat) {
+    if (!cat) return '';
+    return LEGACY_CATEGORY_LABELS[String(cat).toLowerCase()] || cat;
 }
 
 async function loadMods() {
@@ -4158,7 +4207,7 @@ function displayMods(mods) {
                     <img src="${escapeHtml(img)}" class="mod-card-image" alt="${escapeHtml(mod.title)}"
                          onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 600 400%22><rect fill=%22%23101018%22 width=%22600%22 height=%22400%22/></svg>'">
                     <div class="mod-card-top-badges">
-                        ${mod.category ? `<span class="mod-card-badge">${escapeHtml(mod.category)}</span>` : ''}
+                        ${mod.category ? `<span class="mod-card-badge">${escapeHtml(prettyCategory(mod.category))}</span>` : ''}
                         ${isInstalled ? '<span class="mod-card-badge installed"><i class="fas fa-check-circle"></i> YÜKLÜ</span>' : ''}
                     </div>
                 </div>
@@ -4188,7 +4237,29 @@ function openAddGameModal() {
     renderAgTemplate();
     const gv = document.getElementById('ag-tpl-value'); if (gv) gv.value = '';
     const gg = document.getElementById('ag-tpl-gift'); if (gg) gg.innerHTML = '🎁 Hediye';
+    const tt = document.getElementById('ag-tpl-type'); if (tt) tt.value = 'keyboard';
+    agTplTypeChanged();    // Fare dropdown'ı gizle, klavye moduna dön
+    const cat = document.getElementById('ag-category'); if (cat) cat.selectedIndex = 0;
+    agCategoryChanged();   // seçili oyunu "Oyun Adı" alanına otomatik yaz
 }
+// "Oyun" dropdown'u değişince "Oyun Adı" alanını otomatik doldur. "Diğer" seçilince
+// alanı serbest bırak (elle yazılabilir). Böylece iki alan çelişmez, kafa karıştırmaz.
+function agCategoryChanged() {
+    const sel = document.getElementById('ag-category');
+    const game = document.getElementById('ag-game');
+    if (!sel || !game) return;
+    if (sel.value === 'Diğer') {
+        game.readOnly = false;
+        if (game.dataset.auto === '1') game.value = '';
+        game.dataset.auto = '';
+        game.placeholder = 'Oyun adını yazın...';
+    } else {
+        game.value = sel.value;
+        game.readOnly = true;
+        game.dataset.auto = '1';
+    }
+}
+window.agCategoryChanged = agCategoryChanged;
 function closeAddGameModal() {
     const m = document.getElementById('add-game-modal');
     if (m) m.classList.remove('active');
@@ -4196,6 +4267,7 @@ function closeAddGameModal() {
     ['ag-title', 'ag-game', 'ag-description', 'ag-image', 'ag-download'].forEach(id => {
         const el = document.getElementById(id); if (el) el.value = '';
     });
+    const game = document.getElementById('ag-game'); if (game) { game.readOnly = false; game.dataset.auto = ''; }
     const ver = document.getElementById('ag-version'); if (ver) ver.value = '1.0.0';
     _agTemplate = [];
     renderAgTemplate();
@@ -4211,12 +4283,18 @@ async function submitAddGame() {
         imageUrl: document.getElementById('ag-image').value.trim(),
         downloadUrl: document.getElementById('ag-download').value.trim(),
         tags: [],
-        template: _agTemplate.map(t => ({ giftName: t.giftName, type: t.type, value: t.value }))
+        template: _agTemplate.map(t => {
+            const cmds = toCommands(t);
+            // type/value = ilk komut (eski sürümlerle uyum), commands = tam dizi.
+            return { giftName: t.giftName, type: cmds[0]?.type || 'keyboard', value: cmds[0]?.value || '', commands: cmds };
+        })
     };
     if (!payload.title || !payload.gameTitle || !payload.downloadUrl) {
         showToast('Başlık, oyun adı ve indirme URL zorunlu', true);
         return;
     }
+    // "Diğer" seçiliyse kategoriyi girilen oyun adına eşitle → rozet/filtre anlamlı olsun.
+    if (payload.category === 'Diğer' && payload.gameTitle) payload.category = payload.gameTitle;
     try {
         const result = await window.api.createMod(payload);
         if (result.success) {
@@ -4273,11 +4351,24 @@ function captureShortcutInto(type, input, onValue) {
 function agTplTypeChanged() {
     _agTplDraft.value = '';
     const v = document.getElementById('ag-tpl-value');
+    const mouseSel = document.getElementById('ag-tpl-mouse');
     const type = document.getElementById('ag-tpl-type')?.value || 'keyboard';
-    if (v) { v.value = ''; v.readOnly = true; v.classList.remove('capturing'); v.placeholder = { keyboard: 'Kısayol (tıkla+bas)', text: 'Komut yaz (tıkla)', mouse: 'Fare (tıkla+bas)' }[type]; }
+    if (type === 'mouse') {
+        // Fare için tıkla-yakala yerine buton seçici göster (güvenilir + kolay).
+        if (v) v.style.display = 'none';
+        if (mouseSel) { mouseSel.style.display = ''; _agTplDraft.value = mouseSel.value; }
+    } else {
+        if (mouseSel) mouseSel.style.display = 'none';
+        if (v) { v.style.display = ''; v.value = ''; v.readOnly = true; v.classList.remove('capturing'); v.placeholder = { keyboard: 'Kısayol (tıkla+bas)', text: 'Komut yaz (tıkla)' }[type]; }
+    }
+}
+function agTplMouseChanged() {
+    const mouseSel = document.getElementById('ag-tpl-mouse');
+    if (mouseSel) _agTplDraft.value = mouseSel.value;
 }
 function agTplCapture() {
     const type = document.getElementById('ag-tpl-type').value;
+    if (type === 'mouse') return; // fare artık dropdown ile seçiliyor
     captureShortcutInto(type, document.getElementById('ag-tpl-value'), (val) => { _agTplDraft.value = val; });
 }
 function agTplPickGift() {
@@ -4290,31 +4381,64 @@ function agTplPickGift() {
 function agTplAdd() {
     const type = document.getElementById('ag-tpl-type').value;
     if (type === 'text') { const v = document.getElementById('ag-tpl-value'); if (v) _agTplDraft.value = v.value.trim(); }
+    if (type === 'mouse') { const m = document.getElementById('ag-tpl-mouse'); if (m) _agTplDraft.value = m.value; }
     if (!_agTplDraft.giftName) { showToast('Önce hediye seç', true); return; }
     if (!_agTplDraft.value) { showToast('Önce kısayol/değer gir', true); return; }
-    _agTemplate.push({ giftName: _agTplDraft.giftName, iconUrl: _agTplDraft.iconUrl, type, value: _agTplDraft.value });
-    _agTplDraft = { giftName: '', iconUrl: '', value: '' };
+    const cmd = { type, value: _agTplDraft.value };
+    // Aynı hediye zaten listede varsa komutu O satıra ekle (2., 3. komut...).
+    // Böylece bir hediye birden çok komut çalıştırabilir (Minecraft için gerekli).
+    const key = _agTplDraft.giftName.trim().toLocaleLowerCase('tr-TR');
+    const existing = _agTemplate.find(r => (r.giftName || '').trim().toLocaleLowerCase('tr-TR') === key);
+    if (existing) {
+        existing.commands = toCommands(existing);
+        existing.commands.push(cmd);
+        delete existing.type; delete existing.value;
+        if (!existing.iconUrl && _agTplDraft.iconUrl) existing.iconUrl = _agTplDraft.iconUrl;
+        showToast(`✓ "${_agTplDraft.giftName}" hediyesine ${existing.commands.length}. komut eklendi`);
+    } else {
+        _agTemplate.push({ giftName: _agTplDraft.giftName, iconUrl: _agTplDraft.iconUrl, commands: [cmd] });
+    }
+    // Hediye seçili kalsın — arka arkaya komut eklenebilsin. Sadece değeri temizle.
+    _agTplDraft.value = '';
     const v = document.getElementById('ag-tpl-value'); if (v) v.value = '';
-    const g = document.getElementById('ag-tpl-gift'); if (g) g.innerHTML = '🎁 Hediye';
     renderAgTemplate();
 }
 function agTplRemove(i) { _agTemplate.splice(i, 1); renderAgTemplate(); }
+function agTplRemoveCmd(i, ci) {
+    const row = _agTemplate[i]; if (!row) return;
+    const cmds = toCommands(row);
+    cmds.splice(ci, 1);
+    if (!cmds.length) { _agTemplate.splice(i, 1); }
+    else { row.commands = cmds; delete row.type; delete row.value; }
+    renderAgTemplate();
+}
 function renderAgTemplate() {
     const list = document.getElementById('ag-tpl-list'); if (!list) return;
     const ic = { keyboard: '⌨', text: '📝', mouse: '🖱' };
-    list.innerHTML = _agTemplate.map((t, i) => `
+    list.innerHTML = _agTemplate.map((t, i) => {
+        const cmds = toCommands(t);
+        const chips = cmds.map((c, ci) => `
+            <span style="display:inline-flex;align-items:center;gap:0.25rem;background:rgba(255,46,184,0.1);border:1px solid rgba(255,46,184,0.28);color:#ff2eb8;padding:0.1rem 0.4rem;border-radius:5px;font-weight:700;white-space:nowrap;">
+                ${cmds.length > 1 ? `<span style="opacity:.6;">${ci + 1}.</span>` : ''}${ic[c.type] || '⌨'} ${escapeHtml(c.value)}
+                <span onclick="agTplRemoveCmd(${i},${ci})" style="cursor:pointer;color:#ff6b9d;font-weight:900;padding:0 0.1rem;" title="Komutu sil">×</span>
+            </span>`).join('');
+        return `
         <div style="display:flex;align-items:center;gap:0.5rem;background:var(--bg);border:1px solid var(--ov-06);border-radius:6px;padding:0.35rem 0.55rem;font-size:0.74rem;">
-            <img src="${t.iconUrl || ''}" style="width:18px;height:18px;border-radius:3px;" onerror="this.style.display='none'">
-            <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(t.giftName)}</span>
-            <span style="color:#ff2eb8;font-weight:700;white-space:nowrap;">${ic[t.type] || '⌨'} ${escapeHtml(t.value)}</span>
-            <button type="button" onclick="agTplRemove(${i})" style="background:none;border:none;color:#ff6b9d;cursor:pointer;font-size:0.9rem;">✕</button>
-        </div>`).join('');
+            <img src="${t.iconUrl || ''}" style="width:18px;height:18px;border-radius:3px;flex-shrink:0;" onerror="this.style.display='none'">
+            <span style="flex-shrink:0;min-width:52px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;">${escapeHtml(t.giftName)}</span>
+            <i class="fas fa-arrow-right" style="color:#7a6e94;flex-shrink:0;font-size:0.65rem;"></i>
+            <div style="flex:1;display:flex;flex-wrap:wrap;gap:0.25rem;min-width:0;">${chips}</div>
+            <button type="button" onclick="agTplRemove(${i})" style="background:none;border:none;color:#ff6b9d;cursor:pointer;font-size:0.9rem;flex-shrink:0;" title="Satırı sil">✕</button>
+        </div>`;
+    }).join('');
 }
 window.agTplTypeChanged = agTplTypeChanged;
+window.agTplMouseChanged = agTplMouseChanged;
 window.agTplCapture = agTplCapture;
 window.agTplPickGift = agTplPickGift;
 window.agTplAdd = agTplAdd;
 window.agTplRemove = agTplRemove;
+window.agTplRemoveCmd = agTplRemoveCmd;
 
 // ═══════════════════ MOD DETAIL PAGE ═══════════════════
 
@@ -4337,7 +4461,7 @@ async function openModDetail(modId) {
         // so the streamer starts with sensible gift→shortcut defaults instead of blank.
         if (Object.keys(currentModConfig.giftActions).length === 0 && Array.isArray(mod.template) && mod.template.length) {
             const seeded = {};
-            mod.template.forEach(t => { if (t && t.giftName && t.value) seeded[t.giftName] = { type: t.type || 'keyboard', value: t.value }; });
+            mod.template.forEach(t => { if (!t || !t.giftName) return; const cmds = toCommands(t); if (cmds.length) seeded[t.giftName] = { type: cmds[0].type, value: cmds[0].value, commands: cmds }; });
             if (Object.keys(seeded).length) {
                 currentModConfig.giftActions = seeded;
                 window.api.saveModConfig(modId, { giftActions: seeded }).catch(() => {});
@@ -4361,7 +4485,7 @@ function renderModDetailHero() {
     const mod = currentModDetail;
     if (!mod) return;
     setText('md-breadcrumb', `${mod.gameTitle || '—'} / ${mod.title}`);
-    setText('md-category', (mod.category || 'mod').toUpperCase());
+    setText('md-category', prettyCategory(mod.category || 'mod').toUpperCase());
     setText('md-version', `v${mod.version || '1.0.0'}`);
     setText('md-installs', `${mod.downloadCount || 0} indirme`);
     setText('md-title', mod.title);
@@ -4392,7 +4516,13 @@ function renderModDetailHero() {
             installBtn.style.cursor = isInstalled ? 'default' : 'pointer';
         }
     }
-    if (uninstallBtn) uninstallBtn.style.display = (isInstalled && !integration) ? 'inline-flex' : 'none';
+    // Yüklüyse "Kaldır" göster — entegrasyon modu dosya indirip "yüklü" olduysa da
+    // geri alınabilsin (aksi halde durumu temizlemenin yolu kalmıyordu).
+    if (uninstallBtn) uninstallBtn.style.display = isInstalled ? 'inline-flex' : 'none';
+    // Entegrasyon modunda GERÇEK dosya varsa (admin ZIP yüklediyse) indirme butonu
+    // da göster — "Sunucuya Bağlan" ile birlikte (ör. OptiFine profili / resource pack).
+    const dlBtn = document.getElementById('md-download-btn');
+    if (dlBtn) dlBtn.style.display = (integration && mod.fileUploadedAt) ? 'inline-flex' : 'none';
 
     // Per-mod arm/disarm card — only meaningful once the mod is installed
     const armCard = document.getElementById('md-arm-card');
@@ -4481,6 +4611,8 @@ function renderModGiftActions() {
     grid.innerHTML = entries.map(([name, act]) => {
         const g = giftCatalogCache.find(x => x.name === name) || {};
         const nameEsc = escapeHtml(name).replace(/'/g, "\\'");
+        const cmds = toCommands(act);
+        const cmdChips = cmds.map((c, ci) => `<span style="display:inline-flex;align-items:center;gap:0.2rem;background:rgba(255,46,184,0.12);border:1px solid rgba(255,46,184,0.3);color:#ff2eb8;padding:0.22rem 0.5rem;border-radius:6px;font-size:0.72rem;font-weight:700;white-space:nowrap;">${cmds.length > 1 ? `<span style="opacity:.55;">${ci + 1}.</span>` : ''}${typeIcon[c.type] || '⌨'} ${escapeHtml(c.value)}${cmds.length > 1 ? ` <span onclick="mdRemoveCommand('${nameEsc}',${ci})" style="cursor:pointer;color:#ff9ec4;font-weight:900;" title="Bu komutu sil">×</span>` : ''}</span>`).join('');
         return `
             <div class="md-gift-row mapped" data-name="${escapeHtml(name)}">
                 <img class="md-gift-icon" src="${g.icon || ''}" alt="" onerror="this.style.display='none'">
@@ -4488,8 +4620,8 @@ function renderModGiftActions() {
                     <div class="md-gift-name">${escapeHtml(name)}</div>
                     <div class="md-gift-coins">💎 ${g.coins ?? '?'}</div>
                 </div>
-                <div style="margin-left:auto;display:flex;align-items:center;gap:0.4rem;">
-                    <span style="background:rgba(255,46,184,0.12);border:1px solid rgba(255,46,184,0.3);color:#ff2eb8;padding:0.25rem 0.6rem;border-radius:6px;font-size:0.74rem;font-weight:700;white-space:nowrap;">${typeIcon[act.type] || '⌨'} ${escapeHtml(act.value)}</span>
+                <div style="margin-left:auto;display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap;justify-content:flex-end;">
+                    <div style="display:flex;flex-wrap:wrap;gap:0.25rem;justify-content:flex-end;">${cmdChips}</div>
                     <button class="md-gift-btn md-gift-btn-test" onclick="testGiftAction('${nameEsc}')" title="Test et"><i class="fas fa-bolt"></i></button>
                     <button class="md-gift-btn" onclick="clearGiftAction('${nameEsc}')" title="Kaldır"><i class="fas fa-times"></i></button>
                 </div>
@@ -4573,29 +4705,36 @@ async function mdAddMapping() {
     if (!_mdAdd.giftName) { showToast('Önce bir hediye seç', true); return; }
     if (!_mdAdd.value) { showToast('Önce kısayol/değer gir', true); return; }
     const gn = _mdAdd.giftName, val = _mdAdd.value;
-    await saveGiftAction(gn, { type, value: val });
+    // Hediye zaten atanmışsa komutu O hediyeye ekle (2., 3. komut...). Yoksa yeni.
+    const cmds = toCommands(currentModConfig?.giftActions?.[gn]).concat([{ type, value: val }]);
+    await saveGiftAction(gn, { type: cmds[0].type, value: cmds[0].value, commands: cmds });
     toggleMdAddPanel(false);
-    showToast(`✓ ${gn} → ${type === 'keyboard' ? '⌨' : type === 'text' ? '📝' : '🖱'} ${val}`);
+    showToast(cmds.length > 1
+        ? `✓ ${gn} → ${cmds.length}. komut eklendi (sırayla çalışır)`
+        : `✓ ${gn} → ${type === 'keyboard' ? '⌨' : type === 'text' ? '📝' : '🖱'} ${val}`);
+}
+async function mdRemoveCommand(giftName, ci) {
+    const cmds = toCommands(currentModConfig?.giftActions?.[giftName]);
+    cmds.splice(ci, 1);
+    if (!cmds.length) await saveGiftAction(giftName, null);
+    else await saveGiftAction(giftName, { type: cmds[0].type, value: cmds[0].value, commands: cmds });
 }
 window.toggleMdAddPanel = toggleMdAddPanel;
 window.mdAddTypeChanged = mdAddTypeChanged;
 window.mdCaptureValue = mdCaptureValue;
 window.mdPickGift = mdPickGift;
 window.mdAddMapping = mdAddMapping;
+window.mdRemoveCommand = mdRemoveCommand;
 
 // Test a single gift's mapped action without needing a live TikTok event.
 // Useful to verify a key actually reaches the foreground app (e.g. open
 // Notepad, set the gift to "h", click test → see "h" appear).
 async function testGiftAction(giftName) {
-    const action = currentModConfig?.giftActions?.[giftName];
-    if (!action || !action.value) { showToast?.('Bu hediyeye atanmış aksiyon yok', true); return; }
-    try {
-        const res = await window.api.executeAction(action);
-        if (res?.success) showToast?.(`🎮 Test: "${giftName}" → ${action.type}:${action.value}`);
-        else showToast?.(`❌ Test başarısız: ${res?.error || 'bilinmeyen'}`, true);
-    } catch (e) {
-        showToast?.('Test hatası: ' + e.message, true);
-    }
+    const cmds = toCommands(currentModConfig?.giftActions?.[giftName]);
+    if (!cmds.length) { showToast?.('Bu hediyeye atanmış aksiyon yok', true); return; }
+    const r = await runCommandsOnce(cmds);
+    if (r.ok) showToast?.(`🎮 Test: "${giftName}" → ${cmds.length > 1 ? cmds.length + ' komut sırayla' : cmds[0].type + ':' + cmds[0].value}`);
+    else showToast?.(`❌ Test başarısız: ${r.error || 'bilinmeyen'}`, true);
 }
 
 function startShortcutCapture(input, giftName) {
@@ -4728,11 +4867,45 @@ function isIntegrationMod(mod) {
 }
 
 function showMinecraftConnectInfo(mod) {
-    const addr = (mod.downloadUrl || '').replace(/^minecraft:\/\//i, '').trim() || '187.124.29.94';
-    try { window.api.openExternal && navigator.clipboard?.writeText(addr); } catch {}
+    // Adres: önce mod'un serverAddress alanı, yoksa minecraft:// downloadUrl, yoksa VPS.
+    const addr = (mod.serverAddress || (mod.downloadUrl || '').replace(/^minecraft:\/\//i, '')).trim() || '187.124.29.94';
+    try { navigator.clipboard?.writeText(addr); } catch {}
     showToast('Sunucu adresi panoya kopyalandı: ' + addr);
-    alert(`🎮 ${mod.title}\n\nBu bir Minecraft entegrasyonudur — indirme gerekmez.\n\n1) Minecraft → Çok Oyunculu → Sunucu Ekle\n2) Adres: ${addr}   (panoya kopyalandı)\n3) Bağlan (ViaVersion ile her sürüm)\n4) Aksiyonlar & Olaylar'dan hediyeleri 🟩 Minecraft komutlarına bağla\n\nDetay: Kullanım Kılavuzu Bölüm 7.`);
+    // Sürüm bilgisi mod'dan gelir — artık sabit "her sürüm" iddiası YOK.
+    const req = mod.mcVersion ? `Gereken sürüm: ${mod.mcVersion}` : 'Gereken sürüm için mod açıklamasına bak';
+    const note = mod.connectNote ? `\n\n⚠️ Not: ${mod.connectNote}` : '';
+    showConfirm(
+        `Bu bir Minecraft entegrasyonudur — indirme gerekmez, sunucuya katılman yeterli.\n\n1) Minecraft → Çok Oyunculu → Sunucu Ekle\n2) Adres: ${addr}   (panoya kopyalandı)\n3) ${req}\n4) Aksiyonlar & Olaylar'dan hediyeleri komutlara bağla${note}`,
+        { title: `🎮 ${mod.title}`, okText: 'Anladım', cancelText: 'Kapat', danger: false }
+    );
 }
+
+// Entegrasyon modunun GERÇEK dosyasını (admin ZIP yüklediyse) indir — normalde
+// installModAction entegrasyonda "Sunucuya Bağlan"a kısa devre yaptığından ayrı yol.
+async function downloadIntegrationFile() {
+    if (!currentModDetail) return;
+    if (!currentModDetail.fileUploadedAt) { showToast('Bu mod için indirilecek dosya yok', true); return; }
+    const dirRes = await window.api.pickInstallDirectory(currentModDetail.title);
+    if (!dirRes.success) return;
+    showInstallProgress(currentModDetail);
+    const installRes = await window.api.installMod(currentModDetail._id, dirRes.data.installPath);
+    if (installRes.success) {
+        const meta = installRes.meta || {};
+        if (meta.archiveDownloaded) {
+            const sizeStr = meta.archiveBytes ? ` (${humanBytes(meta.archiveBytes)})` : '';
+            updateInstallProgress({ phase: 'done', percentage: 100, message: `✓ İndirildi${sizeStr}` });
+            setTimeout(closeInstallProgress, 1800);
+            showToast(`"${currentModDetail.title}" indirildi → ${dirRes.data.installPath}`);
+        } else {
+            updateInstallProgress({ phase: 'warn', percentage: 100, message: `⚠️ Dosya inmedi: ${meta.archiveError || 'bilinmeyen hata'}` });
+            setTimeout(closeInstallProgress, 3500);
+        }
+    } else {
+        updateInstallProgress({ phase: 'error', percentage: 0, message: '✗ ' + installRes.error });
+        setTimeout(closeInstallProgress, 3000);
+    }
+}
+window.downloadIntegrationFile = downloadIntegrationFile;
 
 async function installModAction() {
     if (!currentModDetail) return;
@@ -6384,12 +6557,21 @@ async function navigateOverlay(key) {
     const wheelGroup = document.getElementById('ov-wheel-group');
     if (wheelGroup) wheelGroup.style.display = isWheel ? '' : 'none';
 
-    currentOverlayContext = { key, ...info, overlayDbId: null, overlayId: null };
-
-    // Always start with a fresh form — user-requested behavior
-    // ("her seferinde yenilenecek"). Existing records appear in the drafts list below.
-    currentOverlayData = null;
-    resetOverlayForm(info);
+    // Yüklü bir taslağı (Devam Et ile açılmış, overlayDbId var) düzenlerken AYNI
+    // sekmeye tekrar tıklanırsa formu SIFIRLAMA — yoksa kullanıcının başlık vb.
+    // düzenlemeleri "Beğeni Hedefi"ne geri dönüyordu ("değiştiremiyoruz"). Farklı
+    // bir overlay tipine geçince yine sıfır form gelir; sıfırdan başlamak için
+    // "Yeni Taslak" butonu (newOverlayDraft) var.
+    const sameLoaded = currentOverlayContext && currentOverlayContext.key === key && currentOverlayContext.overlayDbId;
+    currentOverlayContext = {
+        key, ...info,
+        overlayDbId: sameLoaded ? currentOverlayContext.overlayDbId : null,
+        overlayId: sameLoaded ? currentOverlayContext.overlayId : null,
+    };
+    if (!sameLoaded) {
+        currentOverlayData = null;
+        resetOverlayForm(info);
+    }
     updateOverlayPreview();
     updateSaveButtonLabel();
     await loadOverlayDrafts();
@@ -8399,13 +8581,15 @@ async function renderMigratePreview() {
             // 1. The streamer's own per-mod gift→action config (highest priority).
             const acts = m.config?.giftActions || {};
             for (const [gift, action] of Object.entries(acts)) {
-                if (action && action.value) { rows.push({ mod: m.title, gift, value: action.value, type: action.type || 'keyboard' }); seen.add(gift); }
+                const cmds = toCommands(action);
+                if (cmds.length) { rows.push({ mod: m.title, gift, commands: cmds }); seen.add(gift); }
             }
             // 2. The mod's default template (admin-defined) — imports even if the
             // streamer never opened the mod to seed a personal config.
             for (const t of (m.template || [])) {
-                if (t && t.giftName && t.value && !seen.has(t.giftName)) {
-                    rows.push({ mod: m.title, gift: t.giftName, value: t.value, type: t.type || 'keyboard' });
+                const cmds = toCommands(t);
+                if (t && t.giftName && cmds.length && !seen.has(t.giftName)) {
+                    rows.push({ mod: m.title, gift: t.giftName, commands: cmds });
                     seen.add(t.giftName);
                 }
             }
@@ -8413,7 +8597,7 @@ async function renderMigratePreview() {
         if (!rows.length) { el.innerHTML = '<div style="color:#7a6e94;font-size:0.82rem;">Dönüştürülecek eşleme bulunamadı. Kurulu modların hediye→tuş ataması (ya da admin taslağı) yok. Mod Detay sayfasından hediye-aksiyon ekle, sonra tekrar dene.</div>'; return; }
         el.innerHTML = `<div style="font-size:0.8rem;color:#c8c8d4;margin-bottom:0.5rem;">${rows.length} eşleme bulundu:</div>` +
             `<div style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:0.3rem;">` +
-            rows.map(r => `<div style="display:flex;align-items:center;gap:0.5rem;font-size:0.78rem;padding:0.4rem 0.6rem;background:rgba(255,255,255,0.02);border-radius:7px;"><span class="auto-flow-pill auto-flow-trigger" style="font-size:0.7rem;">🎁 ${escapeHtml(r.gift)}</span><i class="fas fa-arrow-right" style="color:#7a6e94;"></i><span class="auto-flow-pill auto-flow-action" style="font-size:0.7rem;">⌨️ ${escapeHtml(r.value)}</span><span style="margin-left:auto;color:#7a6e94;font-size:0.68rem;">${escapeHtml(r.mod)}</span></div>`).join('') +
+            rows.map(r => `<div style="display:flex;align-items:center;gap:0.5rem;font-size:0.78rem;padding:0.4rem 0.6rem;background:rgba(255,255,255,0.02);border-radius:7px;"><span class="auto-flow-pill auto-flow-trigger" style="font-size:0.7rem;">🎁 ${escapeHtml(r.gift)}</span><i class="fas fa-arrow-right" style="color:#7a6e94;"></i><span style="display:flex;flex-wrap:wrap;gap:0.2rem;">${(r.commands || []).map((c, ci) => `<span class="auto-flow-pill auto-flow-action" style="font-size:0.7rem;">${r.commands.length > 1 ? (ci + 1) + '. ' : ''}⌨️ ${escapeHtml(c.value)}</span>`).join('')}</span><span style="margin-left:auto;color:#7a6e94;font-size:0.68rem;">${escapeHtml(r.mod)}</span></div>`).join('') +
             `</div>`;
         el._rows = rows;
     } catch (e) { el.innerHTML = `<div style="color:#fca5a5;font-size:0.8rem;">Hata: ${escapeHtml(e.message)}</div>`; }
@@ -8426,8 +8610,16 @@ async function runModMigration() {
     let made = 0;
     try {
         for (const r of rows) {
-            const action = await autoApi('/actions', { method: 'POST', body: { name: `${r.gift} → ${r.value}`, type: r.type, config: { value: r.value, repeatCount: 1 } } });
-            await autoApi('/rules', { method: 'POST', body: { name: `${r.gift} (${r.mod})`, trigger: { type: 'gift', giftName: r.gift }, combo: 'perGift', actionIds: [action._id] } });
+            const cmds = (r.commands && r.commands.length) ? r.commands : [{ type: r.type || 'keyboard', value: r.value }];
+            // Her komut için bir Aksiyon oluştur, hepsini tek Kurala bağla → sırayla çalışır.
+            const actionIds = [];
+            for (let ci = 0; ci < cmds.length; ci++) {
+                const c = cmds[ci];
+                const nm = cmds.length > 1 ? `${r.gift} ${ci + 1}. → ${c.value}` : `${r.gift} → ${c.value}`;
+                const action = await autoApi('/actions', { method: 'POST', body: { name: nm, type: c.type || 'keyboard', config: { value: c.value, repeatCount: 1 } } });
+                actionIds.push(action._id);
+            }
+            await autoApi('/rules', { method: 'POST', body: { name: `${r.gift} (${r.mod})`, trigger: { type: 'gift', giftName: r.gift }, combo: 'perGift', actionIds } });
             made++;
         }
         await reloadAutomation();
