@@ -8134,12 +8134,22 @@ async function renderMigratePreview() {
         const mods = (result.success ? result.data : []) || [];
         const rows = [];
         for (const m of mods) {
+            const seen = new Set();
+            // 1. The streamer's own per-mod gift→action config (highest priority).
             const acts = m.config?.giftActions || {};
             for (const [gift, action] of Object.entries(acts)) {
-                if (action && action.value) rows.push({ mod: m.title, gift, value: action.value, type: action.type || 'keyboard' });
+                if (action && action.value) { rows.push({ mod: m.title, gift, value: action.value, type: action.type || 'keyboard' }); seen.add(gift); }
+            }
+            // 2. The mod's default template (admin-defined) — imports even if the
+            // streamer never opened the mod to seed a personal config.
+            for (const t of (m.template || [])) {
+                if (t && t.giftName && t.value && !seen.has(t.giftName)) {
+                    rows.push({ mod: m.title, gift: t.giftName, value: t.value, type: t.type || 'keyboard' });
+                    seen.add(t.giftName);
+                }
             }
         }
-        if (!rows.length) { el.innerHTML = '<div style="color:#7a6e94;font-size:0.82rem;">Dönüştürülecek mod eşlemesi bulunamadı. Önce Modlar sayfasından bir mod kur ve hediye-tuş ataması yap.</div>'; return; }
+        if (!rows.length) { el.innerHTML = '<div style="color:#7a6e94;font-size:0.82rem;">Dönüştürülecek eşleme bulunamadı. Kurulu modların hediye→tuş ataması (ya da admin taslağı) yok. Mod Detay sayfasından hediye-aksiyon ekle, sonra tekrar dene.</div>'; return; }
         el.innerHTML = `<div style="font-size:0.8rem;color:#c8c8d4;margin-bottom:0.5rem;">${rows.length} eşleme bulundu:</div>` +
             `<div style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:0.3rem;">` +
             rows.map(r => `<div style="display:flex;align-items:center;gap:0.5rem;font-size:0.78rem;padding:0.4rem 0.6rem;background:rgba(255,255,255,0.02);border-radius:7px;"><span class="auto-flow-pill auto-flow-trigger" style="font-size:0.7rem;">🎁 ${escapeHtml(r.gift)}</span><i class="fas fa-arrow-right" style="color:#7a6e94;"></i><span class="auto-flow-pill auto-flow-action" style="font-size:0.7rem;">⌨️ ${escapeHtml(r.value)}</span><span style="margin-left:auto;color:#7a6e94;font-size:0.68rem;">${escapeHtml(r.mod)}</span></div>`).join('') +
