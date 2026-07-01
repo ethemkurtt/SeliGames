@@ -6709,21 +6709,22 @@ function applyCurrentStyle() {
 // Theme dropdown handler — recolours wheel slices to the theme before previewing.
 function onOverlayThemeChange() {
     const theme = document.getElementById('ov-theme')?.value;
-    if (currentOverlayContext && currentOverlayContext.overlayType === 'wheel') {
-        recolorWheelSlicesToTheme(theme);
-        updateOverlayPreview();
-        return;
+    // Apply the theme's colour palette to the inputs so EVERY overlay type
+    // visibly changes — including the effect overlays (gift-cannon, particles,
+    // action alert) that are colour-driven and ignore the CSS theme class.
+    const preset = (typeof overlayStyles !== 'undefined' ? overlayStyles : []).find((t) => t.theme === theme);
+    if (preset) {
+        const set = (id, v) => { const el = document.getElementById(id); if (el && v) el.value = v; };
+        set('ov-barColor', preset.barColor);
+        set('ov-bgColor', preset.bgColor);
+        set('ov-textColor', preset.textColor);
+        const animSel = document.getElementById('ov-animation'); if (animSel && preset.animation) animSel.value = preset.animation;
+        // keep the hex labels in sync
+        ['barColor', 'textColor', 'bgColor'].forEach((k) => { const h = document.getElementById('ov-' + k + '-hex'); const el = document.getElementById('ov-' + k); if (h && el) h.textContent = el.value; });
     }
-    // Card-based previews (docks, goals, chat, event-feed, chart…): swap the
-    // theme class IN PLACE instead of rebuilding the whole preview. Rebuilding
-    // restarted the theme's ambient CSS animation on every change, which showed
-    // as a bar flashing in/out. In-place keeps the element → no flash.
-    const card = document.querySelector('#ov-preview .ov-card');
-    if (card && theme) {
-        const hadGlow = card.classList.contains('ov-glow');
-        card.className = 'ov-card ' + normalizeGoalThemeJS(theme) + (hadGlow ? ' ov-glow' : '');
-        return;
-    }
+    if (currentOverlayContext && currentOverlayContext.overlayType === 'wheel') recolorWheelSlicesToTheme(theme);
+    // Re-render — the in-preview ambient animations are disabled (animation:none)
+    // so a full rebuild no longer flashes.
     updateOverlayPreview();
 }
 
@@ -6991,11 +6992,12 @@ function updateOverlayPreview() {
                 </svg>
             </div>`;
     } else if (type === 'actions-feed') {
+        const gt = normalizeGoalThemeJS(s.theme);
         preview.innerHTML = `
             <div style="display:flex;flex-direction:column;align-items:center;gap:14px;">
-                <div style="padding:18px 30px;border-radius:16px;background:linear-gradient(135deg,${s.barColor}33,rgba(15,7,32,0.92));border:1px solid ${s.barColor}66;box-shadow:0 12px 40px rgba(0,0,0,0.4),0 0 40px ${s.barColor}33;text-align:center;">
-                    <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:26px;color:#fff;text-shadow:0 0 18px ${s.barColor}aa;">tester Gül gönderdi!</div>
-                    <div style="margin-top:6px;font-size:14px;color:#fff;opacity:0.8;">Teşekkürler! 🎉</div>
+                <div class="ov-card ${gt} ov-glow" style="--bar:${s.barColor};--accent:${s.barColor};--radius:${s.borderRadius}px;border-radius:${s.borderRadius}px;padding:18px 30px;text-align:center;min-width:260px;">
+                    <div class="ov-title ov-accent" style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:${s.fontSize}px;color:${s.textColor};">tester Gül gönderdi!</div>
+                    <div style="margin-top:6px;font-size:${Math.round(s.fontSize * 0.6)}px;color:${s.textColor};opacity:0.8;">Teşekkürler! 🎉</div>
                 </div>
                 <div style="font-size:11px;color:#9d8bbf;text-align:center;max-width:300px;line-height:1.5;">Bu overlay aksiyon ateşlendiğinde uyarı/ses/TTS/konfeti gösterir. Yayında <b>şeffaftır</b> — sadece aksiyon olunca görünür.</div>
             </div>`;
@@ -7595,19 +7597,40 @@ function clearWheelSlices() {
     renderWheelSliceRows([]);
 }
 
+let _wheelSpinning = false;
 async function wheelTestSpin() {
     if (!currentOverlayContext?.overlayDbId) {
         showToast?.('Önce kaydet, sonra test et', true);
         return;
     }
+    if (_wheelSpinning) return;
     try {
         const res = await window.api.wheelSpin?.(currentOverlayContext.overlayDbId);
-        if (res?.success) {
-            showToast?.(`🎡 Kazanan: ${res.data?.data?.lastSpin?.winnerLabel || '?'}`);
+        if (!res?.success) { showToast?.(res?.error || 'Hata', true); return; }
+        const winner = res.data?.data?.lastSpin?.winnerLabel || '?';
+        // Animate the preview wheel to land the pointer (top) on the winner slice.
+        const svg = document.querySelector('#ov-preview svg');
+        const conf = readWheelConfig();
+        const slices = (conf.slices && conf.slices.length) ? conf.slices : [];
+        const n = slices.length || 6;
+        let idx = slices.findIndex((sl) => (sl.label || '') === winner);
+        if (idx < 0) idx = 0;
+        const step = 360 / n;
+        const target = 360 * 6 - (idx * step + step / 2); // several turns, land on winner
+        if (svg) {
+            _wheelSpinning = true;
+            svg.style.transformOrigin = '50% 50%';
+            svg.style.transition = 'none';
+            svg.style.transform = 'rotate(0deg)';
+            void svg.offsetWidth; // reflow so the transition restarts
+            svg.style.transition = 'transform 4.4s cubic-bezier(.15,.7,.1,1)';
+            svg.style.transform = `rotate(${target}deg)`;
+            setTimeout(() => { showToast?.(`🎡 Kazanan: ${winner}`); _wheelSpinning = false; }, 4500);
         } else {
-            showToast?.(res?.error || 'Hata', true);
+            showToast?.(`🎡 Kazanan: ${winner}`);
         }
     } catch (e) {
+        _wheelSpinning = false;
         showToast?.(e.message, true);
     }
 }
