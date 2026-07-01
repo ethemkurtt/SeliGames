@@ -230,6 +230,8 @@ async function loadDashboard() {
 
         // Mod count
         if (modsRes.success) setText('stat-mods', (modsRes.data || []).length);
+        // Öne çıkan (en yeni) mod — hero banner otomatik güncellensin
+        if (modsRes.success) renderFeaturedMod(modsRes.data || []);
         // Overlay count
         if (overlaysRes.success) setText('stat-overlays', (overlaysRes.data || []).length);
 
@@ -265,6 +267,41 @@ async function loadDashboard() {
         console.error('loadDashboard error:', err);
     }
 }
+
+// Öne çıkan mod = en son eklenen mod. Backend GET /api/mods createdAt:-1
+// sıralı döner, yani data[0] her zaman en yeni mod. Yeni mod eklenince
+// (loadDashboard yeniden çağrıldığında) banner otomatik güncellenir.
+let _featuredModId = null;
+function renderFeaturedMod(mods) {
+    const box = document.getElementById('hero-cover');
+    const titleEl = document.getElementById('hero-cover-title');
+    const imgEl = document.getElementById('hero-cover-img');
+    if (!box || !titleEl || !imgEl) return;
+    const mod = (mods || [])[0];
+    if (!mod) { box.style.display = 'none'; return; }   // hiç mod yoksa gizle
+    box.style.display = '';
+    _featuredModId = mod._id || mod.id || null;
+    titleEl.textContent = mod.title || 'Öne Çıkan Mod';
+    const img = absBackendUrl(mod.imageUrl || mod.image || '');
+    if (img) imgEl.src = img;   // görsel yoksa mevcut (tnt) kapak kalır
+}
+function openFeaturedMod() {
+    if (_featuredModId && typeof openModDetail === 'function') openModDetail(_featuredModId);
+    else navigateTo('mods');
+}
+window.openFeaturedMod = openFeaturedMod;
+
+// Ana Sayfa açıkken uygulamaya geri dönülünce (ör. admin panelden yeni mod
+// eklenince) mod sayısı + öne çıkan banner otomatik tazelensin. Hafif throttle.
+let _lastDashRefresh = 0;
+window.addEventListener('focus', () => {
+    const dash = document.getElementById('dashboard-page');
+    if (!dash || !dash.classList.contains('active')) return;
+    const now = Date.now();
+    if (now - _lastDashRefresh < 4000) return;
+    _lastDashRefresh = now;
+    loadDashboard();
+});
 
 function renderRecentActivity(events) {
     const el = document.getElementById('recent-activity');
@@ -4186,6 +4223,7 @@ async function submitAddGame() {
             showToast(`"${payload.title}" eklendi ✓`);
             closeAddGameModal();
             await loadMods();
+            loadDashboard();   // Ana Sayfa: mod sayısı + öne çıkan banner güncellensin
         } else {
             showToast('Eklenemedi: ' + result.error, true);
         }

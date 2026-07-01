@@ -4181,7 +4181,6 @@
                 <img src="assets/logo-full.png" alt="SeliGames" class="sidebar-logo-img"
                      onerror="this.outerHTML='<div class=&quot;sidebar-logo&quot;>SELIGAMES</div>'">
                 <img src="assets/logo-emblem.png" alt="S" class="sidebar-logo-emblem">
-                <div class="sidebar-subtitle">Modlama Platformu</div>
             </div>
 
             <div class="nav-item active" onclick="navigateTo('dashboard')">
@@ -4361,13 +4360,13 @@
                     </div>
                 </div>
 
-                <!-- Hero Cover Banner (TNT Mod) -->
-                <div class="hero-cover" onclick="navigateTo('mods')" title="Modlara git">
-                    <img src="assets/tnt-cover.jpg" alt="TNT Mod" class="hero-cover-img"
-                         onerror="this.parentElement.style.display='none'">
+                <!-- Hero Cover Banner (öne çıkan / en yeni mod — dinamik) -->
+                <div class="hero-cover" id="hero-cover" onclick="openFeaturedMod()" title="Modlara git">
+                    <img src="assets/tnt-cover.jpg" alt="Öne Çıkan Mod" class="hero-cover-img" id="hero-cover-img"
+                         onerror="this.src='assets/tnt-cover.jpg'">
                     <div class="hero-cover-overlay">
                         <div class="hero-cover-badge">🧨 ÖNE ÇIKAN MOD</div>
-                        <div class="hero-cover-title">Dünyanın En Büyük TNT Patlatması</div>
+                        <div class="hero-cover-title" id="hero-cover-title">Dünyanın En Büyük TNT Patlatması</div>
                         <div class="hero-cover-cta">Modları Keşfet <i class="fas fa-arrow-right"></i></div>
                     </div>
                 </div>
