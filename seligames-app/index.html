@@ -2099,6 +2099,15 @@
 
         .nav-accordion-body { display: none; }
         .nav-accordion-body.open { display: block; }
+        /* Collapsed-sidebar flyout: sub-items float next to the mini sidebar so
+           you can navigate without expanding it (keeps the work area wide). */
+        .nav-accordion-body.acc-flyout {
+            min-width: 210px; background: #14101f;
+            border: 1px solid rgba(255,255,255,0.12); border-radius: 10px;
+            box-shadow: 0 14px 44px rgba(0,0,0,0.55); padding: 6px;
+        }
+        .nav-accordion-body.acc-flyout .nav-sub-item { display: block; padding-left: 12px; white-space: nowrap; }
+        .nav-accordion-header.flyout-open { color: #ff2eb8; }
 
         .nav-sub-item {
             padding: 0.35rem 0.8rem 0.35rem 2rem;

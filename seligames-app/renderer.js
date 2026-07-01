@@ -1191,28 +1191,36 @@ function renderCompletedGoals(goals) {
 }
 
 // Sidebar accordion toggle - defined early for HTML onclick
-function toggleAccordion(el) {
-    // When the sidebar is collapsed, accordion bodies are display:none and their
-    // sub-items (OBS katmanları vb.) are unreachable — clicking felt "dead". So if
-    // collapsed, expand the sidebar first, then open the clicked accordion.
-    const sidebar = document.getElementById('sidebar');
-    if (sidebar && sidebar.classList.contains('collapsed')) {
-        toggleSidebar();
-    }
-    var body = el.nextElementSibling;
-    if (!body) return;
-    var wasOpen = body.classList.contains('open');
-    // close all
-    var allBodies = document.querySelectorAll('.nav-accordion-body');
-    var allHeaders = document.querySelectorAll('.nav-accordion-header');
-    for (var i = 0; i < allBodies.length; i++) allBodies[i].classList.remove('open');
-    for (var i = 0; i < allHeaders.length; i++) allHeaders[i].classList.remove('open');
-    // toggle
-    if (!wasOpen) {
-        body.classList.add('open');
-        el.classList.add('open');
-    }
+function closeAccFlyouts() {
+    document.querySelectorAll('.nav-accordion-body.acc-flyout').forEach((b) => { b.classList.remove('acc-flyout'); b.removeAttribute('style'); });
+    document.querySelectorAll('.nav-accordion-header.flyout-open').forEach((h) => h.classList.remove('flyout-open'));
 }
+function toggleAccordion(el) {
+    const sidebar = document.getElementById('sidebar');
+    const body = el.nextElementSibling;
+    if (!body) return;
+    // Collapsed sidebar: show the sub-items as a floating flyout next to the
+    // header WITHOUT expanding the sidebar — keeps the overlay work area wide.
+    if (sidebar && sidebar.classList.contains('collapsed')) {
+        const isOpen = body.classList.contains('acc-flyout');
+        closeAccFlyouts();
+        if (isOpen) return;
+        const r = el.getBoundingClientRect();
+        body.classList.add('acc-flyout');
+        el.classList.add('flyout-open');
+        body.style.cssText = `display:block !important;position:fixed;left:${Math.round(r.right + 6)}px;top:${Math.round(r.top)}px;z-index:9999;`;
+        return;
+    }
+    // Expanded sidebar: normal accordion toggle.
+    const wasOpen = body.classList.contains('open');
+    document.querySelectorAll('.nav-accordion-body').forEach((b) => b.classList.remove('open'));
+    document.querySelectorAll('.nav-accordion-header').forEach((h) => h.classList.remove('open'));
+    if (!wasOpen) { body.classList.add('open'); el.classList.add('open'); }
+}
+// Close any open collapsed-sidebar flyout when clicking elsewhere.
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.nav-accordion-header') && !e.target.closest('.acc-flyout')) closeAccFlyouts();
+});
 
 // Load profile data
 async function loadProfile() {
@@ -6145,6 +6153,7 @@ const overlayTypeMap = {
 
 // Navigate to overlay settings page
 async function navigateOverlay(key) {
+    if (typeof closeAccFlyouts === 'function') closeAccFlyouts();
     // Handle gallery sub-items FIRST — they don't live in overlayTypeMap
     if (key === 'gallery-templates' || key === 'gallery-my') {
         document.querySelectorAll('.nav-sub-item').forEach(i => i.classList.remove('active'));
@@ -6606,8 +6615,21 @@ function applyCurrentStyle() {
 
 // Theme dropdown handler — recolours wheel slices to the theme before previewing.
 function onOverlayThemeChange() {
+    const theme = document.getElementById('ov-theme')?.value;
     if (currentOverlayContext && currentOverlayContext.overlayType === 'wheel') {
-        recolorWheelSlicesToTheme(document.getElementById('ov-theme')?.value);
+        recolorWheelSlicesToTheme(theme);
+        updateOverlayPreview();
+        return;
+    }
+    // Card-based previews (docks, goals, chat, event-feed, chart…): swap the
+    // theme class IN PLACE instead of rebuilding the whole preview. Rebuilding
+    // restarted the theme's ambient CSS animation on every change, which showed
+    // as a bar flashing in/out. In-place keeps the element → no flash.
+    const card = document.querySelector('#ov-preview .ov-card');
+    if (card && theme) {
+        const hadGlow = card.classList.contains('ov-glow');
+        card.className = 'ov-card ' + normalizeGoalThemeJS(theme) + (hadGlow ? ' ov-glow' : '');
+        return;
     }
     updateOverlayPreview();
 }
