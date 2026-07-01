@@ -24,6 +24,16 @@ const userSchema = new mongoose.Schema({
         enum: ['admin', 'user'],
         default: 'user'
     },
+    // Granular admin-panel permissions (page × action). Only admins can grant
+    // these (PUT /api/admin/users/:id/permissions). A non-admin user holding any
+    // permission may sign into the admin panel and manage exactly the pages /
+    // actions granted. Full admins bypass this matrix entirely.
+    permissions: {
+        mods:          { view: { type: Boolean, default: false }, add: { type: Boolean, default: false }, edit: { type: Boolean, default: false }, delete: { type: Boolean, default: false } },
+        users:         { view: { type: Boolean, default: false }, add: { type: Boolean, default: false }, edit: { type: Boolean, default: false }, delete: { type: Boolean, default: false } },
+        subscriptions: { view: { type: Boolean, default: false }, add: { type: Boolean, default: false }, edit: { type: Boolean, default: false }, delete: { type: Boolean, default: false } },
+        settings:      { view: { type: Boolean, default: false }, add: { type: Boolean, default: false }, edit: { type: Boolean, default: false }, delete: { type: Boolean, default: false } },
+    },
     // Personal Information
     fullName: {
         type: String,

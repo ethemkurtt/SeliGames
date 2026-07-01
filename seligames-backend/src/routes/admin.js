@@ -4,12 +4,14 @@ const User = require('../models/User');
 const Mod = require('../models/Mod');
 const Event = require('../models/Event');
 const Overlay = require('../models/Overlay');
-const { requireAdmin } = require('../middleware/auth');
+const { requireAdmin, requirePermission, requirePanelAccess } = require('../middleware/auth');
 
 const router = express.Router();
 
-// All admin routes require admin role
-router.use(requireAdmin);
+// Every admin route requires at least panel access (full admin OR a user with
+// any granted permission). Individual routes then gate on the exact page+action
+// permission below. Granting permissions themselves stays admin-only.
+router.use(requirePanelAccess);
 
 // ─── Dashboard / Stats ────────────────────────────────────────────────
 
@@ -46,7 +48,7 @@ router.get('/stats', async (req, res) => {
 
 // ─── Users CRUD ───────────────────────────────────────────────────────
 
-router.get('/users', async (req, res) => {
+router.get('/users', requirePermission('users', 'view'), async (req, res) => {
     try {
         const { q, plan, role, limit = 50, offset = 0 } = req.query;
         const filter = {};
@@ -68,7 +70,7 @@ router.get('/users', async (req, res) => {
     }
 });
 
-router.get('/users/:id', async (req, res) => {
+router.get('/users/:id', requirePermission('users', 'view'), async (req, res) => {
     try {
         const user = await User.findById(req.params.id).select('-password');
         if (!user) return res.status(404).json({ error: 'User not found' });
@@ -76,20 +78,23 @@ router.get('/users/:id', async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-router.put('/users/:id', async (req, res) => {
+router.put('/users/:id', requirePermission('users', 'edit'), async (req, res) => {
     try {
         const allowed = ['username', 'email', 'fullName', 'phoneNumber', 'tiktokUsername',
             'role', 'subscriptionPlan', 'subscriptionStatus', 'subscriptionEndDate',
             'paymentStatus', 'autoRenew'];
         const update = {};
         for (const k of allowed) if (k in (req.body || {})) update[k] = req.body[k];
+        // Only full admins may change a user's role (prevents privilege escalation
+        // by a permissioned non-admin editor).
+        if ('role' in update && req.userRole !== 'admin') delete update.role;
         const user = await User.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true }).select('-password');
         if (!user) return res.status(404).json({ error: 'User not found' });
         res.json(user);
     } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
-router.post('/users/:id/reset-password', async (req, res) => {
+router.post('/users/:id/reset-password', requirePermission('users', 'edit'), async (req, res) => {
     try {
         const { newPassword } = req.body || {};
         if (!newPassword || newPassword.length < 6) return res.status(400).json({ error: 'newPassword (>=6 chars) required' });
@@ -100,7 +105,7 @@ router.post('/users/:id/reset-password', async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-router.delete('/users/:id', async (req, res) => {
+router.delete('/users/:id', requirePermission('users', 'delete'), async (req, res) => {
     try {
         if (req.params.id === req.userId) return res.status(400).json({ error: 'Cannot delete yourself' });
         const user = await User.findByIdAndDelete(req.params.id);
@@ -109,9 +114,24 @@ router.delete('/users/:id', async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Grant/revoke a user's admin-panel permissions (page × action matrix).
+// ADMIN-ONLY — a permissioned non-admin must never be able to escalate itself.
+router.put('/users/:id/permissions', requireAdmin, async (req, res) => {
+    try {
+        const src = (req.body && req.body.permissions) || req.body || {};
+        const pages = ['mods', 'users', 'subscriptions', 'settings'];
+        const acts = ['view', 'add', 'edit', 'delete'];
+        const clean = {};
+        for (const pg of pages) { clean[pg] = {}; for (const a of acts) clean[pg][a] = !!(src[pg] && src[pg][a]); }
+        const user = await User.findByIdAndUpdate(req.params.id, { permissions: clean }, { new: true }).select('-password');
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        res.json(user);
+    } catch (e) { res.status(400).json({ error: e.message }); }
+});
+
 // ─── Mods admin (CRUD already exists at /api/mods, but mirror admin-only writes here) ─
 
-router.get('/mods', async (req, res) => {
+router.get('/mods', requirePermission('mods', 'view'), async (req, res) => {
     try {
         const mods = await Mod.find().sort({ createdAt: -1 });
         res.json(mods);
@@ -146,7 +166,7 @@ const siteSettingsSchema = new mongoose.Schema({
 
 const SiteSettings = mongoose.models.SiteSettings || mongoose.model('SiteSettings', siteSettingsSchema);
 
-router.get('/settings', async (req, res) => {
+router.get('/settings', requirePermission('settings', 'view'), async (req, res) => {
     try {
         let s = await SiteSettings.findOne({ key: 'site' });
         if (!s) s = await SiteSettings.create({ key: 'site' });
@@ -154,7 +174,7 @@ router.get('/settings', async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-router.put('/settings', async (req, res) => {
+router.put('/settings', requirePermission('settings', 'edit'), async (req, res) => {
     try {
         const update = { ...req.body };
         delete update.key;

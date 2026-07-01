@@ -5,7 +5,7 @@ const path = require('path');
 const multer = require('multer');
 const Mod = require('../models/Mod');
 const User = require('../models/User');
-const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { requireAuth, requireAdmin, requirePermission } = require('../middleware/auth');
 require('dotenv').config();
 
 const router = express.Router();
@@ -94,8 +94,8 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// Create a mod (for testing/admin)
-router.post('/', async (req, res) => {
+// Create a mod (admin or users with mods.add permission)
+router.post('/', requirePermission('mods', 'add'), async (req, res) => {
     try {
         const mod = await Mod.create(req.body);
         res.status(201).json(mod);
@@ -104,8 +104,8 @@ router.post('/', async (req, res) => {
     }
 });
 
-// Update a mod
-router.put('/:id', async (req, res) => {
+// Update a mod (admin or users with mods.edit permission)
+router.put('/:id', requirePermission('mods', 'edit'), async (req, res) => {
     try {
         const mod = await Mod.findByIdAndUpdate(
             req.params.id,
@@ -119,8 +119,8 @@ router.put('/:id', async (req, res) => {
     }
 });
 
-// Delete a mod (soft delete)
-router.delete('/:id', async (req, res) => {
+// Delete a mod (soft delete) — admin or users with mods.delete permission
+router.delete('/:id', requirePermission('mods', 'delete'), async (req, res) => {
     try {
         const mod = await Mod.findByIdAndUpdate(
             req.params.id,
@@ -252,7 +252,7 @@ router.get('/user/installed', auth, async (req, res) => {
 
 // Admin: upload a mod ZIP. The file lands at MOD_FILES_DIR/<modId>.zip.
 // Existing file is overwritten. Updates the Mod doc with size/name/timestamp.
-router.post('/:id/upload', requireAdmin, (req, res) => {
+router.post('/:id/upload', requirePermission('mods', 'edit'), (req, res) => {
     upload.single('file')(req, res, async (uploadErr) => {
         if (uploadErr) return res.status(400).json({ error: uploadErr.message });
         if (!req.file) return res.status(400).json({ error: 'Dosya gönderilmedi' });
@@ -278,7 +278,7 @@ router.post('/:id/upload', requireAdmin, (req, res) => {
 // Admin: upload a mod cover image. The file lands at MOD_IMAGES_DIR/<id>.<ext>
 // and Mod.imageUrl is patched to point at the statically-served URL so the
 // admin doesn't have to copy/paste anything.
-router.post('/:id/image', requireAdmin, (req, res) => {
+router.post('/:id/image', requirePermission('mods', 'edit'), (req, res) => {
     imageUpload.single('image')(req, res, async (uploadErr) => {
         if (uploadErr) return res.status(400).json({ error: uploadErr.message });
         if (!req.file) return res.status(400).json({ error: 'Görsel gönderilmedi' });
@@ -310,7 +310,7 @@ router.post('/:id/image', requireAdmin, (req, res) => {
 });
 
 // Admin: delete the uploaded file (keeps the mod metadata)
-router.delete('/:id/file', requireAdmin, async (req, res) => {
+router.delete('/:id/file', requirePermission('mods', 'edit'), async (req, res) => {
     try {
         const filePath = path.join(MOD_FILES_DIR, `${req.params.id}.zip`);
         try { fs.unlinkSync(filePath); } catch { }

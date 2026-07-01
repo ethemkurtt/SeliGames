@@ -28,4 +28,38 @@ function requireAdmin(req, res, next) {
     });
 }
 
-module.exports = { requireAuth, requireAdmin };
+// Lazy require to avoid any circular-import surprises at module load time.
+function _User() { return require('../models/User'); }
+
+// Gate a route on a granular permission (page + action). Full admins always
+// pass; otherwise the user's stored permissions matrix is consulted from DB.
+function requirePermission(page, action) {
+    return (req, res, next) => {
+        requireAuth(req, res, async () => {
+            if (req.userRole === 'admin') return next();
+            try {
+                const u = await _User().findById(req.userId).select('role permissions');
+                req.userPermissions = u?.permissions || {};
+                if (u && (u.role === 'admin' || u.permissions?.[page]?.[action])) return next();
+            } catch (e) { /* fall through to 403 */ }
+            return res.status(403).json({ error: 'Bu işlem için yetkiniz yok' });
+        });
+    };
+}
+
+// Allow anyone who can access the admin panel at all: a full admin OR a user
+// holding at least one permission flag anywhere in the matrix.
+function requirePanelAccess(req, res, next) {
+    requireAuth(req, res, async () => {
+        if (req.userRole === 'admin') return next();
+        try {
+            const u = await _User().findById(req.userId).select('role permissions');
+            const perms = u?.permissions ? (u.permissions.toObject ? u.permissions.toObject() : u.permissions) : {};
+            const any = u?.role === 'admin' || Object.values(perms).some((p) => p && (p.view || p.add || p.edit || p.delete));
+            if (any) return next();
+        } catch (e) { /* fall through */ }
+        return res.status(403).json({ error: 'Panel erişim yetkiniz yok' });
+    });
+}
+
+module.exports = { requireAuth, requireAdmin, requirePermission, requirePanelAccess };
