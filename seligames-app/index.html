@@ -2912,10 +2912,24 @@
             border: 1px solid var(--ov-08);
             color: var(--fg-strong);
             border-radius: 6px;
-            padding: 0.3rem 0.4rem;
+            padding: 0.4rem 0.5rem;
             font-size: 0.7rem;
-            max-width: 110px;
+            max-width: 130px;
+            min-width: 96px;
+            cursor: pointer;
+            text-align: left;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
+        .gift-map-select:hover { border-color: #ff2eb8; color: #ff2eb8; }
+        /* Searchable sound-picker modal rows */
+        .mi-pick-row { display: flex; align-items: center; gap: 8px; padding: 2px; border-radius: 8px; }
+        .mi-pick-row:hover { background: rgba(255,255,255,0.05); }
+        .mi-pick-play { flex-shrink: 0; width: 30px; height: 30px; border-radius: 7px; border: none; background: rgba(168,85,247,0.18); color: #c9a6ff; cursor: pointer; font-size: 0.68rem; display: inline-flex; align-items: center; justify-content: center; }
+        .mi-pick-play:hover { background: rgba(168,85,247,0.38); }
+        .mi-pick-name { flex: 1; min-width: 0; cursor: pointer; padding: 7px 8px; font-size: 0.85rem; color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .mi-pick-name:hover { color: #ff2eb8; }
         .gift-map-btn {
             background: var(--ov-04);
             border: 1px solid var(--ov-08);
@@ -6446,7 +6460,18 @@
 
     <!-- html-to-image UMD bundle (used by Hediye Tasarımı sayfası) -->
     <script src="./node_modules/html-to-image/dist/html-to-image.js"></script>
-    <datalist id="mi-sounds-list"></datalist>
+    <!-- Searchable sound picker modal (replaces the ugly native datalist). -->
+    <div class="modal-backdrop" id="mi-picker-modal" hidden>
+      <div class="modal" style="max-width:540px;width:92%;">
+        <div class="modal-header">
+          <h2 class="modal-title">🎵 Ses Seç <span id="mi-picker-for" style="font-weight:400;opacity:.6;font-size:0.8rem;"></span></h2>
+          <button class="modal-x" onclick="closeMiPicker()">✕</button>
+        </div>
+        <input id="mi-picker-search" class="auto-input" placeholder="🔎 Ses ara (myinstants)..." oninput="renderMiPickerList(this.value)" style="margin-bottom:0.6rem;">
+        <div id="mi-picker-list" style="max-height:56vh;overflow-y:auto;display:flex;flex-direction:column;gap:3px;"></div>
+        <div style="margin-top:0.6rem;text-align:right;"><button class="btn-secondary" onclick="clearMiForCurrent()">🔇 Sesi Kaldır</button></div>
+      </div>
+    </div>
     <script src="mi-sounds.js"></script>
     <script src="renderer.js"></script>
 </body>

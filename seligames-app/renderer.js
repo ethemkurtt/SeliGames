@@ -1429,7 +1429,6 @@ const GIFT_PRESET_OPTIONS = [
 ];
 
 async function renderGiftSoundMap() {
-    populateMiDatalist();
     await loadGiftCatalog();
     // also pull user's current map from backend
     try {
@@ -1458,7 +1457,11 @@ function filterGiftSoundMap() {
     else if (filterMode === 'epic') items = items.filter(g => g.coins >= 1000);
 
     items.sort((a, b) => a.coins - b.coins);
-    if (countEl) countEl.textContent = `${items.length} görüntüleniyor`;
+    // Cap the rendered rows — 1690 rows froze the page. Search narrows the list.
+    const totalMatches = items.length;
+    const CAP = 80;
+    items = items.slice(0, CAP);
+    if (countEl) countEl.textContent = totalMatches > CAP ? `${CAP} / ${totalMatches} — aramayla daralt 🔎` : `${totalMatches} hediye`;
 
     // Update badges
     const total = giftCatalogCache.length;
@@ -1490,7 +1493,7 @@ function filterGiftSoundMap() {
                     <div class="gift-map-coins">💎 ${g.coins}${isMp3 ? ' <span class="gift-map-chip-mp3">MP3</span>' : ''}</div>
                 </div>
                 <div class="gift-map-controls">
-                    <input class="gift-map-select" list="mi-sounds-list" value="${entry?.soundName ? escapeAttr(entry.soundName) : ''}" placeholder="🔎 ses ara (myinstants)" onchange="updateGiftMiSound('${escapeHtml(g.name).replace(/'/g, "\\'")}', this.value)">
+                    <button class="gift-map-select" onclick="openMiPicker('${escapeHtml(g.name).replace(/'/g, "\\'")}')" title="Ses seç">${entry?.soundName ? '🎵 ' + escapeHtml(entry.soundName.slice(0, 20)) : '🔎 Ses seç'}</button>
                     <button class="gift-map-btn" onclick="uploadGiftMp3('${escapeHtml(g.name).replace(/'/g, "\\'")}')" title="MP3 yükle">
                         <i class="fas fa-upload"></i>
                     </button>
@@ -1505,16 +1508,44 @@ function filterGiftSoundMap() {
     }).join('');
 }
 
-// Populate the myinstants sound datalist once (494 TR sounds from mi-sounds.js).
-let _miDatalistDone = false;
-function populateMiDatalist() {
-    if (_miDatalistDone) return;
-    const dl = document.getElementById('mi-sounds-list');
-    const list = window.MI_SOUNDS || [];
-    if (!dl || !list.length) return;
-    dl.innerHTML = list.map((s) => `<option value="${escapeAttr(s.name)}"></option>`).join('');
-    _miDatalistDone = true;
+// ─── Searchable sound picker (modal) ─────────────────────────────────────
+let _miPickerGift = null;
+function openMiPicker(giftName) {
+    _miPickerGift = giftName;
+    const m = document.getElementById('mi-picker-modal');
+    if (!m) return;
+    const forEl = document.getElementById('mi-picker-for'); if (forEl) forEl.textContent = '→ ' + giftName;
+    const search = document.getElementById('mi-picker-search'); if (search) search.value = '';
+    renderMiPickerList('');
+    m.hidden = false;
+    setTimeout(() => document.getElementById('mi-picker-search')?.focus(), 60);
 }
+function closeMiPicker() { const m = document.getElementById('mi-picker-modal'); if (m) m.hidden = true; _miPickerGift = null; }
+function renderMiPickerList(q) {
+    const list = document.getElementById('mi-picker-list');
+    if (!list) return;
+    const all = window.MI_SOUNDS || [];
+    q = (q || '').toLocaleLowerCase('tr-TR').trim();
+    let items = q ? all.filter((s) => s.name.toLocaleLowerCase('tr-TR').includes(q)) : all;
+    const total = items.length;
+    items = items.slice(0, 120);
+    list.innerHTML = items.map((s) => `<div class="mi-pick-row">
+        <button class="mi-pick-play" data-url="${escapeAttr(s.url)}" title="Dinle"><i class="fas fa-play"></i></button>
+        <span class="mi-pick-name" data-name="${escapeAttr(s.name)}">${escapeHtml(s.name)}</span>
+    </div>`).join('') + (total > 120 ? `<div style="opacity:.5;font-size:0.75rem;padding:8px;text-align:center;">${total} sonuç — aramayı daralt</div>` : (total === 0 ? '<div style="opacity:.5;padding:14px;text-align:center;">Sonuç yok</div>' : ''));
+    // Event delegation (names contain quotes/emoji/unicode → no inline onclick).
+    list.onclick = (e) => {
+        const play = e.target.closest('.mi-pick-play');
+        if (play) { previewMiSoundUrl(play.dataset.url); return; }
+        const name = e.target.closest('.mi-pick-name');
+        if (name) selectMiSound(name.dataset.name);
+    };
+}
+function previewMiSoundUrl(url) { try { const a = new Audio(url); a.volume = Math.max(0, Math.min(1, getNotifVolume())); a.play().catch(() => {}); } catch {} }
+async function selectMiSound(soundName) { if (!_miPickerGift) return; const g = _miPickerGift; await updateGiftMiSound(g, soundName); closeMiPicker(); }
+async function clearMiForCurrent() { if (_miPickerGift) { const g = _miPickerGift; closeMiPicker(); await clearGiftMapping(g); } }
+window.openMiPicker = openMiPicker; window.closeMiPicker = closeMiPicker; window.renderMiPickerList = renderMiPickerList;
+window.previewMiSoundUrl = previewMiSoundUrl; window.selectMiSound = selectMiSound; window.clearMiForCurrent = clearMiForCurrent;
 
 // Assign a myinstants sound to a gift. Stored as {mp3:url} so the existing MP3
 // playback path (new Audio) plays it — no synthesized sounds involved.
