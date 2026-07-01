@@ -44,6 +44,7 @@
       "main.js",
       "preload.js",
       "renderer.js",
+      "mi-sounds.js",
       "index.html",
       "config.default.json",
       "assets/**/*",

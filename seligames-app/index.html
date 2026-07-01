@@ -4055,7 +4055,11 @@
     #loyalty-page .loy-adjust{display:flex;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap;}
     #loyalty-page .loy-lb-row{display:flex;align-items:center;gap:0.8rem;padding:0.55rem 0.7rem;border-radius:10px;position:relative;overflow:hidden;margin-bottom:0.3rem;}
     #loyalty-page .loy-lb-bar{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,rgba(255,46,184,0.20),transparent);z-index:0;transition:width .6s ease;}
-    #loyalty-page .loy-lb-row>*{position:relative;z-index:1;}
+    /* Lift the row CONTENT above the background bar — but NOT the bar itself.
+       Previously `>*` also matched .loy-lb-bar (equal specificity, later rule)
+       and overrode its position:absolute → the bar went in-flow and its width
+       (points%) pushed the whole row right, staggering the top ranks. */
+    #loyalty-page .loy-lb-row>*:not(.loy-lb-bar){position:relative;z-index:1;}
     #loyalty-page .loy-lb-rank{width:30px;text-align:center;font-weight:900;flex-shrink:0;}
     #loyalty-page .loy-lb-av{width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1.5px solid rgba(255,46,184,0.35);display:inline-flex;align-items:center;justify-content:center;}
     #loyalty-page .loy-lb-av-ph{background:linear-gradient(135deg,#ff2eb8,#a855f7);color:#fff;font-weight:800;font-size:0.85rem;}
@@ -6442,6 +6446,8 @@
 
     <!-- html-to-image UMD bundle (used by Hediye Tasarımı sayfası) -->
     <script src="./node_modules/html-to-image/dist/html-to-image.js"></script>
+    <datalist id="mi-sounds-list"></datalist>
+    <script src="mi-sounds.js"></script>
     <script src="renderer.js"></script>
 </body>
 
