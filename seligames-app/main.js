@@ -1057,7 +1057,9 @@ ipcMain.handle('get-event-sessions', async () => {
 // Gift catalog (public, no auth)
 ipcMain.handle('get-gift-catalog', async () => {
     try {
-        const response = await axios.get(`${BACKEND_URL}/api/gifts`);
+        // 15s timeout — without it a stalled connection hung this IPC forever,
+        // which froze the Gift Sounds page on "Yükleniyor…".
+        const response = await axios.get(`${BACKEND_URL}/api/gifts`, { timeout: 15000 });
         return { success: true, data: response.data };
     } catch (error) {
         return { success: false, error: error.message };

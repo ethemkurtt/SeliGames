@@ -1368,10 +1368,26 @@ let giftSoundMapCache = {}; // { giftName: { preset: 'coin' } | { mp3: 'data:aud
 
 async function loadGiftCatalog() {
     if (giftCatalogCache.length) return giftCatalogCache;
+    // Direct renderer fetch is PRIMARY — fast and reliable. The main-process
+    // IPC (axios) has stalled and hung the whole Gift Sounds page on "Yükleniyor…".
     try {
-        const result = await window.api.getGiftCatalog();
-        if (result.success) giftCatalogCache = result.data || [];
-    } catch (e) { console.warn('gift catalog load failed', e); }
+        const ctrl = new AbortController();
+        const to = setTimeout(() => ctrl.abort(), 12000);
+        const r = await fetch(`${BACKEND_URL}/api/gifts`, { signal: ctrl.signal });
+        clearTimeout(to);
+        const j = await r.json();
+        giftCatalogCache = Array.isArray(j) ? j : (j.data || j.gifts || []);
+    } catch (e) { console.warn('gift catalog fetch failed', e); }
+    // Fallback: main-process IPC, capped at 8s so it can never hang forever.
+    if (!giftCatalogCache.length) {
+        try {
+            const result = await Promise.race([
+                window.api.getGiftCatalog(),
+                new Promise((res) => setTimeout(() => res({ success: false, timeout: true }), 8000)),
+            ]);
+            if (result && result.success && Array.isArray(result.data) && result.data.length) giftCatalogCache = result.data;
+        } catch (e) { console.warn('gift catalog IPC fallback failed', e); }
+    }
     return giftCatalogCache;
 }
 
