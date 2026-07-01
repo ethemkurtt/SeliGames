@@ -3906,7 +3906,8 @@
 /* In-app preview is a STATIC representation: kill ambient theme animations so
    rebuilds (style-preset cycling, theme change, color edits) don't restart them
    and flash. The live OBS overlay keeps all its animations. */
-#ov-preview .ov-card, #ov-preview .ov-card *, #ov-preview .ov-card::before, #ov-preview .ov-card::after { animation: none !important; }
+#ov-preview .ov-card, #ov-preview .ov-card *, #ov-preview .ov-card::before, #ov-preview .ov-card::after,
+#ov-preview .sg, #ov-preview .sg *, #ov-preview .sg::before, #ov-preview .sg::after { animation: none !important; }
 .ov-pop{animation:ovPop .55s ease}
 @keyframes ovPop{0%,100%{transform:scale(1)}38%{transform:scale(1.04)}}
 .ov-shine{position:relative}

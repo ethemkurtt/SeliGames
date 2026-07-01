@@ -6820,9 +6820,12 @@ function updateOverlayPreview() {
         const gt = normalizeGoalThemeJS(s.theme);
         preview.innerHTML = `
             <div class="ov-card ${gt} ov-glow ga-pop" style="--bar:${s.barColor};--radius:${s.borderRadius}px;border-radius:${s.borderRadius}px;padding:24px 34px;text-align:center;min-width:280px;">
-                <div class="ga-rays" style="--c:${s.barColor}"></div><div class="ga-halo" style="--c:${s.barColor}"></div>
                 <div style="position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;">
-                    <div class="ga-icon" style="filter:drop-shadow(0 0 18px ${s.barColor}cc);font-size:72px;line-height:1;">🌹</div>
+                    <div style="position:relative;display:flex;align-items:center;justify-content:center;">
+                        <div class="ga-rays" style="--c:${s.barColor};top:50%;left:50%;"></div>
+                        <div class="ga-halo" style="--c:${s.barColor};top:50%;left:50%;"></div>
+                        <div class="ga-icon" style="filter:drop-shadow(0 0 18px ${s.barColor}cc);font-size:72px;line-height:1;position:relative;z-index:1;">🌹</div>
+                    </div>
                     <div class="ov-title ga-user" style="color:${s.textColor};font-size:${s.fontSize}px;font-weight:900;">Kullanıcı</div>
                     <div class="ga-gift" style="font-size:${Math.round(s.fontSize*0.86)}px;"><span class="ov-accent">Gül</span><span class="ga-mult" style="--c:${s.barColor}">×5</span></div>
                     <div class="ga-diamonds" style="font-size:${Math.round(s.fontSize*0.66)}px;">💎 5</div>
