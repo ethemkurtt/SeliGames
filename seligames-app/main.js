@@ -325,7 +325,7 @@ function disconnectBackendSocket() {
 ipcMain.handle('open-external', (_e, url) => {
     try {
         const u = new URL(String(url));
-        if (u.protocol === 'http:' || u.protocol === 'https:') { shell.openExternal(u.href); return { success: true }; }
+        if (['http:', 'https:', 'mailto:', 'tel:'].includes(u.protocol)) { shell.openExternal(u.href); return { success: true }; }
         return { success: false, error: 'unsupported protocol' };
     } catch (e) { return { success: false, error: e.message }; }
 });

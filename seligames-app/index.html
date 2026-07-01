@@ -4442,9 +4442,7 @@
                         <div class="page-title">🎮 Oyun Modları</div>
                         <div class="page-subtitle">TikTok canlı yayınında izleyicilerinin hediyeleriyle oyunları kontrol et. <span id="mods-total-count" style="color:#ff2eb8;font-weight:700;">—</span> mod mevcut.</div>
                     </div>
-                    <button class="btn-new-draft" onclick="openAddGameModal()" style="margin-top:0.25rem;">
-                        <i class="fas fa-plus-circle"></i> Oyun Ekle
-                    </button>
+                    <!-- Mod ekleme artık yalnızca admin panelinde (seligame.com/admin.html). -->
                 </div>
 
                 <!-- Filter/search bar -->
@@ -5161,7 +5159,7 @@
                 </div>
                 <div class="contact-title">E-posta</div>
                 <p class="contact-text">Her türlü soru ve destek için bize e-posta gönderin.</p>
-                <a href="#" class="contact-link">destek@seligames.com</a>
+                <a href="#" class="contact-link" onclick="event.preventDefault();window.api.openExternal('mailto:destek@seligame.com')">destek@seligame.com</a>
             </div>
 
             <div class="contact-card">
@@ -5170,7 +5168,7 @@
                 </div>
                 <div class="contact-title">Discord</div>
                 <p class="contact-text">Topluluğumuza katılın ve diğer modcularla tanışın.</p>
-                <a href="#" class="contact-link">Discord Sunucusu</a>
+                <a href="#" class="contact-link" onclick="event.preventDefault();window.api.openExternal('https://discord.gg/seligames')">Discord Sunucusu</a>
             </div>
 
             <div class="contact-card">
@@ -5179,13 +5177,16 @@
                 </div>
                 <div class="contact-title">Web Sitesi</div>
                 <p class="contact-text">Daha fazla bilgi ve güncellemeler için web sitemizi ziyaret edin.</p>
-                <a href="#" class="contact-link">www.seligames.com</a>
+                <a href="#" class="contact-link" onclick="event.preventDefault();window.api.openExternal('https://seligame.com')">seligame.com</a>
             </div>
         </div>
     </div>
 
     <!-- Settings Page -->
     <div class="page" id="settings-page">
+        <button class="btn-secondary" onclick="navigateBack()" style="margin-bottom:0.9rem;display:inline-flex;align-items:center;gap:0.4rem;">
+            <i class="fas fa-arrow-left"></i> Geri
+        </button>
         <div class="page-header">
             <div class="page-title">Ayarlar</div>
             <div class="page-subtitle">Tercihlerinizi yapılandırın</div>

@@ -156,7 +156,17 @@ function loadUserInfo(user) {
 }
 
 // Navigation
+let _navPrev = 'dashboard';
+function navigateBack() { navigateTo(_navPrev || 'dashboard'); }
+window.navigateBack = navigateBack;
+
 function navigateTo(page) {
+    // Remember the page we're leaving so inner pages can show a "← Geri" button.
+    const _curActive = document.querySelector('.page.active');
+    if (_curActive && _curActive.id) {
+        const _p = _curActive.id.replace(/-page$/, '');
+        if (_p && _p !== page) _navPrev = _p;
+    }
     // Remove active from all nav items and sub items
     document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
     document.querySelectorAll('.nav-sub-item').forEach(item => item.classList.remove('active'));
