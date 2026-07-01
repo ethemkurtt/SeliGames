@@ -1517,10 +1517,10 @@ function openMiPicker(giftName) {
     const forEl = document.getElementById('mi-picker-for'); if (forEl) forEl.textContent = '→ ' + giftName;
     const search = document.getElementById('mi-picker-search'); if (search) search.value = '';
     renderMiPickerList('');
-    m.hidden = false;
+    m.classList.add('active');
     setTimeout(() => document.getElementById('mi-picker-search')?.focus(), 60);
 }
-function closeMiPicker() { const m = document.getElementById('mi-picker-modal'); if (m) m.hidden = true; _miPickerGift = null; }
+function closeMiPicker() { const m = document.getElementById('mi-picker-modal'); if (m) m.classList.remove('active'); _miPickerGift = null; }
 function renderMiPickerList(q) {
     const list = document.getElementById('mi-picker-list');
     if (!list) return;

@@ -6461,15 +6461,15 @@
     <!-- html-to-image UMD bundle (used by Hediye Tasarımı sayfası) -->
     <script src="./node_modules/html-to-image/dist/html-to-image.js"></script>
     <!-- Searchable sound picker modal (replaces the ugly native datalist). -->
-    <div class="modal-backdrop" id="mi-picker-modal" hidden>
-      <div class="modal" style="max-width:540px;width:92%;">
+    <div id="mi-picker-modal" class="modal" onclick="if(event.target===this)closeMiPicker()">
+      <div class="modal-content" style="max-width:540px;max-height:82vh;display:flex;flex-direction:column;">
         <div class="modal-header">
           <h2 class="modal-title">🎵 Ses Seç <span id="mi-picker-for" style="font-weight:400;opacity:.6;font-size:0.8rem;"></span></h2>
-          <button class="modal-x" onclick="closeMiPicker()">✕</button>
+          <button class="modal-close" onclick="closeMiPicker()"><i class="fas fa-times"></i></button>
         </div>
-        <input id="mi-picker-search" class="auto-input" placeholder="🔎 Ses ara (myinstants)..." oninput="renderMiPickerList(this.value)" style="margin-bottom:0.6rem;">
-        <div id="mi-picker-list" style="max-height:56vh;overflow-y:auto;display:flex;flex-direction:column;gap:3px;"></div>
-        <div style="margin-top:0.6rem;text-align:right;"><button class="btn-secondary" onclick="clearMiForCurrent()">🔇 Sesi Kaldır</button></div>
+        <input id="mi-picker-search" placeholder="🔎 Ses ara (myinstants)..." oninput="renderMiPickerList(this.value)" style="width:100%;padding:0.6rem 0.85rem;background:var(--bg);border:1px solid var(--ov-08);border-radius:8px;color:var(--fg-strong);font-size:0.85rem;margin-bottom:0.75rem;">
+        <div id="mi-picker-list" style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:3px;"></div>
+        <div style="margin-top:0.6rem;text-align:right;flex-shrink:0;"><button class="btn-secondary" onclick="clearMiForCurrent()">🔇 Sesi Kaldır</button></div>
       </div>
     </div>
     <script src="mi-sounds.js"></script>
