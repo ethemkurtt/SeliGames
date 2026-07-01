@@ -37,7 +37,10 @@ const io = new Server(server, {
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(bodyParser.json());
+// 25mb (default was 100kb) — gift-sound MP3s and action media are embedded as
+// base64 data-URIs inside the settings JSON; the tiny default caused HTTP 413.
+app.use(bodyParser.json({ limit: '25mb' }));
+app.use(bodyParser.urlencoded({ limit: '25mb', extended: true }));
 
 // Serve uploaded mod cover images. Path matches what /api/mods/:id/image
 // writes to Mod.imageUrl: "/uploads/mod-images/<modId>.<ext>".
