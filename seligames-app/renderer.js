@@ -830,8 +830,8 @@ function renderGiftCardEl(item) {
 
 // ─── Actions ──────────────────────────────────────────────────────────
 
-function resetGiftDesign() {
-    if (!confirm('Tüm tasarım sıfırlansın mı?')) return;
+async function resetGiftDesign() {
+    if (!(await showConfirm('Tüm tasarım sıfırlansın mı?', { title: '⚠️ Sıfırla', okText: 'Sıfırla', danger: false }))) return;
     giftDesign = JSON.parse(JSON.stringify(GD_DEFAULT));
     try { localStorage.removeItem('giftDesign'); } catch {}
     gdSyncFormFromState();
@@ -863,7 +863,7 @@ function gdNewId() {
     return 'gd_' + Math.random().toString(36).slice(2, 9) + Date.now().toString(36);
 }
 
-function saveGiftDesignAs() {
+async function saveGiftDesignAs() {
     const name = (prompt('Tasarım adı:', giftDesign.name || 'Tasarım') || '').trim();
     if (!name) return;
     const lib = gdGetLibrary();
@@ -872,7 +872,7 @@ function saveGiftDesignAs() {
     const stamp = new Date().toLocaleString('tr-TR');
     const existing = lib.find(d => (d.name || '').toLocaleLowerCase('tr-TR') === name.toLocaleLowerCase('tr-TR'));
     if (existing) {
-        if (!confirm(`"${name}" zaten var. Üzerine yazılsın mı?`)) return;
+        if (!(await showConfirm(`"${name}" zaten var. Üzerine yazılsın mı?`, { title: '💾 Üzerine Yaz', okText: 'Üzerine Yaz', danger: false }))) return;
         existing.design = clone; existing.savedAt = stamp;
     } else {
         lib.unshift({ id: gdNewId(), name, savedAt: stamp, design: clone });
@@ -923,10 +923,10 @@ function loadGiftDesignById(id) {
     closeGiftDesignsModal();
     showToast(`"${entry.name}" yüklendi`);
 }
-function deleteGiftDesignById(id) {
+async function deleteGiftDesignById(id) {
     const entry = gdGetLibrary().find(d => d.id === id);
     if (!entry) return;
-    if (!confirm(`"${entry.name}" silinsin mi?`)) return;
+    if (!(await showConfirm(`"${entry.name}" silinsin mi?`))) return;
     gdSetLibrary(gdGetLibrary().filter(d => d.id !== id));
     renderSavedGiftDesigns();
     showToast('Silindi');
@@ -1521,6 +1521,48 @@ function openMiPicker(giftName) {
     setTimeout(() => document.getElementById('mi-picker-search')?.focus(), 60);
 }
 function closeMiPicker() { const m = document.getElementById('mi-picker-modal'); if (m) m.classList.remove('active'); _miPickerGift = null; }
+
+// ── Themed confirm dialog ────────────────────────────────────────────────
+// Reusable async replacement for the native window.confirm() (which rendered
+// unthemed OS chrome titled "seligames"). Returns a Promise<boolean>.
+// opts: { title, okText, cancelText, danger:false } — danger:false uses the
+// brand/success button instead of the red one (for non-destructive confirms).
+let __confirmResolver = null;
+function __confirmKeyHandler(e) {
+    if (e.key === 'Escape') { e.preventDefault(); __resolveConfirm(false); }
+    else if (e.key === 'Enter') { e.preventDefault(); __resolveConfirm(true); }
+}
+function __resolveConfirm(val) {
+    const m = document.getElementById('confirm-modal');
+    if (m) m.classList.remove('active');
+    document.removeEventListener('keydown', __confirmKeyHandler, true);
+    if (__confirmResolver) { const r = __confirmResolver; __confirmResolver = null; r(val); }
+}
+function showConfirm(message, opts = {}) {
+    return new Promise((resolve) => {
+        // If a confirm is already open, cancel it first so we never orphan a promise.
+        if (__confirmResolver) { const r = __confirmResolver; __confirmResolver = null; r(false); }
+        const m = document.getElementById('confirm-modal');
+        if (!m) { resolve(window.confirm(message)); return; } // fallback if markup missing
+        const titleEl = document.getElementById('confirm-title');
+        const msgEl = document.getElementById('confirm-message');
+        const okBtn = document.getElementById('confirm-ok-btn');
+        const cancelBtn = document.getElementById('confirm-cancel-btn');
+        if (titleEl) titleEl.textContent = opts.title || '⚠️ Onay';
+        if (msgEl) msgEl.textContent = message;
+        if (cancelBtn) cancelBtn.textContent = opts.cancelText || 'İptal';
+        if (okBtn) {
+            okBtn.textContent = opts.okText || 'Sil';
+            okBtn.className = opts.danger === false ? 'btn-success' : 'btn-danger';
+        }
+        __confirmResolver = resolve;
+        m.classList.add('active');
+        document.addEventListener('keydown', __confirmKeyHandler, true);
+        if (okBtn) setTimeout(() => okBtn.focus(), 0);
+    });
+}
+window.__resolveConfirm = __resolveConfirm;
+window.showConfirm = showConfirm;
 function renderMiPickerList(q) {
     const list = document.getElementById('mi-picker-list');
     if (!list) return;
@@ -1600,7 +1642,7 @@ async function clearGiftMapping(giftName) {
 async function clearAllGiftMappings() {
     const count = Object.keys(giftSoundMapCache || {}).length;
     if (!count) { showToast('Temizlenecek atama yok'); return; }
-    if (!confirm(`${count} atama kalıcı olarak silinecek. Emin misin?`)) return;
+    if (!(await showConfirm(`${count} atama kalıcı olarak silinecek. Emin misin?`))) return;
     try {
         const result = await window.api.replaceGiftSoundMap({});
         if (result.success) {
@@ -1621,7 +1663,7 @@ function uploadGiftMp3(giftName) {
         const file = e.target.files[0];
         if (!file) return;
         if (file.size > 500 * 1024) {
-            if (!confirm(`Dosya boyutu ${Math.round(file.size/1024)}KB. 500KB üzerindeki dosyalar DB'yi şişirebilir. Yine de yükle?`)) return;
+            if (!(await showConfirm(`Dosya boyutu ${Math.round(file.size/1024)}KB. 500KB üzerindeki dosyalar DB'yi şişirebilir. Yine de yükle?`, { title: '📁 Yükle', okText: 'Yine de Yükle', danger: false }))) return;
         }
         try {
             const base64 = await new Promise((resolve, reject) => {
@@ -4619,7 +4661,7 @@ async function clearAllGiftActions() {
     if (!currentModDetail) return;
     const count = Object.keys(currentModConfig.giftActions || {}).length;
     if (!count) { showToast('Temizlenecek aksiyon yok'); return; }
-    if (!confirm(`${count} aksiyon kalıcı olarak silinecek. Emin misin?`)) return;
+    if (!(await showConfirm(`${count} aksiyon kalıcı olarak silinecek. Emin misin?`))) return;
     try {
         const result = await window.api.saveModConfig(currentModDetail._id, { giftActions: {} });
         if (result.success) {
@@ -4798,7 +4840,7 @@ if (typeof window !== 'undefined' && window.api?.onInstallProgress) {
 
 async function uninstallModAction() {
     if (!currentModDetail) return;
-    if (!confirm(`"${currentModDetail.title}" kaldırılacak (ayarların korunur). Emin misin?`)) return;
+    if (!(await showConfirm(`"${currentModDetail.title}" kaldırılacak (ayarların korunur). Emin misin?`, { okText: 'Kaldır' }))) return;
     const result = await window.api.uninstallMod(currentModDetail._id);
     if (result.success) {
         currentModConfig.installed = false;
@@ -5240,6 +5282,11 @@ if (window.api?.onTikTokDisconnected) {
         const stopBtn = document.getElementById('btn-stop-live');
         if (startBtn) startBtn.style.display = '';
         if (stopBtn) stopBtn.style.display = 'none';
+        // Reset the gift-scanner status so it doesn't falsely stay "Aktif".
+        const scDot = document.getElementById('scanner-status-dot');
+        const scTxt = document.getElementById('scanner-status-text');
+        if (scDot) scDot.style.background = '#6b6280';
+        if (scTxt) scTxt.textContent = 'Bekleniyor...';
         addEventToFeed({ type: 'system', user: 'Sistem', message: info?.reason || 'Yayın bağlantısı kesildi', icon: '🔌', color: '#ff2eb8' });
     });
 }
@@ -6422,7 +6469,7 @@ async function resumeDraft(dbId) {
 }
 
 async function resetDraft(dbId) {
-    if (!confirm('Bu taslağın sayacı sıfırlanacak (ayarlar korunur). Emin misin?')) return;
+    if (!(await showConfirm('Bu taslağın sayacı sıfırlanacak (ayarlar korunur). Emin misin?', { title: '⚠️ Sıfırla', okText: 'Sıfırla', danger: false }))) return;
     try {
         const result = await window.api.resetOverlay(dbId);
         if (!result.success) { showToast('Sıfırlama hatası', true); return; }
@@ -6441,7 +6488,7 @@ async function resetDraft(dbId) {
 }
 
 async function deleteDraft(dbId) {
-    if (!confirm('Bu taslak kalıcı olarak silinecek. Emin misin?')) return;
+    if (!(await showConfirm('Bu taslak kalıcı olarak silinecek. Emin misin?'))) return;
     try {
         const result = await window.api.deleteOverlay(dbId);
         if (!result.success) { showToast('Silme hatası', true); return; }
@@ -6507,6 +6554,7 @@ function populateOverlayForm(ov) {
     document.getElementById('ov-borderRadius').value = s.borderRadius || 12;
     document.getElementById('ov-borderRadius-val').textContent = (s.borderRadius || 12) + 'px';
     document.getElementById('ov-theme').value = s.theme || 'neon';
+    syncCarouselToTheme(s.theme || 'neon');
     document.getElementById('ov-animation').value = s.animation || 'smooth';
     document.getElementById('ov-showPct').checked = s.showPercentage !== false;
     document.getElementById('ov-showNums').checked = s.showNumbers !== false;
@@ -6531,6 +6579,7 @@ function resetOverlayForm(info) {
     document.getElementById('ov-borderRadius').value = 12;
     document.getElementById('ov-borderRadius-val').textContent = '12px';
     document.getElementById('ov-theme').value = 'neon';
+    syncCarouselToTheme('neon');
     document.getElementById('ov-animation').value = 'smooth';
     document.getElementById('ov-showPct').checked = true;
     document.getElementById('ov-showNums').checked = true;
@@ -6667,18 +6716,18 @@ function normalizeGoalThemeJS(t) {
 // Style carousel — 12 premium animated presets
 var currentStyleIndex = 0;
 var overlayStyles = [
-    { name: 'Neon Pulse', theme: 'neon',     barColor: '#ff2eb8', bgColor: '#08030f', textColor: '#ffffff', animation: 'smooth' },
+    { name: 'Neon Pulse', theme: 'neon',     barColor: '#ff2eb8', bgColor: '#08030f', textColor: '#ffffff', animation: 'pulse'  },
     { name: 'Aurora',     theme: 'aurora',   barColor: '#48f0c8', bgColor: '#060c14', textColor: '#eaffff', animation: 'smooth' },
     { name: 'Fire / Lava',theme: 'fire',     barColor: '#ff6b1a', bgColor: '#120602', textColor: '#ffd9b3', animation: 'pulse'  },
-    { name: 'Rainbow Holo',theme: 'holo',    barColor: '#ff2ec4', bgColor: '#0a0812', textColor: '#ffffff', animation: 'smooth' },
+    { name: 'Rainbow Holo',theme: 'holo',    barColor: '#7cf6ff', bgColor: '#0a0812', textColor: '#ffffff', animation: 'smooth' },
     { name: 'Gold Luxury',theme: 'gold',     barColor: '#ffd700', bgColor: '#1a1502', textColor: '#ffe9a8', animation: 'smooth' },
     { name: 'Cyberpunk',  theme: 'cyber',    barColor: '#22d3ee', bgColor: '#04080e', textColor: '#22d3ee', animation: 'smooth' },
-    { name: 'Galaxy',     theme: 'galaxy',   barColor: '#a855f7', bgColor: '#05030f', textColor: '#f0e7ff', animation: 'smooth' },
+    { name: 'Galaxy',     theme: 'galaxy',   barColor: '#8b5cf6', bgColor: '#05030f', textColor: '#f0e7ff', animation: 'smooth' },
     { name: 'Synthwave',  theme: 'synth',    barColor: '#ff2e88', bgColor: '#1e0828', textColor: '#ffffff', animation: 'bounce' },
-    { name: 'Glass',      theme: 'glass',    barColor: '#a855f7', bgColor: '#111122', textColor: '#ffffff', animation: 'smooth' },
+    { name: 'Glass',      theme: 'glass',    barColor: '#93c5fd', bgColor: '#111122', textColor: '#ffffff', animation: 'smooth' },
     { name: 'Candy',      theme: 'candy',    barColor: '#ff5fa2', bgColor: '#1a0d14', textColor: '#ffffff', animation: 'bounce' },
     { name: 'Electric',   theme: 'electric', barColor: '#3b82f6', bgColor: '#030814', textColor: '#dbeafe', animation: 'pulse'  },
-    { name: 'Minimal',    theme: 'minimal',  barColor: '#ff2eb8', bgColor: '#0f0c16', textColor: '#f5f5fa', animation: 'smooth' }
+    { name: 'Minimal',    theme: 'minimal',  barColor: '#e5e7eb', bgColor: '#0f0c16', textColor: '#f5f5fa', animation: 'smooth' }
 ];
 
 function prevOverlayStyle() {
@@ -6706,9 +6755,24 @@ function applyCurrentStyle() {
     updateOverlayPreview();
 }
 
+// Single source of truth for the carousel: map the selected theme -> its index
+// in overlayStyles, seat currentStyleIndex there, and repaint the "Name · n/12"
+// label. Called from the dropdown handler AND both form-population paths so the
+// carousel never desyncs from #ov-theme (was stuck on "Galaxy · 7/12").
+function syncCarouselToTheme(theme) {
+    theme = theme || (document.getElementById('ov-theme') && document.getElementById('ov-theme').value);
+    var idx = overlayStyles.findIndex(function (t) { return t.theme === theme; });
+    if (idx < 0) idx = 0;
+    currentStyleIndex = idx;
+    var label = document.getElementById('ov-style-label');
+    var s = overlayStyles[currentStyleIndex];
+    if (label && s) label.textContent = s.name + ' · ' + (currentStyleIndex + 1) + '/' + overlayStyles.length;
+}
+
 // Theme dropdown handler — recolours wheel slices to the theme before previewing.
 function onOverlayThemeChange() {
     const theme = document.getElementById('ov-theme')?.value;
+    syncCarouselToTheme(theme);
     // Apply the theme's colour palette to the inputs so EVERY overlay type
     // visibly changes — including the effect overlays (gift-cannon, particles,
     // action alert) that are colour-driven and ignore the CSS theme class.
@@ -6906,7 +6970,7 @@ function updateOverlayPreview() {
                 <div class="sg-track">
                     <div class="sg-fill shine ${s.animation || 'smooth'}" style="width:${pct}%;">${emberFx}${sparkFx}</div>
                     ${pct > 1 && pct < 100 ? `<span class="sg-tip" style="left:calc(${pct}% - 5px)"></span>` : ''}
-                    ${s.showPercentage ? `<span class="sg-pct">${pct.toFixed(0)}%</span>` : ''}
+                    ${s.showPercentage ? `<span class="sg-pct" style="font-size:${Math.min(18, Math.round(s.fontSize * 0.66))}px;">${pct.toFixed(0)}%</span>` : ''}
                 </div>
                 ${done ? '<div class="sg-done-badge">★ TAMAMLANDI ★</div>' : ''}
             </div>`;
@@ -6929,19 +6993,19 @@ function updateOverlayPreview() {
         const gt = normalizeGoalThemeJS(s.theme);
         preview.innerHTML = `
             <div class="ov-card ${gt}" style="--bar:${s.barColor};--radius:${s.borderRadius}px;border-radius:${s.borderRadius}px;padding:16px 20px;min-width:240px;">
-                <div class="lx-head ov-accent"><span>🎯</span><span>${title}</span></div>
+                <div class="lx-head ov-accent" style="font-size:${Math.round(s.fontSize * 0.72)}px;"><span>🎯</span><span>${title}</span></div>
                 <div class="lx-body"><div style="flex:1;min-width:0;"><div class="ov-title lx-user" style="color:${s.textColor};font-size:${s.fontSize}px;">Kullanıcı Adı</div></div></div>
             </div>`;
     } else if (type === 'leaderboard' || type === 'chart') {
         const gt = normalizeGoalThemeJS(s.theme);
         if (type === 'chart') {
             const data = [['Kullanıcı 1', 100], ['Kullanıcı 2', 62], ['Kullanıcı 3', 35]];
-            const rows = data.map(([u, w]) => `<div class="ch-row"><div class="ch-user" style="color:${s.textColor}">${u}</div><div class="ch-track"><div class="ch-fill ov-shine" style="width:${w}%"></div></div><div class="ch-score ov-accent">${(w * 40).toLocaleString('tr-TR')}</div></div>`).join('');
-            preview.innerHTML = `<div class="ov-card ${gt}" style="--bar:${s.barColor};--radius:${s.borderRadius}px;border-radius:${s.borderRadius}px;padding:16px 20px;min-width:320px;"><div class="ch-head ov-accent">📊 ${title}</div>${rows}</div>`;
+            const rows = data.map(([u, w]) => `<div class="ch-row"><div class="ch-user" style="color:${s.textColor};font-size:${Math.round(s.fontSize * 0.72)}px;">${u}</div><div class="ch-track"><div class="ch-fill ov-shine" style="width:${w}%"></div></div><div class="ch-score ov-accent" style="font-size:${Math.round(s.fontSize * 0.72)}px;">${(w * 40).toLocaleString('tr-TR')}</div></div>`).join('');
+            preview.innerHTML = `<div class="ov-card ${gt}" style="--bar:${s.barColor};--radius:${s.borderRadius}px;border-radius:${s.borderRadius}px;padding:16px 20px;min-width:320px;"><div class="ch-head ov-accent" style="font-size:${Math.round(s.fontSize * 0.78)}px;">📊 ${title}</div>${rows}</div>`;
         } else {
             const medals = ['👑', '🥈', '🥉']; const widths = [100, 64, 41];
-            const rows = medals.map((m, i) => `<div class="lb-row${i === 0 ? ' lb-first' : ''}"><div class="lb-rankbar" style="width:${widths[i]}%"></div><div class="lb-rank lb-r${i + 1}">${m}</div><div class="lb-user" style="color:${s.textColor}">Kullanıcı ${i + 1}</div><div class="lb-score ov-accent">${(12450 - i * 4000).toLocaleString('tr-TR')}</div></div>`).join('');
-            preview.innerHTML = `<div class="ov-card ${gt}" style="--bar:${s.barColor};--radius:${s.borderRadius}px;border-radius:${s.borderRadius}px;padding:16px 18px;min-width:320px;"><div class="lb-head ov-accent">🏆 ${title}</div>${rows}</div>`;
+            const rows = medals.map((m, i) => `<div class="lb-row${i === 0 ? ' lb-first' : ''}"><div class="lb-rankbar" style="width:${widths[i]}%"></div><div class="lb-rank lb-r${i + 1}" style="font-size:${s.fontSize}px;">${m}</div><div class="lb-user" style="color:${s.textColor};font-size:${s.fontSize}px;">Kullanıcı ${i + 1}</div><div class="lb-score ov-accent" style="font-size:${s.fontSize}px;">${(12450 - i * 4000).toLocaleString('tr-TR')}</div></div>`).join('');
+            preview.innerHTML = `<div class="ov-card ${gt}" style="--bar:${s.barColor};--radius:${s.borderRadius}px;border-radius:${s.borderRadius}px;padding:16px 18px;min-width:320px;"><div class="lb-head ov-accent" style="font-size:${Math.round(s.fontSize * 0.72)}px;">🏆 ${title}</div>${rows}</div>`;
         }
     } else if (type === 'chat') {
         const gt = normalizeGoalThemeJS(s.theme);
@@ -6957,7 +7021,7 @@ function updateOverlayPreview() {
         const gt = normalizeGoalThemeJS(s.theme);
         preview.innerHTML = `
             <div class="ov-card ${gt} ov-glow" style="--bar:${s.barColor};--radius:${s.borderRadius}px;border-radius:${s.borderRadius}px;padding:22px 40px;text-align:center;min-width:320px;">
-                <div class="sub-label ov-accent">⏱️ ${title}</div>
+                <div class="sub-label ov-accent" style="font-size:${Math.round(s.fontSize * 0.78)}px;">⏱️ ${title}</div>
                 <div class="sub-time sub-tick" style="color:${s.textColor};font-size:${Math.max(44, s.fontSize * 2.2)}px;">01:00:00</div>
                 <div class="sub-foot"><span class="sub-chip sub-added">+5 dk eklendi</span></div>
             </div>`;
@@ -7229,7 +7293,7 @@ async function applyGalleryTemplate(tmpl) {
 }
 
 async function deleteOverlayById(id) {
-    if (!confirm('Bu overlay silinecek. Emin misiniz?')) return;
+    if (!(await showConfirm('Bu overlay silinecek. Emin misiniz?'))) return;
     try {
         const result = await window.api.deleteOverlay(id);
         if (result.success) {
@@ -7311,20 +7375,20 @@ function showToast(msg, isError = false) {
 
 // navigateTo already handles overlay-gallery and gift-scanner pages
 
-// Hook into TikTok event handler to feed the scanner
-const _origHandleTikTokEvent = handleTikTokEvent;
-handleTikTokEvent = function(msg) {
-    _origHandleTikTokEvent(msg);
-
-    const eventType = msg.type || msg.event || '';
-    const eventData = msg.data || msg;
-
-    if (eventType === 'WebcastGiftMessage') {
-        const user = eventData?.user?.nickname || eventData?.user?.uniqueId || 'Bilinmeyen';
-        // Robust gift-name resolution (same cascade the main feed uses) so
-        // the scanner doesn't show "Hediye"/0 on stripped payloads.
-        const giftId = eventData?.giftId ?? eventData?.gift?.id ?? null;
-        let giftName = eventData?.giftName || eventData?.gift?.name || eventData?.gift?.gift_name || '';
+// Feed the scanner from the ACTIVE native-connector event stream
+// (window.api.onTikTokEvent → 'tiktok-event' IPC). main.js emits gifts as
+// { type:'gift', data:{ user, nickname, giftName, giftId, repeatCount,
+//   diamondCount, profilePicture } }. The old code wrapped handleTikTokEvent,
+// which only runs on the DEAD legacy Eulerstream WebSocket path — so the
+// scanner never received a single gift and stayed on "Bekleniyor…".
+if (window.api?.onTikTokEvent) {
+    window.api.onTikTokEvent((msg) => {
+        if (!msg || msg.type !== 'gift') return;
+        const d = msg.data || {};
+        const user = d.nickname || d.user || 'Bilinmeyen';
+        // Robust gift-name resolution so stripped payloads don't show "Hediye"/0.
+        const giftId = d.giftId ?? null;
+        let giftName = d.giftName || '';
         if ((!giftName || /^Hediye/i.test(giftName)) && giftId != null) {
             giftName = resolveGiftNameFromId(giftId) || giftName;
         }
@@ -7333,18 +7397,22 @@ handleTikTokEvent = function(msg) {
             if (hit) giftName = hit.name;
         }
         if (!giftName) giftName = giftId ? `Hediye #${giftId}` : 'Hediye';
-        const giftCount = eventData?.repeatCount || eventData?.count || 1;
-        const diamonds = (eventData?.gift?.diamond_count || eventData?.diamondCount || 0) * giftCount;
+        const giftCount = d.repeatCount || d.count || 1;
+        // main.js forwards the PER-SINGLE-gift diamond value to the renderer
+        // (main.js:735 sends raw data.diamondCount). addToScanner already
+        // multiplies coins×count for the total, and the tier filter buckets on
+        // the per-unit value — so pass the raw per-single value, NOT pre-multiplied.
+        const coins = d.diamondCount || 0;
 
-        addToScanner({ user, giftName, coins: diamonds, count: giftCount });
+        addToScanner({ user, giftName, coins, count: giftCount });
 
-        // Update scanner status (guarded — element only exists on scanner page)
+        // Flip scanner status off "Bekleniyor…" (guarded — scanner page only).
         const dot = document.getElementById('scanner-status-dot');
         const txt = document.getElementById('scanner-status-text');
         if (dot) dot.style.background = '#ff2eb8';
         if (txt) txt.textContent = 'Aktif';
-    }
-};
+    });
+}
 
 // ==================== END OVERLAY SYSTEM ====================
 
@@ -8085,7 +8153,7 @@ async function toggleRule(id, enabled) {
 }
 function editRuleById(id) { const r = _autoRules.find(x => String(x._id) === String(id)); if (r) openRuleEditor(r); }
 async function deleteRuleById(id) {
-    if (!confirm('Bu kural silinsin mi?')) return;
+    if (!(await showConfirm('Bu kural silinsin mi?'))) return;
     try { await autoApi(`/rules/${id}`, { method: 'DELETE' }); await reloadAutomation(); showToast('Kural silindi'); }
     catch (e) { showToast('Hata: ' + e.message, true); }
 }
@@ -8275,7 +8343,7 @@ async function testActionById(id) {
 function editActionById(id) { const a = _autoActions.find(x => String(x._id) === String(id)); if (a) openActionEditor(a); }
 async function deleteActionById(id) {
     const usedBy = _autoRules.filter(r => (r.actionIds || []).some(x => String((typeof x === 'object') ? x._id : x) === String(id))).length;
-    if (!confirm(usedBy ? `Bu aksiyon ${usedBy} kuralda kullanılıyor. Silinsin mi? (kurallardan da çıkarılır)` : 'Bu aksiyon silinsin mi?')) return;
+    if (!(await showConfirm(usedBy ? `Bu aksiyon ${usedBy} kuralda kullanılıyor. Silinsin mi? (kurallardan da çıkarılır)` : 'Bu aksiyon silinsin mi?'))) return;
     try { await autoApi(`/actions/${id}`, { method: 'DELETE' }); await reloadAutomation(); showToast('Aksiyon silindi'); }
     catch (e) { showToast('Hata: ' + e.message, true); }
 }
@@ -8316,7 +8384,7 @@ async function runModMigration() {
     const el = document.getElementById('auto-migrate-preview');
     const rows = el._rows;
     if (!rows || !rows.length) { showToast('Önce dönüştürülecek eşleme bulunmalı', true); return; }
-    if (!confirm(`${rows.length} eşleme, Aksiyon + Kural olarak oluşturulacak. Devam?`)) return;
+    if (!(await showConfirm(`${rows.length} eşleme, Aksiyon + Kural olarak oluşturulacak. Devam?`, { title: '🔁 Aktar', okText: 'Devam', danger: false }))) return;
     let made = 0;
     try {
         for (const r of rows) {

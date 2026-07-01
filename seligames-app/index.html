@@ -1239,6 +1239,25 @@
             box-shadow: 0 4px 15px rgba(255, 46, 184, 0.3);
         }
 
+        .btn-danger {
+            padding: 0.55rem 1.2rem;
+            background: linear-gradient(135deg, #ef4444, #b91c1c);
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.82rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.35);
+        }
+
         @keyframes shimmer {
             0% {
                 left: -100%;
@@ -5878,7 +5897,7 @@
 
                 <div class="style-carousel">
                     <button onclick="prevOverlayStyle()" title="Önceki stil"><i class="fas fa-chevron-left"></i></button>
-                    <span id="ov-style-label">Style: 1/7</span>
+                    <span id="ov-style-label">Neon Pulse · 1/12</span>
                     <button onclick="nextOverlayStyle()" title="Sonraki stil"><i class="fas fa-chevron-right"></i></button>
                 </div>
 
@@ -6470,6 +6489,21 @@
         <input id="mi-picker-search" placeholder="🔎 Ses ara (myinstants)..." oninput="renderMiPickerList(this.value)" style="width:100%;padding:0.6rem 0.85rem;background:var(--bg);border:1px solid var(--ov-08);border-radius:8px;color:var(--fg-strong);font-size:0.85rem;margin-bottom:0.75rem;">
         <div id="mi-picker-list" style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:3px;"></div>
         <div style="margin-top:0.6rem;text-align:right;flex-shrink:0;"><button class="btn-secondary" onclick="clearMiForCurrent()">🔇 Sesi Kaldır</button></div>
+      </div>
+    </div>
+
+    <!-- Themed confirm dialog (replaces native confirm(), which showed "seligames") -->
+    <div id="confirm-modal" class="modal" onclick="if(event.target===this)__resolveConfirm(false)">
+      <div class="modal-content" style="max-width:420px;">
+        <div class="modal-header">
+          <h2 class="modal-title" id="confirm-title">⚠️ Onay</h2>
+          <button class="modal-close" onclick="__resolveConfirm(false)"><i class="fas fa-times"></i></button>
+        </div>
+        <p class="modal-description" id="confirm-message" style="margin-bottom:1.5rem;white-space:pre-wrap;"></p>
+        <div class="modal-actions">
+          <button class="btn-secondary" id="confirm-cancel-btn" onclick="__resolveConfirm(false)">İptal</button>
+          <button class="btn-danger" id="confirm-ok-btn" onclick="__resolveConfirm(true)">Sil</button>
+        </div>
       </div>
     </div>
     <script src="mi-sounds.js"></script>
