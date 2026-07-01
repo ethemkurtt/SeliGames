@@ -6057,7 +6057,7 @@ function playGiftSound(giftName, coins) {
 // These are overwritten with values from main.js config (see initAppConfig below).
 // Kept as `let` so the runtime override sticks.
 let BACKEND_URL = 'http://localhost:3000';
-let WEB_URL = 'http://localhost:5173';
+let WEB_URL = 'https://seligame.com';
 
 // Load runtime config from main.js (config.json / config.default.json) before
 // any URL-dependent code runs. Resolves a promise that other init code awaits.

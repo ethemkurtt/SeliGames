@@ -199,7 +199,7 @@ function loadAppConfig() {
     // Defensive baseline → prod VPS, not localhost. If every config file is
     // missing the app still works against production instead of breaking.
     console.warn('⚠️  No config file found — using built-in prod baseline');
-    return { backendUrl: 'http://187.124.29.94:3000', webUrl: 'http://187.124.29.94:5173' };
+    return { backendUrl: 'http://187.124.29.94:3000', webUrl: 'https://seligame.com' };
 }
 
 const APP_CONFIG = loadAppConfig();
