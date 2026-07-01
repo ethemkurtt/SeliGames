@@ -5416,7 +5416,7 @@
         <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap;">
             <div>
                 <div class="page-title">🎁 Hediye Sesleri</div>
-                <div class="page-subtitle">Her TikTok hediyesine özel bir ses ata. MP3 yükleyebilirsin — atanmayanlar tier (coin) bazlı varsayılanı çalar.</div>
+                <div class="page-subtitle">Her TikTok hediyesine özel bir ses ata. MP3 yükleyebilirsin — atamadıkların varsayılan olarak <b>sessiz</b>dir (aşağıdan boyut sesini açabilirsin).</div>
             </div>
             <button onclick="renderGiftSoundMap()" class="btn-new-draft" style="margin-top:0.25rem;">
                 <i class="fas fa-sync-alt"></i> Yenile
@@ -5437,16 +5437,13 @@
             </button>
         </div>
 
-        <!-- Quick tier defaults reminder -->
-        <div style="background:var(--bg-3);border:1px solid var(--ov-04);border-radius:10px;padding:0.75rem 1rem;margin-bottom:1rem;">
-            <div style="color:#ff2eb8;font-size:0.78rem;font-weight:700;margin-bottom:0.35rem;">
-                <i class="fas fa-info-circle"></i> Önce Tier Varsayılanları
-            </div>
-            <p style="color:var(--text-muted);font-size:0.72rem;line-height:1.55;margin:0;">
-                Küçük / Orta / Büyük / Epic coin aralıkları için genel sesleri
-                <a href="#" onclick="event.preventDefault();navigateTo('settings');setTimeout(()=>document.querySelector('.settings-section:nth-child(3)')?.scrollIntoView({behavior:'smooth'}),100);" style="color:#ff2eb8;font-weight:700;">Ayarlar → 🎁 Hediye Ses Ayarları</a>'ndan seçebilirsin.
-                Aşağıda tek tek hediye bazında bunları override edebilirsin.
-            </p>
+        <!-- Tier fallback toggle: unmapped gifts silent by default -->
+        <div style="background:var(--bg-3);border:1px solid var(--ov-04);border-radius:10px;padding:0.85rem 1rem;margin-bottom:1rem;display:flex;align-items:center;gap:0.85rem;flex-wrap:wrap;">
+            <label style="display:flex;align-items:center;gap:0.6rem;cursor:pointer;flex:1;min-width:250px;">
+                <input type="checkbox" id="tier-fallback-toggle" onchange="setTierFallback(this.checked)" style="width:18px;height:18px;accent-color:#ff2eb8;flex-shrink:0;">
+                <span style="color:var(--fg-strong);font-weight:700;font-size:0.82rem;">Atanmamış hediyelerde otomatik boyut sesi (tier) çal</span>
+            </label>
+            <span style="color:var(--text-muted);font-size:0.72rem;line-height:1.5;flex:2;min-width:220px;">Kapalıyken ses atamadığın hediyeler <b>sessiz</b> kalır. Açıkken coin aralığına göre <a href="#" onclick="event.preventDefault();navigateTo('settings');setTimeout(()=>document.querySelector('.settings-section:nth-child(3)')?.scrollIntoView({behavior:'smooth'}),100);" style="color:#ff2eb8;font-weight:700;">Tier varsayılan sesi</a> çalar.</span>
         </div>
 
         <!-- Stat badges -->

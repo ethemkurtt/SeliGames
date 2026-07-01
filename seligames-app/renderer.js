@@ -1567,12 +1567,14 @@ function uploadGiftMp3(giftName) {
 function previewGiftSound(giftName) {
     const entry = giftSoundMapCache[giftName];
     if (!entry) {
-        // Fallback to tier-based preview
+        // No per-gift mapping. Only preview a tier sound if the streamer enabled
+        // the auto tier fallback; otherwise this gift is silent.
+        if (!tierFallbackEnabled) { showToast('🔇 Bu hediye için ses ayarlı değil'); return; }
         const gift = giftCatalogCache.find(g => g.name === giftName);
         if (gift) {
             const tier = getGiftTier(gift.coins);
             playSound(giftSoundConfig[tier]);
-            showToast(`Tier fallback: ${tier} (${giftSoundConfig[tier]})`);
+            showToast(`Boyut sesi: ${tier} (${giftSoundConfig[tier]})`);
         }
         return;
     }
@@ -5827,6 +5829,18 @@ const giftSoundConfig = {
     large: 'fanfare', // 100-1000 coins
     epic: 'victory'   // 1000+ coins
 };
+// When a gift has NO per-gift mapping ("ses yok"), should we auto-play a sound
+// based on its coin tier? OFF by default so unmapped gifts are truly silent —
+// users were hearing tier sounds ("bell") for gifts they never configured.
+let tierFallbackEnabled = false;
+
+// Toggle whether unmapped gifts auto-play a tier-based sound (default off).
+function setTierFallback(on) {
+    tierFallbackEnabled = !!on;
+    updateSetting('tierFallbackSounds', tierFallbackEnabled);
+    showToast(tierFallbackEnabled ? '🔔 Atanmamış hediyeler boyut sesi çalacak' : '🔇 Atanmamış hediyeler sessiz kalacak');
+}
+window.setTierFallback = setTierFallback;
 
 // Load saved sound preferences from backend
 async function loadSoundPreferences() {
@@ -5850,6 +5864,9 @@ async function loadSoundPreferences() {
                 giftSoundMapCache = result.data.settings.giftSoundMap;
                 console.log('✅ Gift sound map loaded:', Object.keys(giftSoundMapCache).length, 'mappings');
             }
+            tierFallbackEnabled = result.data.settings.tierFallbackSounds === true;
+            const tf = document.getElementById('tier-fallback-toggle');
+            if (tf) tf.checked = tierFallbackEnabled;
             console.log('✅ Sound preferences loaded from backend:', giftSoundConfig);
         }
     } catch (error) {
@@ -6053,7 +6070,9 @@ function playGiftSound(giftName, coins) {
             return;
         }
     }
-    // 2. Fallback: tier-based sound (small/medium/large/epic → giftSoundConfig)
+    // 2. Fallback: only if the streamer opted into tier-based auto sounds.
+    // Otherwise an unmapped gift stays silent ("ses yok" = no sound).
+    if (!tierFallbackEnabled) { console.log(`🔇 "${giftName}" eşlenmemiş — ses yok`); return; }
     const tier = getGiftTier(coins);
     const soundName = giftSoundConfig[tier];
     console.log(`🔊 Tier ${tier} sound: ${soundName} for "${giftName}" (${coins} coins)`);
