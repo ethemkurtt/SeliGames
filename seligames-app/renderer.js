@@ -6397,6 +6397,10 @@ function escapeHtml(s) {
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[c]));
 }
+// Attribute-safe escaping — escapeHtml already escapes quotes, so it's safe for
+// values inside HTML attributes too. (The loyalty leaderboard avatar render used
+// escapeAttr, which was never defined → "escapeAttr is not defined" on Kanal Puanı.)
+const escapeAttr = escapeHtml;
 
 function populateOverlayForm(ov) {
     document.getElementById('ov-title').value = ov.title || '';
