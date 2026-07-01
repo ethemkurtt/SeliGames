@@ -472,6 +472,7 @@ function LeaderboardView({ ov }: { ov: OverlayData }) {
                     <div key={`${item.user}-${i}`} className={`lb-row${i === 0 ? ' lb-first' : ''}`}>
                         <div className="lb-rankbar" style={{ width: `${Math.max(8, (item.score / max) * 100)}%` }} />
                         <div className={`lb-rank lb-r${i + 1}`}>{MEDALS[i] || i + 1}</div>
+                        {(item as any).avatar && <img src={(item as any).avatar} alt="" className="lb-av" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />}
                         <div className="lb-user" style={{ color: textColor }}>{item.user}</div>
                         <div className="lb-score ov-accent">{item.score.toLocaleString('tr-TR')}</div>
                     </div>
@@ -492,7 +493,8 @@ const LISTS_CSS = `
 .lb-row:nth-child(2){animation-delay:.04s}.lb-row:nth-child(3){animation-delay:.09s}.lb-row:nth-child(4){animation-delay:.14s}.lb-row:nth-child(5){animation-delay:.19s}.lb-row:nth-child(6){animation-delay:.24s}
 @keyframes lbIn{0%{opacity:0;transform:translateX(-14px)}100%{opacity:1;transform:none}}
 .lb-rankbar{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 24%,transparent),transparent);z-index:0;transition:width .9s cubic-bezier(.22,1,.36,1)}
-.lb-rank,.lb-user,.lb-score{position:relative;z-index:1}
+.lb-rank,.lb-user,.lb-score,.lb-av{position:relative;z-index:1}
+.lb-av{width:26px;height:26px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1.5px solid color-mix(in srgb,var(--bar) 55%,transparent)}
 .lb-first{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 32%,transparent)}
 .lb-first .lb-rankbar{background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 34%,transparent),transparent)}
 .lb-rank{width:34px;text-align:center;font-size:18px;font-weight:900;flex-shrink:0}

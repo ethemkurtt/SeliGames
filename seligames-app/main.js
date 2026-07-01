@@ -704,10 +704,21 @@ ipcMain.handle('connect-tiktok-live', async (event, username) => {
             if (backendPayload) forwardEventToBackend(backendPayload);
         };
 
+        // Robust avatar extraction — tiktok-live-connector v2 exposes the picture
+        // under different shapes per event (flat profilePictureUrl on some, nested
+        // user.profilePicture.url on others). Try them all so avatars aren't
+        // "sometimes there, sometimes missing".
+        const pfp = (d) => (d && (
+            d.profilePictureUrl ||
+            (d.user && d.user.profilePicture && d.user.profilePicture.url && d.user.profilePicture.url[0]) ||
+            (d.user && d.user.avatarThumb && d.user.avatarThumb.urlList && d.user.avatarThumb.urlList[0]) ||
+            (d.userDetails && d.userDetails.profilePictureUrls && d.userDetails.profilePictureUrls[0])
+        )) || '';
+
         tiktokConnection.on('chat', (data) => {
             sendBoth('chat',
-                { user: data.uniqueId, nickname: data.nickname, comment: data.comment, profilePicture: data.profilePictureUrl || '' },
-                { eventType: 'chat', username: data.uniqueId, nickname: data.nickname, comment: data.comment, profilePicture: data.profilePictureUrl || '', count: 1 });
+                { user: data.uniqueId, nickname: data.nickname, comment: data.comment, profilePicture: pfp(data) },
+                { eventType: 'chat', username: data.uniqueId, nickname: data.nickname, comment: data.comment, profilePicture: pfp(data), count: 1 });
         });
 
         tiktokConnection.on('gift', (data) => {
@@ -721,32 +732,32 @@ ipcMain.handle('connect-tiktok-live', async (event, username) => {
             }
             const count = data.repeatCount || 1;
             sendBoth('gift',
-                { user: data.uniqueId, nickname: data.nickname, giftName: data.giftName, giftId: data.giftId, repeatCount: count, diamondCount: data.diamondCount },
-                { eventType: 'gift', username: data.uniqueId, nickname: data.nickname, giftName: data.giftName, giftId: data.giftId, count, diamondCount: (data.diamondCount || 0) * count, profilePicture: data.profilePictureUrl || '' });
+                { user: data.uniqueId, nickname: data.nickname, giftName: data.giftName, giftId: data.giftId, repeatCount: count, diamondCount: data.diamondCount, profilePicture: pfp(data) },
+                { eventType: 'gift', username: data.uniqueId, nickname: data.nickname, giftName: data.giftName, giftId: data.giftId, count, diamondCount: (data.diamondCount || 0) * count, profilePicture: pfp(data) });
         });
 
         tiktokConnection.on('like', (data) => {
             sendBoth('like',
-                { user: data.uniqueId, nickname: data.nickname, likeCount: data.likeCount, totalLikeCount: data.totalLikeCount },
-                { eventType: 'like', username: data.uniqueId, nickname: data.nickname, likeCount: data.likeCount || 1, count: data.likeCount || 1 });
+                { user: data.uniqueId, nickname: data.nickname, likeCount: data.likeCount, totalLikeCount: data.totalLikeCount, profilePicture: pfp(data) },
+                { eventType: 'like', username: data.uniqueId, nickname: data.nickname, likeCount: data.likeCount || 1, count: data.likeCount || 1, profilePicture: pfp(data) });
         });
 
         tiktokConnection.on('member', (data) => {
             sendBoth('member',
-                { user: data.uniqueId, nickname: data.nickname },
-                { eventType: 'member', username: data.uniqueId, nickname: data.nickname, count: 1 });
+                { user: data.uniqueId, nickname: data.nickname, profilePicture: pfp(data) },
+                { eventType: 'member', username: data.uniqueId, nickname: data.nickname, count: 1, profilePicture: pfp(data) });
         });
 
         tiktokConnection.on('follow', (data) => {
             sendBoth('follow',
-                { user: data.uniqueId, nickname: data.nickname },
-                { eventType: 'follow', username: data.uniqueId, nickname: data.nickname, count: 1 });
+                { user: data.uniqueId, nickname: data.nickname, profilePicture: pfp(data) },
+                { eventType: 'follow', username: data.uniqueId, nickname: data.nickname, count: 1, profilePicture: pfp(data) });
         });
 
         tiktokConnection.on('share', (data) => {
             sendBoth('share',
-                { user: data.uniqueId, nickname: data.nickname },
-                { eventType: 'share', username: data.uniqueId, nickname: data.nickname, count: 1 });
+                { user: data.uniqueId, nickname: data.nickname, profilePicture: pfp(data) },
+                { eventType: 'share', username: data.uniqueId, nickname: data.nickname, count: 1, profilePicture: pfp(data) });
         });
 
         tiktokConnection.on('roomUser', (data) => {

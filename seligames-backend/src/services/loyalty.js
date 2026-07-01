@@ -51,9 +51,13 @@ async function award(ev, io) {
     if (!cfg.enabled) return;
     const amount = pointsFor(ev, cfg.earn);
     if (!amount || amount <= 0) return;
+    const set = { nickname: ev.nickname || ev.user, lastSeen: new Date() };
+    // Only overwrite the stored avatar when this event carries one, so a later
+    // avatar-less event doesn't wipe a good picture.
+    if (ev.profilePicture) set.avatarUrl = ev.profilePicture;
     const doc = await ViewerPoints.findOneAndUpdate(
         { userId: ev.userId, viewer: ev.user },
-        { $inc: { points: amount, totalEarned: amount }, $set: { nickname: ev.nickname || ev.user, lastSeen: new Date() } },
+        { $inc: { points: amount, totalEarned: amount }, $set: set },
         { upsert: true, new: true }
     ).lean().catch(() => null);
     if (doc && io) {

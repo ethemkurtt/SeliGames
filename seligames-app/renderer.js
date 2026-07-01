@@ -5382,7 +5382,7 @@ function forwardToBackend(eventType, eventData) {
         return data?.user?.nickname || data?.user?.uniqueId || data?.nickname || data?.uniqueId || data?.username || '';
     };
 
-    const payload = { eventType, username: getUserInfo(eventData), nickname: getUserInfo(eventData), profilePicture: eventData?.user?.profilePicture?.url?.[0] || '' };
+    const payload = { eventType, username: getUserInfo(eventData), nickname: getUserInfo(eventData), profilePicture: (eventData.profilePicture || eventData?.user?.profilePicture?.url?.[0]) || '' };
 
     if (eventType === 'chat' || eventType === 'comment') {
         payload.comment = eventData?.comment || eventData?.message || '';
@@ -5424,7 +5424,7 @@ function handleTikTokEvent(msg) {
     if (eventType === 'WebcastChatMessage') {
         liveStats.comments++;
         const comment = eventData?.comment || eventData?.message || '';
-        const profilePhoto = eventData?.user?.profilePicture?.url?.[0] || '';
+        const profilePhoto = (eventData.profilePicture || eventData?.user?.profilePicture?.url?.[0]) || '';
 
         addEventToFeed({
             type: 'comment',
@@ -5532,7 +5532,7 @@ function handleTikTokEvent(msg) {
             || eventData?.gift?.diamondCount
             || eventData?.gift_details?.diamond_count
             || 0) * giftCount;
-        const profilePhoto = eventData?.user?.profilePicture?.url?.[0] || '';
+        const profilePhoto = (eventData.profilePicture || eventData?.user?.profilePicture?.url?.[0]) || '';
 
         playGiftSound(giftName, diamonds);
 
@@ -5561,7 +5561,7 @@ function handleTikTokEvent(msg) {
     else if (eventType === 'WebcastLikeMessage') {
         liveStats.likes++;
         const likeCount = eventData?.count || 1;
-        const profilePhoto = eventData?.user?.profilePicture?.url?.[0] || '';
+        const profilePhoto = (eventData.profilePicture || eventData?.user?.profilePicture?.url?.[0]) || '';
 
         addEventToFeed({
             type: 'like',
@@ -5578,7 +5578,7 @@ function handleTikTokEvent(msg) {
     else if (eventType === 'WebcastMemberMessage') {
         liveStats.members++;
         const memberCount = eventData?.memberCount || 0;
-        const profilePhoto = eventData?.user?.profilePicture?.url?.[0] || '';
+        const profilePhoto = (eventData.profilePicture || eventData?.user?.profilePicture?.url?.[0]) || '';
         addEventToFeed({
             type: 'member',
             user: getUserInfo(eventData),
@@ -5593,7 +5593,7 @@ function handleTikTokEvent(msg) {
     // FOLLOW/SHARE (WebcastSocialMessage)
     else if (eventType === 'WebcastSocialMessage') {
         const action = eventData?.action;
-        const profilePhoto = eventData?.user?.profilePicture?.url?.[0] || '';
+        const profilePhoto = (eventData.profilePicture || eventData?.user?.profilePicture?.url?.[0]) || '';
         liveStats.actions++;
         
         if (action === 1 || action === '1') {
@@ -7634,7 +7634,12 @@ async function loadLoyaltyLeaderboard() {
         if (!items.length) { el.innerHTML = '<div class="auto-empty" style="padding:2rem;"><i class="fas fa-gem"></i>Henüz puan kazanan izleyici yok.</div>'; return; }
         const max = items[0]?.points || 1;
         const medals = ['👑', '🥈', '🥉'];
-        el.innerHTML = items.map((it, i) => `<div class="loy-lb-row"><div class="loy-lb-bar" style="width:${Math.max(6, (it.points / max) * 100)}%"></div><div class="loy-lb-rank">${medals[i] || (i + 1)}</div><div class="loy-lb-name">${escapeHtml(it.nickname || it.viewer)}</div><div class="loy-lb-pts">${(it.points || 0).toLocaleString('tr-TR')}</div></div>`).join('');
+        el.innerHTML = items.map((it, i) => {
+            const av = it.avatarUrl
+                ? `<img src="${escapeAttr(it.avatarUrl)}" class="loy-lb-av" onerror="this.style.display='none'">`
+                : `<span class="loy-lb-av loy-lb-av-ph">${escapeHtml((it.nickname || it.viewer || '?').charAt(0).toUpperCase())}</span>`;
+            return `<div class="loy-lb-row"><div class="loy-lb-bar" style="width:${Math.max(6, (it.points / max) * 100)}%"></div><div class="loy-lb-rank">${medals[i] || (i + 1)}</div>${av}<div class="loy-lb-name">${escapeHtml(it.nickname || it.viewer)}</div><div class="loy-lb-pts">${(it.points || 0).toLocaleString('tr-TR')}</div></div>`;
+        }).join('');
     } catch (err) { el.innerHTML = `<div class="auto-empty" style="padding:2rem;color:#ef4444;">Yüklenemedi: ${escapeHtml(err.message)}</div>`; }
 }
 // Live channel-points updates from the backend socket (via main bridge):

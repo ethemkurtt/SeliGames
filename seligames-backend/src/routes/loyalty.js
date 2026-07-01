@@ -47,7 +47,7 @@ router.get('/leaderboard', auth, async (req, res) => {
         const limit = Math.min(100, Number(req.query.limit) || 25);
         const sort = req.query.by === 'lifetime' ? { totalEarned: -1 } : { points: -1 };
         const rows = await ViewerPoints.find({ userId: req.userId }).sort(sort).limit(limit).lean();
-        res.json({ items: rows.map((r, i) => ({ rank: i + 1, viewer: r.viewer, nickname: r.nickname, points: r.points, totalEarned: r.totalEarned })) });
+        res.json({ items: rows.map((r, i) => ({ rank: i + 1, viewer: r.viewer, nickname: r.nickname, avatarUrl: r.avatarUrl || '', points: r.points, totalEarned: r.totalEarned })) });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -56,7 +56,7 @@ router.get('/leaderboard/:userId', async (req, res) => {
     try {
         const limit = Math.min(50, Number(req.query.limit) || 10);
         const rows = await ViewerPoints.find({ userId: req.params.userId }).sort({ points: -1 }).limit(limit).lean();
-        res.json({ items: rows.map((r, i) => ({ rank: i + 1, user: r.nickname || r.viewer, score: r.points })) });
+        res.json({ items: rows.map((r, i) => ({ rank: i + 1, user: r.nickname || r.viewer, score: r.points, avatar: r.avatarUrl || '' })) });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

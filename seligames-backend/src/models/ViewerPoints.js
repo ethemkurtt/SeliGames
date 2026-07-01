@@ -9,6 +9,7 @@ const viewerPointsSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     viewer: { type: String, required: true },          // TikTok unique username
     nickname: { type: String, default: '' },           // display name (latest seen)
+    avatarUrl: { type: String, default: '' },          // profile picture (latest seen)
     points: { type: Number, default: 0 },              // current spendable balance
     totalEarned: { type: Number, default: 0 },         // lifetime earned (for tiers/leaderboard)
     lastSeen: { type: Date, default: Date.now },
