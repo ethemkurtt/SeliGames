@@ -908,6 +908,10 @@
             height: 20px;
             flex-shrink: 0;
         }
+        /* The toggle is a <label>, and `.setting-row label { min-width:80px }`
+           was stretching it to 80px → the knob's fixed 18px travel only reached
+           ~25%. Pin the switch width so the knob slides fully on/off. */
+        .setting-row label.toggle-switch { min-width: 38px; max-width: 38px; width: 38px; }
 
         .toggle-switch input {
             opacity: 0;

@@ -7070,13 +7070,22 @@ async function loadMyOverlays() {
         if (result.success && result.data.length > 0) {
             grid.innerHTML = '';
             result.data.forEach(ov => {
-                const color = ov.style?.barColor || '#ff2eb8';
+                const st = ov.style || {};
+                const color = st.barColor || '#ff2eb8';
+                const gt = normalizeGoalThemeJS(st.theme || 'neon');
+                const radius = st.borderRadius || 12;
+                const myLabels = { goal: 'Hedef', 'gift-alert': 'Hediye', 'last-x': 'Son Kişi', leaderboard: 'Liderlik', chart: 'Grafik', chat: 'Sohbet', 'event-feed': 'Olay', wheel: 'Çark', subathon: 'Subathon' };
+                const tl = myLabels[ov.overlayType] || ov.overlayType;
                 const liveUrl = buildOverlayLiveUrl(ov);
                 const card = document.createElement('div');
                 card.className = 'gallery-card';
                 card.innerHTML = `
-                    <div class="gallery-card-preview" style="background:linear-gradient(135deg,${color}11,${color}22);">
-                        <div style="font-size:2rem;">${ov.isActive ? '🟢' : '🔴'}</div>
+                    <div class="gallery-card-preview" style="background:linear-gradient(135deg,${color}11,${color}22);overflow:hidden;position:relative;">
+                        <div class="sg ${gt}" style="--bar:${color};--radius:${radius}px;border-radius:${radius}px;width:90%;padding:9px 12px;pointer-events:none;">
+                            <div class="sg-head" style="gap:6px;"><span class="sg-title" style="font-size:11px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${tl}</span><span class="sg-nums" style="font-size:9px;flex-shrink:0;">325 / 500</span></div>
+                            <div class="sg-track"><div class="sg-fill shine smooth" style="width:65%;"></div><span class="sg-pct">65%</span></div>
+                        </div>
+                        <span style="position:absolute;top:6px;right:8px;font-size:0.75rem;" title="${ov.isActive ? 'Aktif' : 'Pasif'}">${ov.isActive ? '🟢' : '🔴'}</span>
                     </div>
                     <div class="gallery-card-info">
                         <div class="gallery-card-title">${ov.title}</div>
