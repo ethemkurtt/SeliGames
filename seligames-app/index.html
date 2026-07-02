@@ -6266,6 +6266,26 @@
             <button class="auto-tab" data-tab="migrate" onclick="switchAutoTab('migrate')"><i class="fas fa-wand-magic-sparkles"></i> Mod'dan İçe Aktar</button>
         </div>
 
+        <!-- Nasıl çalışır rehberi -->
+        <details class="auto-guide" open style="margin-bottom:1rem;background:var(--bg-3);border:1px solid var(--ov-08);border-radius:12px;padding:0.2rem 1rem;">
+            <summary style="cursor:pointer;font-weight:700;color:#ff2eb8;padding:0.7rem 0;list-style:none;user-select:none;font-size:0.9rem;">💡 Nasıl çalışır? <span style="font-weight:400;opacity:.55;font-size:0.8rem;">(3 adımda ilk otomasyonun)</span></summary>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:0.75rem;padding:0.3rem 0 1rem;">
+                <div style="background:rgba(168,85,247,0.06);border:1px solid rgba(168,85,247,0.18);border-radius:10px;padding:0.75rem 0.85rem;font-size:0.8rem;line-height:1.5;">
+                    <div style="color:#c084fc;font-weight:800;margin-bottom:0.25rem;">1 · Aksiyon oluştur</div>
+                    <span style="opacity:.85;"><b>Ne olacak?</b> "Yeni Aksiyon" ile bir iş tanımla — oyuna tuş bas, ses çal, ekran uyarısı, Minecraft komutu…</span>
+                </div>
+                <div style="background:rgba(255,46,184,0.06);border:1px solid rgba(255,46,184,0.18);border-radius:10px;padding:0.75rem 0.85rem;font-size:0.8rem;line-height:1.5;">
+                    <div style="color:#ff2eb8;font-weight:800;margin-bottom:0.25rem;">2 · Kural oluştur</div>
+                    <span style="opacity:.85;"><b>Ne zaman?</b> "Yeni Kural" ile bir tetikleyici seç — hediye gelince, komut yazılınca, beğeni…</span>
+                </div>
+                <div style="background:rgba(34,211,238,0.06);border:1px solid rgba(34,211,238,0.18);border-radius:10px;padding:0.75rem 0.85rem;font-size:0.8rem;line-height:1.5;">
+                    <div style="color:#22d3ee;font-weight:800;margin-bottom:0.25rem;">3 · Bağla &amp; test et</div>
+                    <span style="opacity:.85;">Kuralın içinde aksiyonu işaretle, kaydet, <b>Test Et</b> ile dene. Örn: <b>Gül → F2 bas</b>.</span>
+                </div>
+            </div>
+            <div style="font-size:0.72rem;color:var(--text-muted);padding:0 0 0.7rem;">Kısayol: kurulu modların "Gül → tuş" eşlemelerini otomatik kurala çevirmek için <b>“Mod'dan İçe Aktar”</b> sekmesini kullan.</div>
+        </details>
+
         <!-- RULES tab -->
         <div class="auto-tab-panel active" id="auto-panel-rules">
             <div id="auto-rules-list">
@@ -6347,6 +6367,12 @@
             </div>
             <div id="rule-modal-alert" class="auto-alert" style="display:none;"></div>
 
+            <div style="background:rgba(255,46,184,0.07);border:1px solid rgba(255,46,184,0.22);border-radius:10px;padding:0.7rem 0.85rem;margin-bottom:0.9rem;font-size:0.78rem;line-height:1.55;color:#e8dcf0;">
+                <b style="color:#ff2eb8;">Kural nedir?</b> Bir <b>olay</b> olunca (hediye, komut, beğeni…) seçtiğin <b>aksiyon(lar)</b> çalışır.<br>
+                <span style="opacity:.85;">1) Adını yaz &nbsp;→&nbsp; 2) Tetikleyiciyi seç &nbsp;→&nbsp; 3) en alttan çalışacak aksiyonu işaretle.</span><br>
+                <span style="opacity:.65;">Aksiyon yoksa önce sağ üstten <b>“Yeni Aksiyon”</b> oluştur. Gelişmiş ayarlar (koşul, cooldown, ödül) <b>opsiyoneldir</b>.</span>
+            </div>
+
             <div class="auto-field">
                 <label>Kural Adı</label>
                 <input type="text" id="rule-name" class="auto-input" placeholder="örn. Gül gelince blok at">
@@ -6386,6 +6412,9 @@
                 </div>
                 <div class="auto-hint">İzleyici <b>!spin</b> yazınca tetiklenir. Komuttan sonraki yazı %params% ile aksiyona geçer.</div>
             </div>
+
+            <details class="auto-advanced" style="margin:0.4rem 0 0.6rem;border:1px solid var(--ov-08);border-radius:10px;padding:0.2rem 0.7rem;background:rgba(255,255,255,0.02);">
+            <summary style="cursor:pointer;padding:0.5rem 0;font-size:0.8rem;font-weight:700;color:#c8b8e0;list-style:none;user-select:none;">⚙️ Gelişmiş Ayarlar <span style="font-weight:400;opacity:.55;">(koşul, cooldown, roller, ödül — opsiyonel)</span></summary>
 
             <!-- conditions -->
             <div class="auto-field">
@@ -6438,11 +6467,13 @@
                 <div class="auto-hint">0 = ücretsiz. &gt;0 ise bu kural bir <b>ödül</b> olur: tetikleyen izleyicinin bu kadar puanı olmalı, çalışınca düşülür. (En çok <b>komut</b> tetikleyiciyle kullanılır — örn. <b>!heal</b> = 100 puan.)</div>
             </div>
 
+            </details>
+
             <!-- actions -->
             <div class="auto-field">
-                <label>Çalışacak Aksiyonlar</label>
+                <label>Çalışacak Aksiyonlar <span style="color:#ff2eb8;">*</span></label>
                 <div id="rule-action-picker" class="auto-action-picker"></div>
-                <div class="auto-hint">Bir kural birden çok aksiyonu sırayla çalıştırabilir. Aksiyon yoksa önce "Yeni Aksiyon" oluştur.</div>
+                <div class="auto-hint">Bu olay olunca çalışacak aksiyon(lar)ı işaretle — birden çok seçersen sırayla çalışır. Aksiyon yoksa önce "Yeni Aksiyon" oluştur.</div>
             </div>
 
             <div style="display:flex;gap:0.5rem;margin-top:1rem;">
@@ -6461,6 +6492,11 @@
                 <button class="modal-close" onclick="closeActionEditor()"><i class="fas fa-times"></i></button>
             </div>
             <div id="action-modal-alert" class="auto-alert" style="display:none;"></div>
+
+            <div style="background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.25);border-radius:10px;padding:0.7rem 0.85rem;margin-bottom:0.9rem;font-size:0.78rem;line-height:1.55;color:#e8dcf0;">
+                <b style="color:#c084fc;">Aksiyon nedir?</b> Bir kural tetiklenince yapılacak <b>iş</b>: oyuna tuş basmak, ses çalmak, ekrana uyarı çıkarmak, Minecraft komutu göndermek… <br>
+                <span style="opacity:.7;">Önce aksiyonu oluştur, sonra bir <b>Kural</b> ile bir olaya (hediye/komut) bağla.</span>
+            </div>
 
             <div class="auto-field">
                 <label>Aksiyon Adı</label>
