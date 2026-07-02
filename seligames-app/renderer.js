@@ -4328,6 +4328,7 @@ function captureShortcutInto(type, input, onValue) {
         input.classList.remove('capturing'); input.value = val || ''; onValue(val || '');
         window.removeEventListener('keydown', onKey, true);
         window.removeEventListener('mousedown', onMouse, true);
+        document.removeEventListener('click', offClick, true);
     };
     const onKey = (e) => {
         if (type !== 'keyboard') return;
@@ -4344,8 +4345,13 @@ function captureShortcutInto(type, input, onValue) {
         e.preventDefault(); e.stopPropagation();
         finish(e.button === 0 ? 'LeftClick' : e.button === 2 ? 'RightClick' : e.button === 1 ? 'MiddleClick' : `Mouse${e.button}`);
     };
+    // KRİTİK: kutu dışına tıklanınca yakalamayı bitir → global capture-phase
+    // keydown dinleyicisi window'da SIZMASIN. Aksi halde tuşa basmadan çıkınca
+    // dinleyici kalıp tüm uygulamada yazmayı engelliyordu (HEDEF DEĞER, başlık…).
+    const offClick = (e) => { if (!input.contains(e.target)) finish(''); };
     window.addEventListener('keydown', onKey, true);
     if (type === 'mouse') setTimeout(() => window.addEventListener('mousedown', onMouse, true), 50);
+    setTimeout(() => document.addEventListener('click', offClick, true), 200);
 }
 
 function agTplTypeChanged() {
@@ -4671,6 +4677,7 @@ function mdCaptureValue() {
         input.value = val || ''; _mdAdd.value = val || '';
         window.removeEventListener('keydown', onKey, true);
         window.removeEventListener('mousedown', onMouse, true);
+        document.removeEventListener('click', offClick, true);
     };
     const onKey = (e) => {
         if (type !== 'keyboard') return;
@@ -4687,8 +4694,11 @@ function mdCaptureValue() {
         e.preventDefault(); e.stopPropagation();
         finish(e.button === 0 ? 'LeftClick' : e.button === 2 ? 'RightClick' : e.button === 1 ? 'MiddleClick' : `Mouse${e.button}`);
     };
+    // Kutu dışına tıklanınca bitir → sızan global keydown dinleyicisini önle.
+    const offClick = (e) => { if (!input.contains(e.target)) finish(''); };
     window.addEventListener('keydown', onKey, true);
     if (type === 'mouse') setTimeout(() => window.addEventListener('mousedown', onMouse, true), 50);
+    setTimeout(() => document.addEventListener('click', offClick, true), 200);
 }
 
 function mdPickGift() {
@@ -6590,6 +6600,7 @@ async function loadOverlayDrafts() {
         const result = await window.api.getOverlays({
             type: currentOverlayContext.overlayType,
             subType: currentOverlayContext.subType,
+            _ts: Date.now(),   // olası GET önbelleğini atla — liste hep taze gelsin
         });
         if (!result.success) throw new Error(result.error || 'load failed');
 
@@ -6870,6 +6881,9 @@ async function saveCurrentOverlay() {
             showToast(wasNew ? 'Yeni taslak oluşturuldu ✓' : 'Taslak güncellendi ✓');
         } else {
             showToast('Hata: ' + result.error, true);
+            // Kaydetme başarısızsa da listeyi gerçek backend durumuna senkronla —
+            // önizlemede kaydolmamış bir düzenlemenin "kaydolmuş" gibi kalmasını önle.
+            loadOverlayDrafts();
         }
     } catch (error) {
         showToast('Bağlantı hatası', true);
