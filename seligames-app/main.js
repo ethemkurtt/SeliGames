@@ -183,7 +183,7 @@ async function runExecutePayload(payload) {
         if (type === 'launch') {
             const parsed = _parseLaunch?.(payload.command);
             if (parsed) {
-                const child = spawn(parsed.bin, parsed.args, { detached: true, stdio: 'ignore', windowsHide: false });
+                const child = spawn(parsed.bin, parsed.args, { detached: true, stdio: 'ignore', cwd: parsed.cwd || undefined, windowsHide: false });
                 child.unref?.();
                 console.log(`⚙️→🚀 rule-launched: ${payload.command}`);
             }
@@ -461,7 +461,13 @@ function _parseLaunch(input) {
     //    (Beyblade, Harita 2.1) keeps running after SeliGames quits.
     if (process.platform === 'win32' && /\.(exe|bat|cmd|lnk)"?$/i.test(cmd)) {
         const clean = cmd.replace(/^"|"$/g, '');
-        return { bin: 'cmd', args: ['/c', 'start', '', clean] };
+        // Çalışma dizini = dosyanın KENDİ klasörü (spawn cwd). Aksi halde .bat,
+        // SeliGames'in dizininde çalışır ve içindeki relatif yollar (node server.js,
+        // node_modules, assetler…) bulunamaz → cmd açılıp oyun çalışmaz. `start`,
+        // kendisini çağıran cmd'nin çalışma dizinini miras aldığı için cwd'yi
+        // ayarlamak yeterli (klasörden çift tıklamayla birebir aynı davranış).
+        const dir = path.dirname(clean);
+        return { bin: 'cmd', args: ['/c', 'start', '', clean], cwd: dir };
     }
     // 4) Otherwise: treat the whole thing as a shell command. Use the
     //    platform shell so quotes / args / pipes work as the user typed.
@@ -476,7 +482,7 @@ ipcMain.handle('launch-game', async (event, { command, cwd } = {}) => {
         const opts = {
             detached: true,
             stdio: 'ignore',
-            cwd: cwd || undefined,
+            cwd: cwd || parsed.cwd || undefined,   // çağıran cwd verdiyse o, yoksa dosyanın klasörü
             windowsHide: false,
         };
         const child = spawn(parsed.bin, parsed.args, opts);
