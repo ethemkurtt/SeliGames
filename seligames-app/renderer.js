@@ -7258,14 +7258,26 @@ function updateOverlayPreview() {
             </div>`;
     } else if (type === 'leaderboard' || type === 'chart') {
         const gt = normalizeGoalThemeJS(s.theme);
+        // GÖSTERİLECEK SAYI kadar satır (eskiden sabit 3'tü). 1..10 arası.
+        const count = Math.max(1, Math.min(10, parseInt(document.getElementById('ov-maxitems')?.value) || 5));
+        // Bar/skor rengi MANUEL Bar Rengi'ni izlesin: tema class'ının --accent'ini
+        // inline --accent ile ez (eskiden bar/skorlar hep tema rengindeydi).
+        const cardStyle = `--bar:${s.barColor};--accent:${s.barColor};--radius:${s.borderRadius}px;border-radius:${s.borderRadius}px;`;
         if (type === 'chart') {
-            const data = [['Kullanıcı 1', 100], ['Kullanıcı 2', 62], ['Kullanıcı 3', 35]];
-            const rows = data.map(([u, w]) => `<div class="ch-row"><div class="ch-user" style="color:${s.textColor};font-size:${Math.round(s.fontSize * 0.72)}px;">${u}</div><div class="ch-track"><div class="ch-fill ov-shine" style="width:${w}%"></div></div><div class="ch-score ov-accent" style="font-size:${Math.round(s.fontSize * 0.72)}px;">${(w * 40).toLocaleString('tr-TR')}</div></div>`).join('');
-            preview.innerHTML = `<div class="ov-card ${gt}" style="--bar:${s.barColor};--radius:${s.borderRadius}px;border-radius:${s.borderRadius}px;padding:16px 20px;min-width:320px;"><div class="ch-head ov-accent" style="font-size:${Math.round(s.fontSize * 0.78)}px;">📊 ${title}</div>${rows}</div>`;
+            const rows = Array.from({ length: count }, (_, i) => {
+                const w = Math.max(12, Math.round(100 - i * (72 / count)));
+                return `<div class="ch-row"><div class="ch-user" style="color:${s.textColor};font-size:${Math.round(s.fontSize * 0.72)}px;">Kullanıcı ${i + 1}</div><div class="ch-track"><div class="ch-fill ov-shine" style="width:${w}%"></div></div><div class="ch-score ov-accent" style="font-size:${Math.round(s.fontSize * 0.72)}px;">${(w * 40).toLocaleString('tr-TR')}</div></div>`;
+            }).join('');
+            preview.innerHTML = `<div class="ov-card ${gt}" style="${cardStyle}padding:16px 20px;min-width:320px;"><div class="ch-head ov-accent" style="font-size:${Math.round(s.fontSize * 0.78)}px;">📊 ${title}</div>${rows}</div>`;
         } else {
-            const medals = ['👑', '🥈', '🥉']; const widths = [100, 64, 41];
-            const rows = medals.map((m, i) => `<div class="lb-row${i === 0 ? ' lb-first' : ''}"><div class="lb-rankbar" style="width:${widths[i]}%"></div><div class="lb-rank lb-r${i + 1}" style="font-size:${s.fontSize}px;">${m}</div><div class="lb-user" style="color:${s.textColor};font-size:${s.fontSize}px;">Kullanıcı ${i + 1}</div><div class="lb-score ov-accent" style="font-size:${s.fontSize}px;">${(12450 - i * 4000).toLocaleString('tr-TR')}</div></div>`).join('');
-            preview.innerHTML = `<div class="ov-card ${gt}" style="--bar:${s.barColor};--radius:${s.borderRadius}px;border-radius:${s.borderRadius}px;padding:16px 18px;min-width:320px;"><div class="lb-head ov-accent" style="font-size:${Math.round(s.fontSize * 0.72)}px;">🏆 ${title}</div>${rows}</div>`;
+            const medals = ['👑', '🥈', '🥉'];
+            const rows = Array.from({ length: count }, (_, i) => {
+                const m = medals[i] || String(i + 1);
+                const w = Math.max(20, Math.round(100 - i * (62 / count)));
+                const score = Math.max(100, 12450 - i * Math.round(11000 / count));
+                return `<div class="lb-row${i === 0 ? ' lb-first' : ''}"><div class="lb-rankbar" style="width:${w}%"></div><div class="lb-rank lb-r${i + 1}" style="font-size:${s.fontSize}px;">${m}</div><div class="lb-user" style="color:${s.textColor};font-size:${s.fontSize}px;">Kullanıcı ${i + 1}</div><div class="lb-score ov-accent" style="font-size:${s.fontSize}px;">${score.toLocaleString('tr-TR')}</div></div>`;
+            }).join('');
+            preview.innerHTML = `<div class="ov-card ${gt}" style="${cardStyle}padding:16px 18px;min-width:320px;"><div class="lb-head ov-accent" style="font-size:${Math.round(s.fontSize * 0.72)}px;">🏆 ${title}</div>${rows}</div>`;
         }
     } else if (type === 'chat') {
         const gt = normalizeGoalThemeJS(s.theme);

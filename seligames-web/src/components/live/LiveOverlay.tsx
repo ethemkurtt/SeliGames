@@ -521,7 +521,7 @@ function LeaderboardView({ ov }: { ov: OverlayData }) {
     return (
         <div style={{ display: 'flex', width: '100%', justifyContent: 'center' }}>
             <style>{OVERLAY_THEME_CSS + LISTS_CSS}</style>
-            <div className={`ov-card ${t}`} style={{ ['--bar' as any]: barColor, ['--radius' as any]: `${borderRadius}px`, borderRadius, padding: '16px 18px', minWidth: 320, maxWidth: 560 }}>
+            <div className={`ov-card ${t}`} style={{ ['--bar' as any]: barColor, ['--accent' as any]: barColor, ['--radius' as any]: `${borderRadius}px`, borderRadius, padding: '16px 18px', minWidth: 320, maxWidth: 560 }}>
                 <div className="lb-head ov-accent"><span>{subIcon}</span><span>{ov.title}</span></div>
                 {items.length === 0 ? (
                     <div style={{ color: textColor, opacity: 0.5, padding: '12px 0', fontStyle: 'italic' }}>Bekleniyor...</div>
@@ -582,7 +582,7 @@ function ChartView({ ov }: { ov: OverlayData }) {
     return (
         <div style={{ display: 'flex', width: '100%', justifyContent: 'center' }}>
             <style>{OVERLAY_THEME_CSS + CHART_CSS}</style>
-            <div className={`ov-card ${t}`} style={{ ['--bar' as any]: barColor, ['--radius' as any]: `${borderRadius}px`, borderRadius, padding: '16px 20px', minWidth: 340, maxWidth: 640 }}>
+            <div className={`ov-card ${t}`} style={{ ['--bar' as any]: barColor, ['--accent' as any]: barColor, ['--radius' as any]: `${borderRadius}px`, borderRadius, padding: '16px 20px', minWidth: 340, maxWidth: 640 }}>
                 <div className="ch-head ov-accent">📊 {ov.title}</div>
                 {items.length === 0 ? (
                     <div style={{ color: textColor, opacity: 0.5, padding: '12px 0', fontStyle: 'italic' }}>Bekleniyor...</div>
