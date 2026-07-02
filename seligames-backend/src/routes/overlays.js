@@ -72,9 +72,11 @@ router.post('/', auth, async (req, res) => {
 
 router.put('/:id', auth, async (req, res) => {
     try {
+        // Kimlik/sahiplik alanlarını asla client body'sinden ezme — sadece içerik güncellensin.
+        const { _id, userId, overlayId, createdAt, ...patch } = req.body;
         const overlay = await Overlay.findOneAndUpdate(
             { _id: req.params.id, userId: req.userId },
-            req.body,
+            patch,
             { new: true, runValidators: true }
         );
         if (!overlay) return res.status(404).json({ error: 'Bulunamadı' });

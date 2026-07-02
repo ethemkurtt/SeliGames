@@ -5846,6 +5846,23 @@
                     </div>
                 </div>
 
+                <!-- Aksiyon Ekranı: özelleştirilebilir teşekkür/alt yazı -->
+                <div class="setting-group" id="ov-actions-group" style="display:none;">
+                    <label>⚡ Teşekkür / Alt Yazı</label>
+                    <input type="text" class="ov-input" id="ov-thanks" value="Teşekkürler! 🎉" placeholder="Teşekkürler! 🎉" oninput="updateOverlayPreview()">
+                    <div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.3rem;">Aksiyon ateşlendiğinde alt yazı olarak gösterilir. Aksiyonun kendi mesajı yoksa bu metin kullanılır.</div>
+                </div>
+
+                <!-- Etkileşim Şeridi: elle düzenlenebilir girdiler -->
+                <div class="setting-group" id="ov-slider-group" style="display:none;">
+                    <label style="display:flex;align-items:center;justify-content:space-between;">
+                        <span>🎞️ Şerit Girdileri (Hediye → Aksiyon)</span>
+                        <button type="button" class="btn-icon" onclick="addSliderEntry()" title="Girdi ekle" style="background:rgba(255,46,184,0.1);color:#ff2eb8;border:1px solid rgba(255,46,184,0.2);"><i class="fas fa-plus"></i></button>
+                    </label>
+                    <div id="ov-slider-entries" style="display:flex;flex-direction:column;gap:0.4rem;margin-top:0.5rem;"></div>
+                    <div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.5rem;">Boş bırakırsan hediye kurallarından otomatik dolar. Girdi eklersen şerit <b>tam senin yazdığın</b> gibi görünür (örn. Aslan → +60sn).</div>
+                </div>
+
                 <h4 style="color:var(--fg-strong);margin:0.75rem 0 0.5rem;font-size:0.82rem;">Görünüm</h4>
 
                 <div class="setting-row">

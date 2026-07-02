@@ -183,7 +183,7 @@ function renderByType(ov: OverlayData, liveEvents: TikTokLiveEvent[], valueDelta
         case 'event-feed': return <EventFeedView ov={ov} liveEvents={liveEvents} />
         case 'subathon': return <SubathonView ov={ov} />
         case 'wheel': return <WheelView ov={ov} />
-        case 'actions-feed': return <MyActionsView fires={actionFires} />
+        case 'actions-feed': return <MyActionsView fires={actionFires} thanksText={ov.config?.thanksText || ''} />
         case 'interaction-slider': return <InteractionSliderView ov={ov} />
         case 'gift-cannon': return <GiftCannonView ov={ov} liveEvents={liveEvents} />
         case 'like-fountain': return <LikeFountainView ov={ov} liveEvents={liveEvents} />
@@ -1077,7 +1077,7 @@ function EmojiRainView({ ov, liveEvents }: { ov: OverlayData; liveEvents: TikTok
 // that everything visual/audible runs through, à la TikFinity's MyActions.
 // ============================================================================
 
-function MyActionsView({ fires }: { fires: ActionFire[] }) {
+function MyActionsView({ fires, thanksText }: { fires: ActionFire[]; thanksText?: string }) {
     const processed = useRef<Set<string>>(new Set())
     const [visual, setVisual] = useState<ActionFire | null>(null)
     const queue = useRef<ActionFire[]>([])
@@ -1134,12 +1134,12 @@ function MyActionsView({ fires }: { fires: ActionFire[] }) {
     return (
         <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none' }}>
             {confetti && <Confetti key={confetti.id} colors={confetti.colors} intensity={confetti.intensity} />}
-            {visual && <ActionAlertCard fire={visual} />}
+            {visual && <ActionAlertCard fire={visual} thanksText={thanksText} />}
         </div>
     )
 }
 
-function ActionAlertCard({ fire }: { fire: ActionFire }) {
+function ActionAlertCard({ fire, thanksText }: { fire: ActionFire; thanksText?: string }) {
     const c = fire.config || {}
     const ctx = fire.context || {}
     const accent = c.accentColor || '#ff2eb8'
@@ -1180,8 +1180,8 @@ function ActionAlertCard({ fire }: { fire: ActionFire }) {
                             textShadow: `0 0 22px ${accent}aa`,
                         }}>{c.title}</div>
                     )}
-                    {c.message && (
-                        <div style={{ marginTop: 8, fontSize: 18, color: textColor, opacity: 0.85 }}>{c.message}</div>
+                    {(c.message || thanksText) && (
+                        <div style={{ marginTop: 8, fontSize: 18, color: textColor, opacity: 0.85 }}>{c.message || thanksText}</div>
                     )}
                     {ctx.profilePicture && (
                         <img src={ctx.profilePicture} alt="" style={{ width: 46, height: 46, borderRadius: '50%', marginTop: 12, border: `2px solid ${accent}` }} />
@@ -1292,10 +1292,15 @@ function InteractionSliderView({ ov }: { ov: OverlayData }) {
     // No gift→action rules yet → show a scrolling EXAMPLE strip (faded) instead of
     // a static "bekleniyor" so the overlay isn't empty while the streamer tests /
     // sets up rules. Real rules replace it automatically once added in Aksiyonlar.
-    const isDemo = !items.length
-    const data = isDemo
-        ? [{ giftName: 'Gül', label: 'Blok at' }, { giftName: 'Roket', label: 'Çark çevir' }, { giftName: 'Aslan', label: '+60sn' }, { giftName: 'Elmas', label: 'TNT yağmuru' }, { giftName: 'Yıldız', label: 'Konfeti' }]
-        : items
+    // Kullanıcı overlay editöründe elle girdi tanımladıysa (config.items) o KAZANIR —
+    // kurallardan otomatik dolan listenin önüne geçer. Yoksa kurallar, o da yoksa demo.
+    const custom = (ov.config && (ov.config as any).items) || []
+    const isDemo = !custom.length && !items.length
+    const data = custom.length
+        ? custom
+        : (isDemo
+            ? [{ giftName: 'Gül', label: 'Blok at' }, { giftName: 'Roket', label: 'Çark çevir' }, { giftName: 'Aslan', label: '+60sn' }, { giftName: 'Elmas', label: 'TNT yağmuru' }, { giftName: 'Yıldız', label: 'Konfeti' }]
+            : items)
 
     // Continuous marquee of gift→action chips.
     const doubled = [...data, ...data]

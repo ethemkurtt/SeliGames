@@ -6566,6 +6566,10 @@ async function navigateOverlay(key) {
     if (subGroup) subGroup.style.display = isSubathon ? '' : 'none';
     const wheelGroup = document.getElementById('ov-wheel-group');
     if (wheelGroup) wheelGroup.style.display = isWheel ? '' : 'none';
+    const actionsGroup = document.getElementById('ov-actions-group');
+    if (actionsGroup) actionsGroup.style.display = (info.overlayType === 'actions-feed') ? '' : 'none';
+    const sliderGroup = document.getElementById('ov-slider-group');
+    if (sliderGroup) sliderGroup.style.display = (info.overlayType === 'interaction-slider') ? '' : 'none';
 
     // Yüklü bir taslağı (Devam Et ile açılmış, overlayDbId var) düzenlerken AYNI
     // sekmeye tekrar tıklanırsa formu SIFIRLAMA — yoksa kullanıcının başlık vb.
@@ -6597,10 +6601,10 @@ async function loadOverlayDrafts() {
     listEl.innerHTML = '<div class="ov-drafts-empty">Yükleniyor...</div>';
 
     try {
+        // subType FİLTRESİ YOK: sadece tipe göre çek. Aksi halde subType drift'i
+        // (ör. resume sonrası) güncellenen taslağı kendi listesinden dışlıyordu.
         const result = await window.api.getOverlays({
             type: currentOverlayContext.overlayType,
-            subType: currentOverlayContext.subType,
-            _ts: Date.now(),   // olası GET önbelleğini atla — liste hep taze gelsin
         });
         if (!result.success) throw new Error(result.error || 'load failed');
 
@@ -6625,7 +6629,7 @@ async function loadOverlayDrafts() {
             const target = ov.targetValue || 0;
             const current = ov.currentValue || 0;
             const pct = target > 0 ? Math.min((current / target) * 100, 100) : 0;
-            const isActive = currentOverlayContext.overlayDbId === ov._id;
+            const isActive = String(currentOverlayContext.overlayDbId) === String(ov._id);
             const showGoalBits = ov.overlayType === 'goal';
 
             const card = document.createElement('div');
@@ -6688,6 +6692,12 @@ async function resumeDraft(dbId) {
         currentOverlayData = ov;
         currentOverlayContext.overlayDbId = ov._id;
         currentOverlayContext.overlayId = ov.overlayId;
+        // KRİTİK: yüklenen taslağın kimliğini de senkronla — yoksa kaydetmede
+        // subType/başlık statik overlayTypeMap değerinden yazılıp taslak listeden
+        // filtreleniyordu ("sol altta güncellenmiyor"). Artık listeyle uyumlu.
+        currentOverlayContext.overlayType = ov.overlayType || currentOverlayContext.overlayType;
+        currentOverlayContext.subType = ov.subType || currentOverlayContext.subType;
+        currentOverlayContext.title = ov.title || currentOverlayContext.title;
         populateOverlayForm(ov);
         updateOverlayPreview();
         updateSaveButtonLabel();
@@ -6827,8 +6837,11 @@ function getOverlayFormData() {
     var customCSSEl = document.getElementById('ov-custom-css');
     const isSubathon = currentOverlayContext.overlayType === 'subathon';
     const isWheel = currentOverlayContext.overlayType === 'wheel';
+    const isActions = currentOverlayContext.overlayType === 'actions-feed';
+    const isSlider = currentOverlayContext.overlayType === 'interaction-slider';
     const subConf = isSubathon ? readSubathonConfig() : {};
     const wheelConf = isWheel ? readWheelConfig() : {};
+    const sliderItems = isSlider ? readSliderEntries() : null;
     return {
         title: document.getElementById('ov-title').value || currentOverlayContext.title,
         overlayType: currentOverlayContext.overlayType,
@@ -6838,6 +6851,8 @@ function getOverlayFormData() {
         config: {
             maxItems: parseInt(document.getElementById('ov-maxitems').value) || 5,
             duration: parseInt(document.getElementById('ov-duration').value) || 5,
+            ...(isActions ? { thanksText: document.getElementById('ov-thanks')?.value || 'Teşekkürler! 🎉' } : {}),
+            ...(sliderItems && sliderItems.length ? { items: sliderItems } : {}),
             ...subConf,
             ...wheelConf,
         },
@@ -7264,11 +7279,15 @@ function updateOverlayPreview() {
         preview.innerHTML = `<div class="ov-card ${gt}" style="--bar:${s.barColor};--accent:${s.barColor};--radius:${s.borderRadius}px;border-radius:${s.borderRadius}px;background:${s.backgroundColor};padding:12px;min-width:280px;"><div class="dk-head ov-accent" style="font-size:${Math.round(s.fontSize * 0.92)}px;">📋 ${title}</div><div class="dk-scroll">${html}</div></div>`;
     } else if (type === 'subathon') {
         const gt = normalizeGoalThemeJS(s.theme);
+        // Çalışıyorsa canlı kalan süreyi, değilse yapılandırılan başlangıç süresini göster.
+        let subSec;
+        if (_subathonPreviewEndsAt) subSec = Math.max(0, Math.round((_subathonPreviewEndsAt - Date.now()) / 1000));
+        else { try { subSec = readSubathonConfig().startSeconds || 3600; } catch { subSec = 3600; } }
         preview.innerHTML = `
             <div class="ov-card ${gt} ov-glow" style="--bar:${s.barColor};--radius:${s.borderRadius}px;border-radius:${s.borderRadius}px;padding:22px 40px;text-align:center;min-width:320px;">
                 <div class="sub-label ov-accent" style="font-size:${Math.round(s.fontSize * 0.78)}px;">⏱️ ${title}</div>
-                <div class="sub-time sub-tick" style="color:${s.textColor};font-size:${Math.max(44, s.fontSize * 2.2)}px;">01:00:00</div>
-                <div class="sub-foot"><span class="sub-chip sub-added">+5 dk eklendi</span></div>
+                <div class="sub-time sub-tick" style="color:${s.textColor};font-size:${Math.max(44, s.fontSize * 2.2)}px;">${_fmtHMS(subSec)}</div>
+                <div class="sub-foot"><span class="sub-chip sub-added">${_subathonPreviewEndsAt ? '● çalışıyor' : 'beklemede'}</span></div>
             </div>`;
     } else if (type === 'wheel') {
         // Theme-driven wheel: slice colours come from the theme palette (or each
@@ -7277,6 +7296,10 @@ function updateOverlayPreview() {
         const wheelConf = readWheelConfig();
         const pal = wheelPalette(s.theme);
         const accent = s.barColor || '#ffd000';
+        // Font Boyutu → dilim yazısı (200x200 viewBox'a ölçekli; 18px=9 taban, sınırlı).
+        const wheelFs = Math.max(5, Math.min(16, (s.fontSize || 18) * 0.5));
+        // Kenar Yuvarlama → çarkın kapsayıcı kartına (çarkın kendisi daire).
+        const wheelRadius = s.borderRadius ?? 12;
         const wslices = (wheelConf.slices && wheelConf.slices.length) ? wheelConf.slices : [{}, {}, {}, {}, {}, {}];
         const n = wslices.length;
         const cx = 100, cy = 100, r = 92, step = 360 / n;
@@ -7288,11 +7311,11 @@ function updateOverlayPreview() {
             const col = sl.color || pal[i % pal.length];
             const mid = a0 + step / 2;
             const [lx, ly] = polar(mid, r * 0.6);
-            const lbl = sl.label ? `<text x="${lx}" y="${ly}" fill="#fff" font-size="9" font-weight="800" text-anchor="middle" dominant-baseline="middle" transform="rotate(${mid} ${lx} ${ly})" style="text-shadow:0 1px 2px rgba(0,0,0,0.85)">${escapeHtml(String(sl.label).slice(0, 9))}</text>` : '';
+            const lbl = sl.label ? `<text x="${lx}" y="${ly}" fill="#fff" font-size="${wheelFs}" font-weight="800" text-anchor="middle" dominant-baseline="middle" transform="rotate(${mid} ${lx} ${ly})" style="text-shadow:0 1px 2px rgba(0,0,0,0.85)">${escapeHtml(String(sl.label).slice(0, 9))}</text>` : '';
             return `<path d="M${cx} ${cy} L${x0} ${y0} A${r} ${r} 0 ${large} 1 ${x1} ${y1} Z" fill="${col}" stroke="#0a0a0f" stroke-width="2"/>${lbl}`;
         }).join('');
         preview.innerHTML = `
-            <div style="position:relative;width:200px;height:200px;margin:0 auto;">
+            <div style="position:relative;width:200px;height:200px;margin:0 auto;border-radius:${wheelRadius}px;padding:12px;box-sizing:content-box;background:rgba(0,0,0,0.28);">
                 <div style="position:absolute;top:-2px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-top:18px solid ${accent};z-index:2;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5));"></div>
                 <svg width="200" height="200" viewBox="0 0 200 200" style="filter:drop-shadow(0 6px 16px rgba(0,0,0,0.5));">
                     ${paths}
@@ -7306,16 +7329,20 @@ function updateOverlayPreview() {
             <div style="display:flex;flex-direction:column;align-items:center;gap:14px;">
                 <div class="ov-card ${gt} ov-glow" style="--bar:${s.barColor};--accent:${s.barColor};--radius:${s.borderRadius}px;border-radius:${s.borderRadius}px;padding:18px 30px;text-align:center;min-width:260px;">
                     <div class="ov-title ov-accent" style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:${s.fontSize}px;color:${s.textColor};">tester Gül gönderdi!</div>
-                    <div style="margin-top:6px;font-size:${Math.round(s.fontSize * 0.6)}px;color:${s.textColor};opacity:0.8;">Teşekkürler! 🎉</div>
+                    <div style="margin-top:6px;font-size:${Math.round(s.fontSize * 0.6)}px;color:${s.textColor};opacity:0.8;">${escapeHtml(document.getElementById('ov-thanks')?.value || 'Teşekkürler! 🎉')}</div>
                 </div>
                 <div style="font-size:11px;color:#9d8bbf;text-align:center;max-width:300px;line-height:1.5;">Bu overlay aksiyon ateşlendiğinde uyarı/ses/TTS/konfeti gösterir. Yayında <b>şeffaftır</b> — sadece aksiyon olunca görünür.</div>
             </div>`;
     } else if (type === 'interaction-slider') {
         // Animated marquee preview (was static — testers expected it to scroll like
         // the live overlay). Chips are doubled so the loop is seamless (-50%).
-        const demo = [['🎁 Gül', 'Blok at'], ['🚀 Roket', 'Çark çevir'], ['🦁 Aslan', '+60sn'], ['💎 Elmas', 'TNT yağmuru'], ['🌟 Yıldız', 'Konfeti']];
-        const chip = ([g, a]) => `<div style="display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:999px;background:${s.barColor}1a;border:1px solid ${s.barColor}44;white-space:nowrap;flex:0 0 auto;"><span style="color:${s.barColor};font-weight:800;font-size:13px;">${g}</span><span style="color:${s.textColor};opacity:0.5;">→</span><span style="color:${s.textColor};font-weight:600;font-size:13px;">${a}</span></div>`;
-        const chips = demo.concat(demo).map(chip).join('');
+        // Elle girilen girdiler varsa onları kullan; yoksa demo (canlıda kurallardan dolar).
+        const custom = readSliderEntries();
+        const src = (custom && custom.length)
+            ? custom.map((it) => ['🎁 ' + (it.giftName || ''), it.label || ''])
+            : [['🎁 Gül', 'Blok at'], ['🚀 Roket', 'Çark çevir'], ['🦁 Aslan', '+60sn'], ['💎 Elmas', 'TNT yağmuru'], ['🌟 Yıldız', 'Konfeti']];
+        const chip = ([g, a]) => `<div style="display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:999px;background:${s.barColor}1a;border:1px solid ${s.barColor}44;white-space:nowrap;flex:0 0 auto;"><span style="color:${s.barColor};font-weight:800;font-size:13px;">${escapeHtml(g)}</span><span style="color:${s.textColor};opacity:0.5;">→</span><span style="color:${s.textColor};font-weight:600;font-size:13px;">${escapeHtml(a)}</span></div>`;
+        const chips = src.concat(src).map(chip).join('');
         preview.innerHTML = `
             <style>@keyframes gdSliderMarquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}</style>
             <div style="width:100%;max-width:460px;padding:12px 0;border-radius:${s.borderRadius}px;${themeStyles.container};overflow:hidden;">
@@ -7764,6 +7791,30 @@ function clearSubathonGifts() {
     renderSubathonGiftRows({});
 }
 
+// Subathon editör önizlemesi CANLI geri sayım — "Başlat" deyince önizleme sayacı
+// gerçekten tik atsın (eskiden statik "01:00:00" duruyordu). endsAt sunucudan gelir.
+let _subathonPreviewTimer = null;
+let _subathonPreviewEndsAt = 0;
+function _fmtHMS(sec) { sec = Math.max(0, sec | 0); const p = (n) => String(n).padStart(2, '0'); return `${p(sec / 3600 | 0)}:${p((sec % 3600) / 60 | 0)}:${p(sec % 60)}`; }
+function tickSubathonPreview() {
+    const el = document.querySelector('#ov-preview .sub-time');
+    if (!el || !_subathonPreviewEndsAt) return;
+    const rem = Math.round((_subathonPreviewEndsAt - Date.now()) / 1000);
+    el.textContent = _fmtHMS(rem);
+    if (rem <= 0 && _subathonPreviewTimer) { clearInterval(_subathonPreviewTimer); _subathonPreviewTimer = null; }
+}
+function startSubathonPreview(endsAtMs) {
+    _subathonPreviewEndsAt = endsAtMs || 0;
+    if (_subathonPreviewTimer) { clearInterval(_subathonPreviewTimer); _subathonPreviewTimer = null; }
+    updateOverlayPreview();
+    tickSubathonPreview();
+    if (_subathonPreviewEndsAt) _subathonPreviewTimer = setInterval(tickSubathonPreview, 1000);
+}
+function stopSubathonPreview() {
+    if (_subathonPreviewTimer) { clearInterval(_subathonPreviewTimer); _subathonPreviewTimer = null; }
+    _subathonPreviewEndsAt = 0;
+    updateOverlayPreview();
+}
 async function subathonControl(action) {
     if (!currentOverlayContext?.overlayDbId) {
         showToast?.('Önce kaydet, sonra kontrol et', true);
@@ -7775,6 +7826,9 @@ async function subathonControl(action) {
             const labels = { start: 'başlatıldı', pause: 'durduruldu', reset: 'sıfırlandı' };
             showToast?.(`Zamanlayıcı ${labels[action] || action}`);
             currentOverlayData = res.data;
+            // Editör önizlemesini de canlı çalıştır/durdur.
+            if (action === 'start') { const e = res.data?.data?.endsAt; startSubathonPreview(e ? Date.parse(e) : 0); }
+            else { stopSubathonPreview(); }
         } else {
             showToast?.(res?.error || 'Hata', true);
         }
@@ -7962,6 +8016,60 @@ resetOverlayForm = function (info) {
     }
 };
 // ==================== END WHEEL OF ACTIONS ====================
+
+// ==================== ETKİLEŞİM ŞERİDİ (elle girdiler) + AKSİYON teşekkür ====================
+function renderSliderEntryRows(entries) {
+    const wrap = document.getElementById('ov-slider-entries');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+    if (!entries || !entries.length) {
+        wrap.innerHTML = '<div style="color:#9d8bbf;font-size:0.75rem;font-style:italic;padding:0.3rem 0;">Girdi yok — otomatik (kurallardan) dolacak. + ile elle ekle.</div>';
+        return;
+    }
+    entries.forEach((it, i) => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;gap:0.4rem;align-items:center;';
+        row.innerHTML = `
+            <input type="text" class="ov-input" placeholder="Hediye (örn. Aslan)" value="${escapeAttr(it.giftName || '')}" style="flex:1;" data-sl-gift="${i}" oninput="updateOverlayPreview()">
+            <span style="color:var(--text-muted);">→</span>
+            <input type="text" class="ov-input" placeholder="Aksiyon (örn. +60sn)" value="${escapeAttr(it.label || '')}" style="flex:1;" data-sl-label="${i}" oninput="updateOverlayPreview()">
+            <button type="button" class="btn-icon" onclick="removeSliderEntry(${i})" style="background:rgba(255,46,184,0.08);color:#ff2eb8;" title="Sil"><i class="fas fa-times"></i></button>`;
+        wrap.appendChild(row);
+    });
+}
+function readSliderEntries() {
+    const wrap = document.getElementById('ov-slider-entries');
+    if (!wrap) return [];
+    const gifts = wrap.querySelectorAll('[data-sl-gift]');
+    const labels = wrap.querySelectorAll('[data-sl-label]');
+    const out = [];
+    for (let i = 0; i < gifts.length; i++) {
+        const giftName = gifts[i].value.trim();
+        const label = labels[i].value.trim();
+        if (giftName || label) out.push({ giftName, label });
+    }
+    return out;
+}
+function addSliderEntry() { const e = readSliderEntries(); e.push({ giftName: '', label: '' }); renderSliderEntryRows(e); }
+function removeSliderEntry(idx) { const e = readSliderEntries(); e.splice(idx, 1); renderSliderEntryRows(e); updateOverlayPreview(); }
+window.addSliderEntry = addSliderEntry;
+window.removeSliderEntry = removeSliderEntry;
+
+// Thanks metni + şerit girdileri form round-trip (subathon/wheel wrapper'ları gibi).
+const _origPopAS = populateOverlayForm;
+populateOverlayForm = function (ov) {
+    _origPopAS(ov);
+    const thanksEl = document.getElementById('ov-thanks');
+    if (thanksEl) thanksEl.value = ov.config?.thanksText || 'Teşekkürler! 🎉';
+    if (ov.overlayType === 'interaction-slider') renderSliderEntryRows((ov.config && ov.config.items) || []);
+};
+const _origResetAS = resetOverlayForm;
+resetOverlayForm = function (info) {
+    _origResetAS(info);
+    const thanksEl = document.getElementById('ov-thanks');
+    if (thanksEl) thanksEl.value = 'Teşekkürler! 🎉';
+    if (info.overlayType === 'interaction-slider') renderSliderEntryRows([]);
+};
 
 // ==================== PER-MOD ARM/DISARM UI ====================
 function updateModArmButton(modId) {
