@@ -291,7 +291,7 @@ io.on('connection', (socket) => {
 
                 if (ot === 'gift-alert' && eventType === 'gift') {
                     if (!overlay.data) overlay.data = {};
-                    overlay.data.lastGift = {
+                    const giftEntry = {
                         user: username || nickname,
                         name: giftName,
                         count,
@@ -299,6 +299,9 @@ io.on('connection', (socket) => {
                         diamonds: diamondCount,
                         time: Date.now()
                     };
+                    overlay.data.lastGift = giftEntry;   // alert bunu okur
+                    // Hediye Şeridi (subType 'ticker') için son 30 hediyenin listesi.
+                    overlay.data.recentGifts = [giftEntry, ...(overlay.data.recentGifts || [])].slice(0, 30);
                     overlay.markModified('data');
                     await overlay.save();
                     io.to(`overlay:${overlay.overlayId}`).emit('overlay-update', {

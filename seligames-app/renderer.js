@@ -7210,7 +7210,17 @@ function updateOverlayPreview() {
             </div>`;
     } else if (type === 'gift-alert') {
         const gt = normalizeGoalThemeJS(s.theme);
-        preview.innerHTML = `
+        if (currentOverlayContext.subType === 'ticker') {
+            // Hediye Şeridi: son hediyelerin yatay kayan şeridi (alert'ten farklı).
+            const demo = [['Ayşe', 'Gül', '×5'], ['Mehmet', 'Aslan', '×1'], ['Zeynep', 'Kalp', '×12'], ['Can', 'Gül', '×3']];
+            const chip = (u, g, m) => `<span class="gt-chip" style="--c:${s.barColor};"><span>🎁</span><b style="color:${s.textColor}">${u}</b><span class="ov-accent">${g}</span><span class="gt-mult" style="--c:${s.barColor}">${m}</span></span>`;
+            const chips = demo.map((d) => chip(d[0], d[1], d[2])).join('');
+            preview.innerHTML = `
+                <div class="ov-card ${gt}" style="--bar:${s.barColor};--accent:${s.barColor};--radius:${s.borderRadius}px;border-radius:${s.borderRadius}px;padding:8px 0;overflow:hidden;min-width:340px;max-width:520px;font-size:${Math.round(s.fontSize * 0.72)}px;">
+                    <div class="gt-marquee">${chips}${chips}</div>
+                </div>`;
+        } else {
+            preview.innerHTML = `
             <div class="ov-card ${gt} ov-glow ga-pop" style="--bar:${s.barColor};--radius:${s.borderRadius}px;border-radius:${s.borderRadius}px;padding:24px 34px;text-align:center;min-width:280px;">
                 <div style="position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;">
                     <div style="position:relative;display:flex;align-items:center;justify-content:center;">
@@ -7223,6 +7233,7 @@ function updateOverlayPreview() {
                     <div class="ga-diamonds" style="font-size:${Math.round(s.fontSize*0.66)}px;">💎 5</div>
                 </div>
             </div>`;
+        }
     } else if (type === 'last-x') {
         const gt = normalizeGoalThemeJS(s.theme);
         preview.innerHTML = `

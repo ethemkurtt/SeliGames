@@ -175,7 +175,7 @@ export function LiveOverlay({ overlayId }: { overlayId: string }) {
 function renderByType(ov: OverlayData, liveEvents: TikTokLiveEvent[], valueDelta: number | null, actionFires: ActionFire[]) {
     switch (ov.overlayType) {
         case 'goal': return <GoalView ov={ov} valueDelta={valueDelta} />
-        case 'gift-alert': return <GiftAlertView ov={ov} />
+        case 'gift-alert': return ov.subType === 'ticker' ? <GiftTickerView ov={ov} /> : <GiftAlertView ov={ov} />
         case 'last-x': return <LastXView ov={ov} />
         case 'leaderboard': return <LeaderboardView ov={ov} />
         case 'chart': return <ChartView ov={ov} />
@@ -362,6 +362,63 @@ function GiftAlertView({ ov }: { ov: OverlayData }) {
         </div>
     )
 }
+
+// Hediye Şeridi (gift ticker) — son hediyelerin yatay kayan şeridi. Alert'ten
+// farklı olarak kalıcıdır (otomatik gizlenmez) ve birden çok hediyeyi listeler.
+// Backend recentGifts gönderiyorsa onu kullanır; yoksa gelen lastGift'lerden
+// kendi listesini biriktirir (OBS kaynağı yenilenince boş başlar, dolar).
+function GiftTickerView({ ov }: { ov: OverlayData }) {
+    const s = ov.style || {}
+    const textColor = s.textColor || '#ffffff'
+    const barColor = s.barColor || '#ffd700'
+    const fontSize = s.fontSize || 22
+    const borderRadius = s.borderRadius ?? 16
+    const t = normalizeOverlayTheme(s.theme || 'gradient')
+    const accent = overlayAccent(t, barColor)
+    const maxItems = ov.config?.maxItems || 12
+
+    const [items, setItems] = useState<GiftAlertData[]>([])
+    const lastKeyRef = useRef<string | null>(null)
+    const gift = ov.data?.lastGift
+    const recent = ov.data?.recentGifts as GiftAlertData[] | undefined
+    useEffect(() => {
+        if (Array.isArray(recent) && recent.length) { setItems(recent.slice(0, maxItems)); return }
+        if (!gift) return
+        const key = `${gift.user}-${gift.name}-${gift.time}`
+        if (lastKeyRef.current === key) return
+        lastKeyRef.current = key
+        setItems((prev) => [gift, ...prev].slice(0, maxItems))
+    }, [gift?.user, gift?.name, gift?.time, recent, maxItems])
+
+    if (!items.length) return null
+    const chip = (g: GiftAlertData, i: number) => {
+        const cat = findGiftByName(g.name)
+        return (
+            <span className="gt-chip" style={{ ['--c' as any]: accent }} key={i}>
+                {cat?.icon ? <img src={cat.icon} alt="" style={{ width: 20, height: 20, objectFit: 'contain' }} /> : <span>🎁</span>}
+                <b style={{ color: textColor }}>{g.user}</b>
+                <span className="ov-accent">{g.name}</span>
+                {(g.count || 1) > 1 && <span className="gt-mult" style={{ ['--c' as any]: accent }}>×{g.count}</span>}
+            </span>
+        )
+    }
+    return (
+        <div style={{ display: 'flex', width: '100%', justifyContent: 'center' }}>
+            <style>{OVERLAY_THEME_CSS + GIFT_TICKER_CSS}</style>
+            <div className={`ov-card ${t}`} style={{ ['--bar' as any]: barColor, ['--accent' as any]: accent, ['--radius' as any]: `${borderRadius}px`, borderRadius, padding: '8px 0', overflow: 'hidden', width: '100%', maxWidth: 900, fontSize: Math.round(fontSize * 0.72) }}>
+                <div className="gt-marquee">{items.map(chip)}{items.map((g, i) => chip(g, i + 1000))}</div>
+            </div>
+        </div>
+    )
+}
+
+const GIFT_TICKER_CSS = `
+.gt-marquee{display:inline-flex;gap:22px;white-space:nowrap;animation:gtScroll 18s linear infinite;padding:0 22px;will-change:transform}
+@keyframes gtScroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.gt-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid color-mix(in srgb,var(--c) 45%,transparent)}
+.gt-chip b{font-weight:800}
+.gt-mult{color:#fff;background:var(--c);padding:0 8px;border-radius:999px;font-weight:900}
+`
 
 const GIFT_ALERT_CSS = `
 @keyframes gaPop{0%{transform:scale(.4) translateY(30px);opacity:0}55%{transform:scale(1.08) translateY(0);opacity:1}75%{transform:scale(.97)}100%{transform:scale(1)}}
