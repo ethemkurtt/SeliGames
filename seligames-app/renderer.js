@@ -7336,12 +7336,12 @@ function updateOverlayPreview() {
     } else if (type === 'interaction-slider') {
         // Animated marquee preview (was static — testers expected it to scroll like
         // the live overlay). Chips are doubled so the loop is seamless (-50%).
-        // Elle girilen girdiler varsa onları kullan; yoksa demo (canlıda kurallardan dolar).
+        // Elle girilen girdiler varsa onları kullan (seçilen hediye ikonuyla); yoksa demo.
         const custom = readSliderEntries();
         const src = (custom && custom.length)
-            ? custom.map((it) => ['🎁 ' + (it.giftName || ''), it.label || ''])
-            : [['🎁 Gül', 'Blok at'], ['🚀 Roket', 'Çark çevir'], ['🦁 Aslan', '+60sn'], ['💎 Elmas', 'TNT yağmuru'], ['🌟 Yıldız', 'Konfeti']];
-        const chip = ([g, a]) => `<div style="display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:999px;background:${s.barColor}1a;border:1px solid ${s.barColor}44;white-space:nowrap;flex:0 0 auto;"><span style="color:${s.barColor};font-weight:800;font-size:13px;">${escapeHtml(g)}</span><span style="color:${s.textColor};opacity:0.5;">→</span><span style="color:${s.textColor};font-weight:600;font-size:13px;">${escapeHtml(a)}</span></div>`;
+            ? custom.map((it) => ({ icon: it.iconUrl || '', gift: it.giftName || '', label: it.label || '' }))
+            : [{ icon: '', gift: 'Gül', label: 'Blok at' }, { icon: '', gift: 'Roket', label: 'Çark çevir' }, { icon: '', gift: 'Aslan', label: '+60sn' }, { icon: '', gift: 'Elmas', label: 'TNT yağmuru' }, { icon: '', gift: 'Yıldız', label: 'Konfeti' }];
+        const chip = (it) => `<div style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:999px;background:${s.barColor}1a;border:1px solid ${s.barColor}44;white-space:nowrap;flex:0 0 auto;">${it.icon ? `<img src="${it.icon}" style="width:16px;height:16px;border-radius:3px;" onerror="this.style.display='none'">` : '🎁'}<span style="color:${s.barColor};font-weight:800;font-size:13px;">${escapeHtml(it.gift)}</span><span style="color:${s.textColor};opacity:0.5;">→</span><span style="color:${s.textColor};font-weight:600;font-size:13px;">${escapeHtml(it.label)}</span></div>`;
         const chips = src.concat(src).map(chip).join('');
         preview.innerHTML = `
             <style>@keyframes gdSliderMarquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}</style>
@@ -8018,42 +8018,51 @@ resetOverlayForm = function (info) {
 // ==================== END WHEEL OF ACTIONS ====================
 
 // ==================== ETKİLEŞİM ŞERİDİ (elle girdiler) + AKSİYON teşekkür ====================
+// Girdiler modül dizisinde tutulur; hediye GERÇEK katalogdan seçilir (ikon dahil),
+// aksiyon metni serbest yazılır (örn. Aslan → +60sn).
+let _sliderEntries = [];
 function renderSliderEntryRows(entries) {
+    if (Array.isArray(entries)) _sliderEntries = entries.map((it) => ({ giftName: it.giftName || '', iconUrl: it.iconUrl || '', label: it.label || '' }));
     const wrap = document.getElementById('ov-slider-entries');
     if (!wrap) return;
     wrap.innerHTML = '';
-    if (!entries || !entries.length) {
-        wrap.innerHTML = '<div style="color:#9d8bbf;font-size:0.75rem;font-style:italic;padding:0.3rem 0;">Girdi yok — otomatik (kurallardan) dolacak. + ile elle ekle.</div>';
+    if (!_sliderEntries.length) {
+        wrap.innerHTML = '<div style="color:#9d8bbf;font-size:0.75rem;font-style:italic;padding:0.3rem 0;">Girdi yok — otomatik (kurallardan) dolacak. + ile hediye seçip elle ekle.</div>';
         return;
     }
-    entries.forEach((it, i) => {
+    _sliderEntries.forEach((it, i) => {
         const row = document.createElement('div');
         row.style.cssText = 'display:flex;gap:0.4rem;align-items:center;';
+        const giftBtn = it.giftName
+            ? `<img src="${it.iconUrl || ''}" style="width:16px;height:16px;border-radius:3px;vertical-align:middle;" onerror="this.style.display='none'"> ${escapeHtml(it.giftName)}`
+            : '🎁 Hediye seç';
         row.innerHTML = `
-            <input type="text" class="ov-input" placeholder="Hediye (örn. Aslan)" value="${escapeAttr(it.giftName || '')}" style="flex:1;" data-sl-gift="${i}" oninput="updateOverlayPreview()">
+            <button type="button" class="ov-input" onclick="pickSliderGift(${i})" style="flex:1;text-align:left;cursor:pointer;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="Hediye seç">${giftBtn}</button>
             <span style="color:var(--text-muted);">→</span>
-            <input type="text" class="ov-input" placeholder="Aksiyon (örn. +60sn)" value="${escapeAttr(it.label || '')}" style="flex:1;" data-sl-label="${i}" oninput="updateOverlayPreview()">
+            <input type="text" class="ov-input" placeholder="Aksiyon (örn. +60sn)" value="${escapeAttr(it.label || '')}" style="flex:1;" data-sl-label="${i}" oninput="_sliderEntries[${i}].label=this.value;updateOverlayPreview()">
             <button type="button" class="btn-icon" onclick="removeSliderEntry(${i})" style="background:rgba(255,46,184,0.08);color:#ff2eb8;" title="Sil"><i class="fas fa-times"></i></button>`;
         wrap.appendChild(row);
     });
 }
 function readSliderEntries() {
-    const wrap = document.getElementById('ov-slider-entries');
-    if (!wrap) return [];
-    const gifts = wrap.querySelectorAll('[data-sl-gift]');
-    const labels = wrap.querySelectorAll('[data-sl-label]');
-    const out = [];
-    for (let i = 0; i < gifts.length; i++) {
-        const giftName = gifts[i].value.trim();
-        const label = labels[i].value.trim();
-        if (giftName || label) out.push({ giftName, label });
-    }
-    return out;
+    return _sliderEntries
+        .map((it) => ({ giftName: (it.giftName || '').trim(), iconUrl: it.iconUrl || '', label: (it.label || '').trim() }))
+        .filter((it) => it.giftName || it.label);
 }
-function addSliderEntry() { const e = readSliderEntries(); e.push({ giftName: '', label: '' }); renderSliderEntryRows(e); }
-function removeSliderEntry(idx) { const e = readSliderEntries(); e.splice(idx, 1); renderSliderEntryRows(e); updateOverlayPreview(); }
+function addSliderEntry() { _sliderEntries.push({ giftName: '', iconUrl: '', label: '' }); renderSliderEntryRows(); }
+function removeSliderEntry(idx) { _sliderEntries.splice(idx, 1); renderSliderEntryRows(); updateOverlayPreview(); }
+function pickSliderGift(idx) {
+    openGiftPickerFor((giftName, iconUrl) => {
+        if (!_sliderEntries[idx]) return;
+        _sliderEntries[idx].giftName = giftName;
+        _sliderEntries[idx].iconUrl = iconUrl;
+        renderSliderEntryRows();
+        updateOverlayPreview();
+    });
+}
 window.addSliderEntry = addSliderEntry;
 window.removeSliderEntry = removeSliderEntry;
+window.pickSliderGift = pickSliderGift;
 
 // Thanks metni + şerit girdileri form round-trip (subathon/wheel wrapper'ları gibi).
 const _origPopAS = populateOverlayForm;
