@@ -638,7 +638,7 @@ function ChatView({ ov, liveEvents }: { ov: OverlayData; liveEvents: TikTokLiveE
     return (
         <div style={{ display: 'flex', width: '100%', justifyContent: 'center' }}>
             <style>{OVERLAY_THEME_CSS + DOCK_CSS}</style>
-            <div className={`ov-card ${t}`} style={{ ['--bar' as any]: barColor, ['--radius' as any]: `${borderRadius}px`, borderRadius, padding: 12, minWidth: 300, maxWidth: 420, width: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', maxHeight: '90vh' }}>
+            <div className={`ov-card ${t}`} style={{ ['--bar' as any]: barColor, ['--accent' as any]: barColor, ['--radius' as any]: `${borderRadius}px`, borderRadius, padding: 12, minWidth: 300, maxWidth: 420, width: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', maxHeight: '90vh' }}>
                 <div className="dk-head ov-accent">💬 {ov.title || 'Canlı Chat'}</div>
                 <div ref={scrollRef} className="dk-scroll">
                     {messages.length === 0 ? (
@@ -686,7 +686,7 @@ function EventFeedView({ ov, liveEvents }: { ov: OverlayData; liveEvents: TikTok
     return (
         <div style={{ display: 'flex', width: '100%', justifyContent: 'center' }}>
             <style>{OVERLAY_THEME_CSS + DOCK_CSS}</style>
-            <div className={`ov-card ${t}`} style={{ ['--bar' as any]: barColor, ['--radius' as any]: `${borderRadius}px`, borderRadius, padding: 12, minWidth: 300, maxWidth: 440, width: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', maxHeight: '90vh' }}>
+            <div className={`ov-card ${t}`} style={{ ['--bar' as any]: barColor, ['--accent' as any]: barColor, ['--radius' as any]: `${borderRadius}px`, borderRadius, padding: 12, minWidth: 300, maxWidth: 440, width: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', maxHeight: '90vh' }}>
                 <div className="dk-head ov-accent">📋 {ov.title || 'Event Akışı'}</div>
                 <div ref={scrollRef} className="dk-scroll">
                     {events.length === 0 ? (

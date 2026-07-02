@@ -7281,13 +7281,16 @@ function updateOverlayPreview() {
         }
     } else if (type === 'chat') {
         const gt = normalizeGoalThemeJS(s.theme);
-        const msgs = [['Kullanıcı1', 'Merhaba! 👋'], ['Kullanıcı2', 'Harika yayın!'], ['Kullanıcı3', 'Devam et 🔥']];
-        const html = msgs.map(([u, t]) => `<div class="dk-chatrow"><div class="dk-msg" style="font-size:${s.fontSize}px;"><span class="ov-accent dk-user">${u}</span><span style="color:${s.textColor}">${t}</span></div></div>`).join('');
+        // GÖSTERİLECEK SAYI kadar mesaj (eskiden sabit 3'tü).
+        const count = Math.max(1, Math.min(12, parseInt(document.getElementById('ov-maxitems')?.value) || 5));
+        const msgPool = ['Merhaba! 👋', 'Harika yayın!', 'Devam et 🔥', 'Selam! 🎉', '👏👏', 'Çok iyi!', 'Bravo! 🙌', '🔥🔥', 'Süpersin!', 'Takipteyim'];
+        const html = Array.from({ length: count }, (_, i) => `<div class="dk-chatrow"><div class="dk-msg" style="font-size:${s.fontSize}px;"><span class="ov-accent dk-user">Kullanıcı${i + 1}</span><span style="color:${s.textColor}"> ${msgPool[i % msgPool.length]}</span></div></div>`).join('');
         preview.innerHTML = `<div class="ov-card ${gt}" style="--bar:${s.barColor};--accent:${s.barColor};--radius:${s.borderRadius}px;border-radius:${s.borderRadius}px;background:${s.backgroundColor};padding:12px;min-width:280px;"><div class="dk-head ov-accent" style="font-size:${Math.round(s.fontSize * 0.92)}px;">💬 ${title}</div><div class="dk-scroll">${html}</div></div>`;
     } else if (type === 'event-feed') {
         const gt = normalizeGoalThemeJS(s.theme);
-        const events = [['🎁', 'Kullanıcı1', 'Gül gönderdi ×5'], ['❤️', 'Kullanıcı2', 'Beğendi'], ['➕', 'Kullanıcı3', 'Takip etti']];
-        const html = events.map(([ic, u, t]) => `<div class="dk-feedrow"><span class="dk-emoji">${ic}</span><div style="flex:1;min-width:0;font-size:${s.fontSize}px;color:${s.textColor}"><b class="ov-accent" style="margin-right:5px;">${u}</b><span>${t}</span></div></div>`).join('');
+        const count = Math.max(1, Math.min(12, parseInt(document.getElementById('ov-maxitems')?.value) || 5));
+        const evPool = [['🎁', 'Gül gönderdi ×5'], ['❤️', 'Beğendi'], ['➕', 'Takip etti'], ['🎁', 'Kalp gönderdi ×3'], ['🔁', 'Yayını paylaştı'], ['👋', 'Yayına katıldı'], ['🎁', 'Aslan gönderdi'], ['❤️', '100 beğeni']];
+        const html = Array.from({ length: count }, (_, i) => { const [ic, t] = evPool[i % evPool.length]; return `<div class="dk-feedrow"><span class="dk-emoji">${ic}</span><div style="flex:1;min-width:0;font-size:${s.fontSize}px;color:${s.textColor}"><b class="ov-accent" style="margin-right:5px;">Kullanıcı${i + 1}</b><span>${t}</span></div></div>`; }).join('');
         preview.innerHTML = `<div class="ov-card ${gt}" style="--bar:${s.barColor};--accent:${s.barColor};--radius:${s.borderRadius}px;border-radius:${s.borderRadius}px;background:${s.backgroundColor};padding:12px;min-width:280px;"><div class="dk-head ov-accent" style="font-size:${Math.round(s.fontSize * 0.92)}px;">📋 ${title}</div><div class="dk-scroll">${html}</div></div>`;
     } else if (type === 'subathon') {
         const gt = normalizeGoalThemeJS(s.theme);
